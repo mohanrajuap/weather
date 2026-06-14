@@ -263,32 +263,57 @@ def _user_tz_offset_seconds() -> int:
         return 0
 
 def timing_advice(city_key: str) -> Dict[str, Any]:
-    """Whether NOW is a good time, and if not, when to run again (city + user local)."""
-    meta     = CITIES[city_key]
-    tz       = meta["tz"]
-    peak_end = meta.get("peak_end", 17)
+    """
+    Whether NOW gives a RELIABLE signal, based on how much of the day's
+    peak has actually been observed.
+
+    Key fact: the daily HIGH is usually locked in by ~2pm local. Before the
+    peak window, a forecast (even 70%) can still shift a lot. After the peak,
+    live observations have constrained the outcome → far more reliable.
+
+    Reliability tiers (local time, today predictions):
+      before peak window         → SPECULATIVE (forecast only, can still move)
+      during peak window         → FIRMING (peak being observed now)
+      after peak window          → RELIABLE (high is locked, settles next AM)
+      late evening / tomorrow     → forecast-only for tomorrow
+    """
+    meta      = CITIES[city_key]
+    tz        = meta["tz"]
+    peak_end  = meta.get("peak_end", 17)
+    # peak window start ~ 3 hours before peak_end (e.g. 13:00 if peak_end 16)
+    peak_start = max(11, peak_end - 3)
 
     local_now = _now_utc() + timedelta(seconds=tz)
     h         = local_now.hour + local_now.minute / 60.0
 
-    GOLDEN_START, GOLDEN_END = 6, 11
-
-    if GOLDEN_START <= h < GOLDEN_END:
-        quality, ok, hint = "GOLDEN", True, None
-        msg = "Prime window — models fresh, market still wide. Act now."
-    elif GOLDEN_END <= h < peak_end:
-        quality, ok, hint = "GOOD", True, None
-        msg = "Still tradeable — market tightening as peak approaches."
-    elif peak_end <= h < 22:
-        quality, ok, hint = "TOMORROW", True, GOLDEN_START
-        msg = "Predicting tomorrow (long lead). Sharper if you re-check tomorrow morning."
+    # Decide reliability of acting NOW on a TODAY prediction
+    if h < 6:
+        quality, ok, reliable = "OVERNIGHT", False, False
+        msg = "Overnight — models not refreshed, no live obs yet. Wait."
+        hint = 6
+    elif h < peak_start:
+        quality, ok, reliable = "SPECULATIVE", False, False
+        msg = (f"Pre-peak ({local_now.strftime('%H:%M')}). Forecast only — the day's high "
+               f"hasn't formed yet. A 70% now can still flip. Wait until ~{peak_start}:00.")
+        hint = peak_start
+    elif h < peak_end:
+        quality, ok, reliable = "FIRMING", True, False
+        msg = (f"Peak window ({peak_start}:00–{peak_end}:00). High is forming now — "
+               f"signal firming up. Tradeable, but watch live obs.")
+        hint = None
+    elif h < 22:
+        quality, ok, reliable = "RELIABLE", True, True
+        msg = (f"Post-peak ({local_now.strftime('%H:%M')}). Day's high is essentially "
+               f"locked — most reliable window. Settles ~next morning.")
+        hint = None
     else:
-        quality, ok, hint = "EARLY", False, GOLDEN_START
-        msg = "Overnight — wait for the morning model run for a sharp signal."
+        quality, ok, reliable = "OVERNIGHT", False, False
+        msg = "Late night — today is done. Tomorrow's market is forecast-only until its peak."
+        hint = peak_start
 
     next_city, next_user, hours_until = None, None, None
     if hint is not None:
-        target_local = local_now.replace(hour=hint, minute=0, second=0, microsecond=0)
+        target_local = local_now.replace(hour=int(hint), minute=0, second=0, microsecond=0)
         if target_local <= local_now:
             target_local += timedelta(days=1)
         target_utc  = target_local - timedelta(seconds=tz)
@@ -298,10 +323,12 @@ def timing_advice(city_key: str) -> Dict[str, Any]:
         next_user   = (target_utc + timedelta(seconds=user_tz)).strftime("%H:%M %a")
 
     return {
-        "quality":             quality,
+        "quality":             quality,       # OVERNIGHT/SPECULATIVE/FIRMING/RELIABLE
         "ok_to_trade":         ok,
+        "reliable":            reliable,      # True only post-peak
         "message":             msg,
         "city_local_now":      local_now.strftime("%H:%M"),
+        "peak_window":         f"{peak_start:02d}:00–{peak_end:02d}:00",
         "hours_until_golden":  hours_until,
         "next_run_city_local": next_city,
         "next_run_user_local": next_user,
@@ -1110,10 +1137,21 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         if stale_reading and verdict == "TRADE":
             verdict = "WAIT"
             reasons.append(f"live reading flat ({max_so_far:.0f}° x3) — possibly stale/cached data")
-        # timing override
-        if not timing["ok_to_trade"] and verdict == "TRADE":
-            verdict = "WAIT"
-            reasons.append("outside golden window")
+        # ── timing / reliability gate ──
+        # A 70% signal pre-peak is NOT reliable — the day's high hasn't formed.
+        # Only allow TRADE when the peak is forming (FIRMING) or done (RELIABLE).
+        tq = timing.get("quality")
+        if not is_tomorrow and verdict == "TRADE":
+            if tq in ("SPECULATIVE", "OVERNIGHT"):
+                verdict = "WAIT"
+                reasons.append(f"pre-peak — day's high not formed yet "
+                              f"(wait until ~{timing.get('peak_window','peak')})")
+            elif tq == "FIRMING":
+                # tradeable but tag as not-yet-fully-reliable
+                reasons.append("peak forming — firming up, watch live obs")
+        if is_tomorrow and verdict == "TRADE":
+            # tomorrow's market is always forecast-only — never fully reliable yet
+            reasons.append("tomorrow's market — forecast only, recheck near its peak")
 
     if verdict == "TRADE" and not reasons:
         reasons.append("clear signal — strong bucket, low uncertainty, models agree")
@@ -1154,6 +1192,7 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         "icao":           icao,
         # timing
         "timing":         timing,
+        "reliable":       timing.get("reliable", False),
         # forecasts
         "forecasts":      forecasts,
         "deb":            deb,
@@ -1287,7 +1326,7 @@ def print_city_detail(p: Dict):
 
     # ── TIMING BANNER ──
     q = tim.get("quality", "?")
-    q_emoji = {"GOLDEN": "🟢", "GOOD": "🟡", "TOMORROW": "🟠", "EARLY": "🔴"}.get(q, "⚪")
+    q_emoji = {"RELIABLE": "🟢", "FIRMING": "🟡", "SPECULATIVE": "🟠", "OVERNIGHT": "🔴"}.get(q, "⚪")
     print(f"\n  {q_emoji} TIMING [{q}] — city local time {tim.get('city_local_now','?')}")
     print(f"     {tim.get('message','')}")
     if tim.get("next_run_user_local"):
@@ -1465,7 +1504,7 @@ def print_summary_table(results: List[Dict], min_prob: float = 0.0):
     print(f"{'─'*W}")
     print(f"  VERDICT: 🟢TRADE=act now  🟠WAIT=signal not clean  🔴SKIP=no edge")
     print(f"  AGREE: ✅strong ⚠️moderate ❌weak (DEB vs ensemble)")
-    print(f"  TIMING: GOLDEN(6-11am) GOOD(11-peak) TOMORROW(eve) EARLY(overnight)")
+    print(f"  TIMING: 🔴SPECULATIVE(pre-peak) 🟡FIRMING(peak now) 🟢RELIABLE(post-peak,locked)")
     print(f"{'═'*W}")
 
     # ── ACTIONABLE TRADES ──

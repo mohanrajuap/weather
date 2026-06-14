@@ -44,6 +44,10 @@ INTERVAL_MIN  = int(os.environ.get("CHECK_INTERVAL_MIN", "20"))
 POS_UPDATE_MIN = int(os.environ.get("POSITION_UPDATE_MIN", "15"))
 # Tighter watch on held positions — checks model vs your bucket and alerts on flips
 POS_WATCH_MIN  = int(os.environ.get("POSITION_WATCH_MIN", "5"))
+# How often to fast-recheck ACTIVE signals (ones we already alerted on) for drops
+SIGNAL_WATCH_MIN = int(os.environ.get("SIGNAL_WATCH_MIN", "5"))
+# If "1", only alert on RELIABLE (post-peak) signals; speculative pre-peak suppressed
+RELIABLE_ONLY  = os.environ.get("RELIABLE_ONLY", "0") == "1"
 THRESHOLD     = float(os.environ.get("PROB_THRESHOLD", "0.70"))
 USE_PRICES    = os.environ.get("USE_PRICES", "1") == "1"
 STATE_DB      = os.environ.get("STATE_DB", "/data/monitor_state.db")
@@ -133,6 +137,7 @@ def fmt_new_signal(p) -> str:
         f"📅 Market date: <b>{p['target_date']}</b> ({p.get('predicting','')})",
         f"🕐 Timing: <b>{tim.get('quality','?')}</b> (local {tim.get('city_local_now','?')}, peak {tim.get('peak_window','?')})",
         ("✅ RELIABLE — peak observed, high essentially locked" if tim.get("reliable")
+         else "🔮 FORECAST ONLY — tomorrow's peak ~a day away, can shift a lot" if tim.get("quality") == "FORECAST"
          else "⏳ NOT YET RELIABLE — peak still forming, signal can shift"),
         "",
         f"🎯 Predicted: <b>{p['top_bucket']}{sym}</b> at <b>{p['top_prob']*100:.0f}%</b>",
@@ -472,6 +477,57 @@ def watch_positions(conn):
                          alerted_high=already)
 
 
+def watch_active_signals(conn):
+    """
+    Fast re-check of signals we've ALREADY alerted on (alerted_high=1).
+    Runs every SIGNAL_WATCH_MIN minutes — far quicker than the 20-min full scan —
+    so if an active 70% signal starts dropping, you hear about it immediately,
+    not up to 20 minutes later.
+
+    Only re-checks already-alerted, non-watch keys (skips the 'watch|' position keys).
+    """
+    cur = conn.execute(
+        "SELECT key, city, target_date, bucket, prob FROM signals "
+        "WHERE alerted_high=1 AND key NOT LIKE 'watch|%'"
+    )
+    rows = cur.fetchall()
+    if not rows:
+        return
+
+    for key, city, tdate, prev_bucket, prev_prob in rows:
+        try:
+            p = pw.predict(city, fetch_prices=USE_PRICES)
+        except Exception:
+            continue
+        if "error" in p:
+            continue
+
+        # only relevant if still the same target market
+        if p.get("target_date") != tdate:
+            continue
+
+        prob    = p.get("top_prob", 0.0)
+        bucket  = p.get("top_bucket")
+        verdict = p.get("verdict")
+        clean   = verdict == "TRADE"
+
+        collapsed      = (prob < THRESHOLD or not clean)
+        bucket_shifted = (clean and prob >= THRESHOLD
+                          and prev_bucket is not None and bucket != prev_bucket)
+
+        if bucket_shifted:
+            send_telegram(fmt_bucket_shift(p, prev_bucket, prev_prob))
+            upsert_state(conn, key, city, tdate, bucket, prob, alerted_high=1)
+            print(f"  ⚡🔄 FAST SHIFT {city} {prev_bucket}°→{bucket}°")
+        elif collapsed:
+            send_telegram(fmt_collapse(p, prev_prob if prev_prob is not None else prob))
+            upsert_state(conn, key, city, tdate, bucket, prob, alerted_high=0)
+            print(f"  ⚡🔴 FAST COLLAPSE {city} {prob*100:.0f}%")
+        else:
+            # still healthy — just refresh stored prob
+            upsert_state(conn, key, city, tdate, bucket, prob, alerted_high=1)
+
+
 # ── One monitoring pass ───────────────────────────────────────────────────────
 def run_scan(conn):
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
@@ -499,12 +555,22 @@ def run_scan(conn):
         # only treat as a real signal if it's a clean TRADE verdict
         clean = (verdict == "TRADE")
 
+        # require an actual tradeable edge — no point alerting when the market
+        # already agrees with the model (no >10% edge = nothing to do)
+        has_edge = p.get("best_trade") is not None
+
         prev = get_state(conn, key)
         prev_alerted = prev["alerted_high"] if prev else 0
         prev_prob    = prev["prob"] if prev else None
         prev_bucket  = prev["bucket"] if prev else None
 
-        crossed_up = clean and prob >= THRESHOLD and not prev_alerted
+        # if USE_PRICES is on, require edge; if off, fall back to prob only
+        reliable_ok = (not RELIABLE_ONLY) or p.get("reliable", False)
+        signal_ok = (clean and prob >= THRESHOLD
+                     and (has_edge or not USE_PRICES)
+                     and reliable_ok)
+
+        crossed_up = signal_ok and not prev_alerted
         collapsed  = prev_alerted and (prob < THRESHOLD or not clean)
         # bucket shift: we previously alerted, it's STILL high+clean, but the
         # winning bucket CHANGED (e.g. 32°C@70% → 28°C@70%)
@@ -599,6 +665,7 @@ def main():
         last_pos = time.time()
 
     last_watch = 0.0
+    last_sigwatch = 0.0
     while True:
         now = time.time()
 
@@ -617,6 +684,14 @@ def main():
             except Exception as e:
                 print(f"[loop] watch error: {e}")
             last_watch = time.time()
+
+        # FAST watch on active signals — catch drops without waiting 20 min
+        if now - last_sigwatch >= SIGNAL_WATCH_MIN * 60:
+            try:
+                watch_active_signals(conn)
+            except Exception as e:
+                print(f"[loop] signal watch error: {e}")
+            last_sigwatch = time.time()
 
         # periodic full position P&L update
         if WALLET and (now - last_pos >= POS_UPDATE_MIN * 60):

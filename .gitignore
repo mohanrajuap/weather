@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.env
+*.db
+deb_history.json
+monitor_state.db
+venv/

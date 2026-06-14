@@ -1,0 +1,1662 @@
+"""
+polyweather_predict.py  v2.0
+============================
+Run once → scans ALL 51 cities, shows probabilities + trading signals.
+
+FIXES in v2.0:
+  - CORRECT TARGET DATE: after peak hours → automatically predicts TOMORROW
+  - Shows which Polymarket date to look for (Jun 13 / Jun 14 etc.)
+  - Multi-model fetches correct date index (today vs tomorrow)
+  - Ensemble fetches correct date index
+  - METAR reads today's observations for live temp / max_so_far
+  - Dead market only triggers when predicting TODAY (not tomorrow)
+  - All display output shows target date clearly
+
+Usage:
+    python polyweather_predict.py                    <- scan all cities
+    python polyweather_predict.py tokyo london       <- specific cities
+    python polyweather_predict.py --workers 10       <- faster
+    python polyweather_predict.py --min-prob 0.5     <- high confidence only
+    python polyweather_predict.py --detail istanbul  <- full detail
+    python polyweather_predict.py --json             <- raw JSON
+    python polyweather_predict.py --list             <- list cities
+    python polyweather_predict.py --record-actual istanbul 2026-06-13 20
+
+Requirements:
+    pip install httpx requests python-dotenv
+"""
+
+import sys
+import os
+import math
+import json
+import threading
+import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timedelta, timezone
+from typing import Optional, Dict, List, Any, Tuple
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+try:
+    import httpx
+except ImportError:
+    print("ERROR: pip install httpx requests")
+    sys.exit(1)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CITY REGISTRY — 51 cities
+# key fields: lat/lon, icao, tz (UTC offset seconds), f (Fahrenheit?),
+#             settlement source, peak_end (local hour when day's max is done)
+# ══════════════════════════════════════════════════════════════════════════════
+CITIES = {
+    "ankara":        {"lat": 40.1281, "lon": 32.9951,   "icao": "LTAC",  "tz": 10800,  "f": False, "settlement": "metar", "peak_end": 17},
+    "istanbul":      {"lat": 41.2749, "lon": 28.7323,   "icao": "LTFM",  "tz": 10800,  "f": False, "settlement": "noaa",  "peak_end": 17},
+    "moscow":        {"lat": 55.5915, "lon": 37.2615,   "icao": "UUWW",  "tz": 10800,  "f": False, "settlement": "metar", "peak_end": 17},
+    "london":        {"lat": 51.5048, "lon": 0.0522,    "icao": "EGLC",  "tz": 3600,   "f": False, "settlement": "metar", "peak_end": 17},
+    "paris":         {"lat": 48.9694, "lon": 2.4414,    "icao": "LFPB",  "tz": 3600,   "f": False, "settlement": "metar", "peak_end": 17},
+    "munich":        {"lat": 48.3538, "lon": 11.7861,   "icao": "EDDM",  "tz": 3600,   "f": False, "settlement": "metar", "peak_end": 17},
+    "milan":         {"lat": 45.6306, "lon": 8.7231,    "icao": "LIMC",  "tz": 3600,   "f": False, "settlement": "metar", "peak_end": 17},
+    "warsaw":        {"lat": 52.1672, "lon": 20.9679,   "icao": "EPWA",  "tz": 3600,   "f": False, "settlement": "metar", "peak_end": 17},
+    "madrid":        {"lat": 40.4719, "lon": -3.5626,   "icao": "LEMD",  "tz": 3600,   "f": False, "settlement": "metar", "peak_end": 18},
+    "tel aviv":      {"lat": 32.0055, "lon": 34.8854,   "icao": "LLBG",  "tz": 7200,   "f": False, "settlement": "metar", "peak_end": 16},
+    "amsterdam":     {"lat": 52.3105, "lon": 4.7683,    "icao": "EHAM",  "tz": 3600,   "f": False, "settlement": "metar", "peak_end": 17},
+    "helsinki":      {"lat": 60.3183, "lon": 24.9497,   "icao": "EFHK",  "tz": 7200,   "f": False, "settlement": "metar", "peak_end": 17},
+    "lagos":         {"lat": 6.5774,  "lon": 3.3212,    "icao": "DNMM",  "tz": 3600,   "f": False, "settlement": "metar", "peak_end": 15},
+    "cape town":     {"lat": -33.9648,"lon": 18.6017,   "icao": "FACT",  "tz": 7200,   "f": False, "settlement": "metar", "peak_end": 16},
+    "jeddah":        {"lat": 21.6796, "lon": 39.1565,   "icao": "OEJN",  "tz": 10800,  "f": False, "settlement": "metar", "peak_end": 15},
+    "seoul":         {"lat": 37.4602, "lon": 126.4407,  "icao": "RKSI",  "tz": 32400,  "f": False, "settlement": "metar", "peak_end": 16},
+    "busan":         {"lat": 35.1796, "lon": 128.9380,  "icao": "RKPK",  "tz": 32400,  "f": False, "settlement": "metar", "peak_end": 16},
+    "hong kong":     {"lat": 22.3080, "lon": 113.9185,  "icao": "VHHH",  "tz": 28800,  "f": False, "settlement": "hko",   "peak_end": 15},
+    "taipei":        {"lat": 25.0777, "lon": 121.5737,  "icao": "RCSS",  "tz": 28800,  "f": False, "settlement": "cwa",   "peak_end": 15},
+    "shanghai":      {"lat": 31.1443, "lon": 121.8083,  "icao": "ZSPD",  "tz": 28800,  "f": False, "settlement": "metar", "peak_end": 15},
+    "beijing":       {"lat": 40.0799, "lon": 116.5847,  "icao": "ZBAA",  "tz": 28800,  "f": False, "settlement": "metar", "peak_end": 15},
+    "qingdao":       {"lat": 36.2661, "lon": 120.3744,  "icao": "ZSQD",  "tz": 28800,  "f": False, "settlement": "metar", "peak_end": 15},
+    "wuhan":         {"lat": 30.7838, "lon": 114.2080,  "icao": "ZHHH",  "tz": 28800,  "f": False, "settlement": "metar", "peak_end": 15},
+    "chengdu":       {"lat": 30.5785, "lon": 103.9470,  "icao": "ZUUU",  "tz": 28800,  "f": False, "settlement": "metar", "peak_end": 15},
+    "chongqing":     {"lat": 29.7192, "lon": 106.6423,  "icao": "ZUCK",  "tz": 28800,  "f": False, "settlement": "metar", "peak_end": 15},
+    "shenzhen":      {"lat": 22.6395, "lon": 113.8105,  "icao": "ZGSZ",  "tz": 28800,  "f": False, "settlement": "metar", "peak_end": 15},
+    "guangzhou":     {"lat": 23.3924, "lon": 113.2988,  "icao": "ZGGG",  "tz": 28800,  "f": False, "settlement": "metar", "peak_end": 15},
+    "singapore":     {"lat": 1.3644,  "lon": 103.9915,  "icao": "WSSS",  "tz": 28800,  "f": False, "settlement": "metar", "peak_end": 15},
+    "tokyo":         {"lat": 35.5523, "lon": 139.7798,  "icao": "RJTT",  "tz": 32400,  "f": False, "settlement": "metar", "peak_end": 16},
+    "kuala lumpur":  {"lat": 2.7456,  "lon": 101.7099,  "icao": "WMKK",  "tz": 28800,  "f": False, "settlement": "metar", "peak_end": 15},
+    "jakarta":       {"lat": -6.1275, "lon": 106.6537,  "icao": "WIII",  "tz": 25200,  "f": False, "settlement": "metar", "peak_end": 15},
+    "manila":        {"lat": 14.5086, "lon": 121.0194,  "icao": "RPLL",  "tz": 28800,  "f": False, "settlement": "metar", "peak_end": 15},
+    "wellington":    {"lat": -41.3272,"lon": 174.8051,  "icao": "NZWN",  "tz": 46800,  "f": False, "settlement": "metar", "peak_end": 17},
+    "toronto":       {"lat": 43.6777, "lon": -79.6248,  "icao": "CYYZ",  "tz": -18000, "f": False, "settlement": "metar", "peak_end": 16},
+    "new york":      {"lat": 40.6413, "lon": -73.7781,  "icao": "KJFK",  "tz": -18000, "f": True,  "settlement": "metar", "peak_end": 16},
+    "los angeles":   {"lat": 33.9425, "lon": -118.4081, "icao": "KLAX",  "tz": -28800, "f": True,  "settlement": "metar", "peak_end": 16},
+    "san francisco": {"lat": 37.6213, "lon": -122.3790, "icao": "KSFO",  "tz": -28800, "f": True,  "settlement": "metar", "peak_end": 16},
+    "aurora":        {"lat": 39.8561, "lon": -104.6737, "icao": "KBKF",  "tz": -25200, "f": True,  "settlement": "metar", "peak_end": 17},
+    "austin":        {"lat": 30.1975, "lon": -97.6664,  "icao": "KAUS",  "tz": -21600, "f": True,  "settlement": "metar", "peak_end": 17},
+    "houston":       {"lat": 29.9902, "lon": -95.3368,  "icao": "KIAH",  "tz": -21600, "f": True,  "settlement": "metar", "peak_end": 17},
+    "chicago":       {"lat": 41.9742, "lon": -87.9073,  "icao": "KORD",  "tz": -21600, "f": True,  "settlement": "metar", "peak_end": 16},
+    "dallas":        {"lat": 32.8998, "lon": -97.0403,  "icao": "KDFW",  "tz": -21600, "f": True,  "settlement": "metar", "peak_end": 17},
+    "miami":         {"lat": 25.7959, "lon": -80.2870,  "icao": "KMIA",  "tz": -18000, "f": True,  "settlement": "metar", "peak_end": 16},
+    "atlanta":       {"lat": 33.6407, "lon": -84.4277,  "icao": "KATL",  "tz": -18000, "f": True,  "settlement": "metar", "peak_end": 16},
+    "seattle":       {"lat": 47.4502, "lon": -122.3088, "icao": "KSEA",  "tz": -28800, "f": True,  "settlement": "metar", "peak_end": 17},
+    "mexico city":   {"lat": 19.4361, "lon": -99.0719,  "icao": "MMMX",  "tz": -21600, "f": False, "settlement": "metar", "peak_end": 15},
+    "buenos aires":  {"lat": -34.8222,"lon": -58.5358,  "icao": "SAEZ",  "tz": -10800, "f": False, "settlement": "metar", "peak_end": 16},
+    "sao paulo":     {"lat": -23.4356,"lon": -46.4731,  "icao": "SBGR",  "tz": -10800, "f": False, "settlement": "metar", "peak_end": 15},
+    "panama city":   {"lat": 9.0714,  "lon": -79.3835,  "icao": "MPTO",  "tz": -18000, "f": False, "settlement": "metar", "peak_end": 15},
+    "lucknow":       {"lat": 26.7606, "lon": 80.8893,   "icao": "VILK",  "tz": 19800,  "f": False, "settlement": "metar", "peak_end": 16},
+    "karachi":       {"lat": 24.9008, "lon": 67.1681,   "icao": "OPKC",  "tz": 18000,  "f": False, "settlement": "metar", "peak_end": 16},
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CITY ALIASES — handles spacing, abbreviations, common spellings
+# So "hongkong", "hong kong", "hk", "HONGKONG" all resolve to "hong kong"
+# ══════════════════════════════════════════════════════════════════════════════
+ALIASES = {
+    "hongkong": "hong kong", "hk": "hong kong",
+    "newyork": "new york", "nyc": "new york", "ny": "new york",
+    "losangeles": "los angeles", "la": "los angeles",
+    "sanfrancisco": "san francisco", "sf": "san francisco",
+    "telaviv": "tel aviv",
+    "capetown": "cape town",
+    "kualalumpur": "kuala lumpur", "kl": "kuala lumpur",
+    "mexicocity": "mexico city",
+    "buenosaires": "buenos aires", "ba": "buenos aires",
+    "saopaulo": "sao paulo", "sãopaulo": "sao paulo",
+    "panamacity": "panama city",
+    "laufaushan": "lau fau shan",
+    "istanbul": "istanbul", "ist": "istanbul",
+    "moscow": "moscow", "mos": "moscow",
+}
+
+def resolve_city(name: str) -> Optional[str]:
+    """Normalize a user-typed city name to a registry key."""
+    if not name:
+        return None
+    raw = name.lower().strip()
+    # direct match
+    if raw in CITIES:
+        return raw
+    # alias match (handles 'hongkong', 'nyc', etc.)
+    nospace = raw.replace(" ", "").replace("_", "").replace("-", "")
+    if nospace in ALIASES:
+        return ALIASES[nospace]
+    if raw in ALIASES:
+        return ALIASES[raw]
+    # try matching ignoring spaces against registry keys
+    for key in CITIES:
+        if key.replace(" ", "") == nospace:
+            return key
+    return None
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SETTLEMENT ROUNDING
+# ══════════════════════════════════════════════════════════════════════════════
+def wu_round(value: float) -> int:
+    if value >= 0:
+        return int(math.floor(value + 0.5))
+    return int(math.ceil(value - 0.5))
+
+def settlement_round(city: str, value: Optional[float]) -> Optional[int]:
+    if value is None:
+        return None
+    meta = CITIES.get(city.lower().strip(), {})
+    if meta.get("settlement") == "hko":
+        return int(math.floor(float(value)))
+    return wu_round(float(value))
+
+# ══════════════════════════════════════════════════════════════════════════════
+# HTTP
+# ══════════════════════════════════════════════════════════════════════════════
+_SESSION = httpx.Client(
+    timeout=12.0,
+    follow_redirects=True,
+    headers={"User-Agent": "PolyWeatherPredict/2.0 (+https://polyweather.top)"},
+    limits=httpx.Limits(max_connections=50, max_keepalive_connections=20),
+)
+
+def _get(url: str, params: dict = None, timeout: float = 10.0) -> Optional[Any]:
+    try:
+        r = _SESSION.get(url, params=params or {}, timeout=timeout)
+        r.raise_for_status()
+        return r.json()
+    except Exception:
+        return None
+
+def _sf(v) -> Optional[float]:
+    try:
+        return float(v)
+    except Exception:
+        return None
+
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TARGET DATE LOGIC  ← THE CORE FIX
+#
+# If it's past the city's peak_end hour locally, today's max is already done.
+# We predict TOMORROW instead — which is what Polymarket's open market is for.
+# ══════════════════════════════════════════════════════════════════════════════
+def resolve_target(city_key: str) -> Dict[str, Any]:
+    """
+    Returns:
+        target_date  : "YYYY-MM-DD" in city local time — the market date
+        target_idx   : 0=today, 1=tomorrow in Open-Meteo daily array
+        predicting   : "today" or "tomorrow"
+        local_now    : current local datetime
+        local_hour   : current local hour
+        is_after_peak: True if today's max is already settled
+    """
+    meta       = CITIES[city_key]
+    tz         = meta["tz"]
+    peak_end   = meta.get("peak_end", 17)
+
+    local_now  = _now_utc() + timedelta(seconds=tz)
+    local_hour = local_now.hour
+
+    # After peak_end → today is done → predict tomorrow
+    if local_hour >= peak_end:
+        target_dt   = local_now + timedelta(days=1)
+        target_idx  = 1
+        predicting  = "tomorrow"
+        is_after    = True
+    else:
+        target_dt   = local_now
+        target_idx  = 0
+        predicting  = "today"
+        is_after    = False
+
+    return {
+        "target_date":   target_dt.strftime("%Y-%m-%d"),
+        "target_idx":    target_idx,
+        "predicting":    predicting,
+        "local_now":     local_now,
+        "local_hour":    local_hour,
+        "local_date":    local_now.strftime("%Y-%m-%d"),
+        "is_after_peak": is_after,
+        "peak_end":      peak_end,
+    }
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TIMING ADVISOR — is NOW a good time to predict this city?
+#
+# Golden window = morning of the target day, local time:
+#   models ran overnight, METAR starting, peak still hours away (market cheap).
+#
+#   06:00–11:00 local  → GOLDEN  (best edge)
+#   11:00–peak_end     → GOOD    (market tightening)
+#   peak_end–22:00     → TOMORROW (long lead, less sharp — recheck AM)
+#   22:00–06:00        → EARLY   (overnight, wait for morning run)
+# ══════════════════════════════════════════════════════════════════════════════
+def _user_tz_offset_seconds() -> int:
+    """User's local UTC offset. Override with POLYWEATHER_USER_TZ_OFFSET (seconds)."""
+    env = os.environ.get("POLYWEATHER_USER_TZ_OFFSET")
+    if env is not None:
+        try:
+            return int(env)
+        except Exception:
+            pass
+    try:
+        local = datetime.now().astimezone()
+        return int(local.utcoffset().total_seconds())
+    except Exception:
+        return 0
+
+def timing_advice(city_key: str) -> Dict[str, Any]:
+    """Whether NOW is a good time, and if not, when to run again (city + user local)."""
+    meta     = CITIES[city_key]
+    tz       = meta["tz"]
+    peak_end = meta.get("peak_end", 17)
+
+    local_now = _now_utc() + timedelta(seconds=tz)
+    h         = local_now.hour + local_now.minute / 60.0
+
+    GOLDEN_START, GOLDEN_END = 6, 11
+
+    if GOLDEN_START <= h < GOLDEN_END:
+        quality, ok, hint = "GOLDEN", True, None
+        msg = "Prime window — models fresh, market still wide. Act now."
+    elif GOLDEN_END <= h < peak_end:
+        quality, ok, hint = "GOOD", True, None
+        msg = "Still tradeable — market tightening as peak approaches."
+    elif peak_end <= h < 22:
+        quality, ok, hint = "TOMORROW", True, GOLDEN_START
+        msg = "Predicting tomorrow (long lead). Sharper if you re-check tomorrow morning."
+    else:
+        quality, ok, hint = "EARLY", False, GOLDEN_START
+        msg = "Overnight — wait for the morning model run for a sharp signal."
+
+    next_city, next_user, hours_until = None, None, None
+    if hint is not None:
+        target_local = local_now.replace(hour=hint, minute=0, second=0, microsecond=0)
+        if target_local <= local_now:
+            target_local += timedelta(days=1)
+        target_utc  = target_local - timedelta(seconds=tz)
+        hours_until = round((target_utc - _now_utc()).total_seconds() / 3600.0, 1)
+        next_city   = target_local.strftime("%H:%M %a")
+        user_tz     = _user_tz_offset_seconds()
+        next_user   = (target_utc + timedelta(seconds=user_tz)).strftime("%H:%M %a")
+
+    return {
+        "quality":             quality,
+        "ok_to_trade":         ok,
+        "message":             msg,
+        "city_local_now":      local_now.strftime("%H:%M"),
+        "hours_until_golden":  hours_until,
+        "next_run_city_local": next_city,
+        "next_run_user_local": next_user,
+    }
+
+# ══════════════════════════════════════════════════════════════════════════════
+# DATA SOURCES  — all accept target_idx to pick correct day
+# ══════════════════════════════════════════════════════════════════════════════
+def fetch_open_meteo(lat: float, lon: float,
+                     use_fahrenheit: bool = False,
+                     target_idx: int = 0) -> Optional[Dict]:
+    """Fetch forecast. Returns today's max (idx=0) or tomorrow's (idx=1)."""
+    unit = "fahrenheit" if use_fahrenheit else "celsius"
+    data = _get("https://api.open-meteo.com/v1/forecast", {
+        "latitude": lat, "longitude": lon,
+        "daily": "temperature_2m_max,temperature_2m_min",
+        "hourly": "temperature_2m",
+        "current": "temperature_2m",
+        "temperature_unit": unit,
+        "timezone": "UTC",
+        "forecast_days": 3,
+    }, timeout=8.0)
+    if not data:
+        return None
+    daily = data.get("daily", {})
+    dates = daily.get("time", [])
+    highs = daily.get("temperature_2m_max", [])
+    if target_idx < len(highs) and highs[target_idx] is not None:
+        data["_target_max"] = round(float(highs[target_idx]), 1)
+        data["_target_date"] = dates[target_idx] if target_idx < len(dates) else None
+    return data
+
+def fetch_ensemble(lat: float, lon: float,
+                   use_fahrenheit: bool = False,
+                   target_idx: int = 0) -> Optional[Dict]:
+    """Fetch ensemble spread for target day."""
+    unit = "fahrenheit" if use_fahrenheit else "celsius"
+    data = _get("https://ensemble-api.open-meteo.com/v1/ensemble", {
+        "latitude": lat, "longitude": lon,
+        "daily": "temperature_2m_max",
+        "temperature_unit": unit,
+        "timezone": "UTC",
+        "models": "icon_seamless",
+        "forecast_days": 3,
+    }, timeout=8.0)
+    if not data:
+        return None
+    daily   = data.get("daily", {})
+    members = {k: v for k, v in daily.items() if k.startswith("temperature_2m_max_member")}
+    if not members:
+        return None
+    vals = sorted(
+        float(v[target_idx]) for v in members.values()
+        if isinstance(v, list) and target_idx < len(v) and v[target_idx] is not None
+    )
+    if not vals:
+        return None
+    n = len(vals)
+    return {
+        "p10":     round(vals[max(0, int(n * 0.10))], 1),
+        "median":  round(vals[n // 2], 1),
+        "p90":     round(vals[min(n - 1, int(n * 0.90))], 1),
+        "members": n,
+    }
+
+def fetch_multi_model(lat: float, lon: float,
+                      use_fahrenheit: bool = False,
+                      target_idx: int = 0) -> Optional[Dict[str, float]]:
+    """Fetch individual NWP model forecasts for target day."""
+    unit = "fahrenheit" if use_fahrenheit else "celsius"
+    model_names = {
+        "ecmwf_ifs025": "ECMWF",
+        "gfs_seamless":  "GFS",
+        "icon_seamless": "ICON",
+        "gem_seamless":  "GEM",
+    }
+    forecasts = {}
+    for api_name, display_name in model_names.items():
+        d = _get("https://api.open-meteo.com/v1/forecast", {
+            "latitude": lat, "longitude": lon,
+            "daily": "temperature_2m_max",
+            "temperature_unit": unit,
+            "timezone": "UTC",
+            "models": api_name,
+            "forecast_days": 3,           # need 3 days so idx=1 works
+        }, timeout=6.0)
+        if d:
+            vals = (d.get("daily") or {}).get("temperature_2m_max") or []
+            if target_idx < len(vals) and vals[target_idx] is not None:
+                forecasts[display_name] = round(float(vals[target_idx]), 1)
+    return forecasts if forecasts else None
+
+def fetch_metar(icao: str, tz_offset: int = 0,
+                local_date: str = None) -> Optional[Dict]:
+    """
+    Fetch METAR for the LOCAL date given.
+    Always fetches TODAY's observations (for live temp / max_so_far).
+    If predicting tomorrow, live data still shows today's current conditions.
+    """
+    data = _get(
+        "https://aviationweather.gov/api/data/metar",
+        {"ids": icao, "format": "json", "hours": 8},
+        timeout=6.0,
+    )
+    if not data or not isinstance(data, list):
+        return None
+
+    # Always use today's LOCAL date for METAR (it's live observation)
+    today_local = (_now_utc() + timedelta(seconds=tz_offset)).strftime("%Y-%m-%d")
+
+    results = []
+    for row in data:
+        temp = _sf(row.get("temp"))
+        if temp is None:
+            continue
+        obs_raw = row.get("reportTime") or row.get("receiptTime") or row.get("observation_time")
+        if not obs_raw:
+            continue
+        try:
+            obs_dt   = datetime.fromisoformat(str(obs_raw).replace("Z", "+00:00"))
+            local_dt = obs_dt + timedelta(seconds=tz_offset)
+            if local_dt.strftime("%Y-%m-%d") != today_local:
+                continue
+            results.append({
+                "temp":         round(temp, 1),
+                "time":         local_dt.strftime("%H:%M"),
+                "obs_dt":       obs_dt,
+                "humidity":     _sf(row.get("relh")),
+                "wind_dir":     _sf(row.get("wdir")),
+                "wind_speed_kt":_sf(row.get("wspd")),
+            })
+        except Exception:
+            continue
+
+    if not results:
+        return None
+
+    results.sort(key=lambda x: x["obs_dt"], reverse=True)
+    max_so_far = max(r["temp"] for r in results)
+    curr       = results[0]
+    recent     = [(r["time"], r["temp"]) for r in results[:4]]
+    trend      = "unknown"
+    if len(recent) >= 2:
+        diff  = recent[0][1] - recent[1][1]
+        trend = "rising" if diff > 0.1 else "falling" if diff < -0.1 else "stagnant"
+
+    return {
+        "current_temp":  curr["temp"],
+        "max_so_far":    max_so_far,
+        "obs_time":      curr["time"],
+        "recent_temps":  recent,
+        "trend":         trend,
+        "obs_count":     len(results),
+        "humidity":      curr.get("humidity"),
+        "wind_speed_kt": curr.get("wind_speed_kt"),
+    }
+
+# ══════════════════════════════════════════════════════════════════════════════
+# POLYMARKET LIVE PRICES  (Gamma API for discovery + CLOB API for prices)
+# Both public, no auth needed.
+#
+# Flow:
+#   1. Gamma /events?search="Tokyo temperature June 14"  → find the event
+#   2. event.markets[] → each bucket market has clobTokenIds + outcomes
+#   3. CLOB /price?token_id=<YES token>&side=buy → live YES price
+# ══════════════════════════════════════════════════════════════════════════════
+GAMMA = "https://gamma-api.polymarket.com"
+CLOB  = "https://clob.polymarket.com"
+DATA  = "https://data-api.polymarket.com"
+
+# Month names for building search queries
+_MONTHS = ["January","February","March","April","May","June",
+           "July","August","September","October","November","December"]
+
+def _pm_display_name(city_key: str) -> str:
+    """Map registry key to the name Polymarket uses in market titles."""
+    overrides = {
+        "new york": "NYC",
+        "hong kong": "Hong Kong",
+    }
+    return overrides.get(city_key, city_key.title())
+
+def fetch_polymarket_market(city_key: str, target_date: str, debug: bool = False) -> Optional[Dict]:
+    """
+    Find the temperature event for a city+date and return per-bucket YES prices.
+    """
+    try:
+        dt = datetime.strptime(target_date, "%Y-%m-%d")
+        date_phrase = f"{_MONTHS[dt.month-1]} {dt.day}"
+    except Exception:
+        return None
+
+    city_disp = _pm_display_name(city_key)
+
+    # Try several search queries — Polymarket title formats vary
+    queries = [
+        f"highest temperature in {city_disp} on {date_phrase}",
+        f"{city_disp} temperature {date_phrase}",
+        f"highest temperature {city_disp}",
+        f"{city_disp} temperature",
+    ]
+
+    events = []
+    for q in queries:
+        # public-search returns events + markets
+        sr = _get(f"{GAMMA}/public-search", {"q": q, "limit": 10}, timeout=8.0)
+        if isinstance(sr, dict) and sr.get("events"):
+            events = sr["events"]
+            if debug:
+                print(f"  [debug] query '{q}' → {len(events)} events")
+            if events:
+                break
+        # fallback: /events endpoint with search
+        ev2 = _get(f"{GAMMA}/events", {"search": q, "closed": "false", "limit": 10}, timeout=8.0)
+        if isinstance(ev2, list) and ev2:
+            events = ev2
+            if debug:
+                print(f"  [debug] /events '{q}' → {len(events)} events")
+            break
+
+    if debug and events:
+        print(f"  [debug] event titles found:")
+        for ev in events[:6]:
+            print(f"     - {ev.get('title')}")
+
+    if not events:
+        if debug:
+            print(f"  [debug] NO events found for any query")
+        return None
+
+    # Match: title must contain city AND the date phrase
+    city_l = city_disp.lower()
+    date_l = date_phrase.lower()
+    event = None
+    for ev in events:
+        title = (ev.get("title") or "").lower()
+        if city_l in title and date_l in title:
+            event = ev
+            break
+    # looser: city + temperature keyword
+    if event is None:
+        for ev in events:
+            title = (ev.get("title") or "").lower()
+            if city_l in title and ("temperature" in title or "temp" in title):
+                event = ev
+                break
+    if event is None:
+        if debug:
+            print(f"  [debug] no event matched city '{city_l}' + date '{date_l}'")
+        return None
+
+    if debug:
+        print(f"  [debug] matched event: {event.get('title')}")
+
+    markets = event.get("markets") or []
+    if debug:
+        print(f"  [debug] event has {len(markets)} bucket markets")
+
+    buckets: Dict[int, Dict] = {}
+    for m in markets:
+        question = m.get("question") or m.get("groupItemTitle") or m.get("title") or ""
+        temp = _extract_temp_from_title(question)
+        if temp is None:
+            continue
+        try:
+            token_ids = json.loads(m.get("clobTokenIds") or "[]")
+            outcomes  = json.loads(m.get("outcomes") or "[]")
+            prices    = json.loads(m.get("outcomePrices") or "[]")
+        except Exception:
+            token_ids, outcomes, prices = [], [], []
+
+        yes_price = no_price = token_yes = None
+        for i, oc in enumerate(outcomes):
+            ocl = str(oc).lower()
+            pr  = _sf(prices[i]) if i < len(prices) else None
+            tid = token_ids[i] if i < len(token_ids) else None
+            if ocl == "yes":
+                yes_price, token_yes = pr, tid
+            elif ocl == "no":
+                no_price = pr
+
+        vol = _sf(m.get("volume") or m.get("volumeNum") or m.get("volume24hr")) or 0.0
+        buckets[temp] = {
+            "yes":       round(yes_price, 3) if yes_price is not None else None,
+            "no":        round(no_price, 3) if no_price is not None else None,
+            "token_yes": token_yes,
+            "vol":       round(vol, 0),
+        }
+
+    if debug:
+        print(f"  [debug] parsed {len(buckets)} buckets: {sorted(buckets.keys())}")
+
+    if not buckets:
+        return None
+
+    slug = event.get("slug") or ""
+    return {
+        "title":   event.get("title"),
+        "buckets": buckets,
+        "url":     f"https://polymarket.com/event/{slug}" if slug else "https://polymarket.com",
+    }
+
+def _extract_temp_from_title(text: str) -> Optional[int]:
+    """Pull the integer temperature out of a market question like '29°C' or '84-85°F'."""
+    import re
+    if not text:
+        return None
+    # match patterns like "29°C", "29C", "29 °C", "84°F"
+    m = re.search(r"(\d{1,3})\s*°?\s*[CF]", text)
+    if m:
+        return int(m.group(1))
+    # "or below" / "or higher" style — grab first number
+    m = re.search(r"(\d{1,3})", text)
+    if m:
+        return int(m.group(1))
+    return None
+
+def fetch_clob_price(token_id: str, side: str = "buy") -> Optional[float]:
+    """Live price from CLOB order book for a token (more current than Gamma)."""
+    if not token_id:
+        return None
+    d = _get(f"{CLOB}/price", {"token_id": token_id, "side": side}, timeout=5.0)
+    if isinstance(d, dict):
+        return _sf(d.get("price"))
+    return None
+
+# ══════════════════════════════════════════════════════════════════════════════
+# YOUR POLYMARKET POSITIONS  (public on-chain data — needs only wallet ADDRESS)
+#
+# Uses the public Data API. Requires only your PUBLIC wallet address (0x...).
+# NEVER needs your private key, password, or seed phrase.
+# Set it once: export POLYMARKET_WALLET=0xYourAddress
+# ══════════════════════════════════════════════════════════════════════════════
+def get_wallet_address(cli_arg: Optional[str] = None) -> Optional[str]:
+    """Resolve wallet address from CLI arg or POLYMARKET_WALLET env var."""
+    addr = cli_arg or os.environ.get("POLYMARKET_WALLET")
+    if not addr:
+        return None
+    addr = addr.strip()
+    if not addr.lower().startswith("0x") or len(addr) < 10:
+        return None
+    return addr
+
+def fetch_positions(wallet: str, weather_only: bool = True) -> Optional[List[Dict]]:
+    """
+    Fetch open positions for a wallet from the public Data API.
+    weather_only=True filters to temperature/weather markets.
+    """
+    if not wallet:
+        return None
+    data = _get(f"{DATA}/positions", {
+        "user": wallet,
+        "limit": 200,
+        "sizeThreshold": 0.1,
+    }, timeout=10.0)
+    if not isinstance(data, list):
+        return None
+
+    positions = []
+    for pos in data:
+        title = (pos.get("title") or "")
+        slug  = (pos.get("slug") or "") + (pos.get("eventSlug") or "")
+        is_weather = ("temperature" in title.lower() or "temperature" in slug.lower()
+                      or "temp" in slug.lower() or "weather" in slug.lower())
+        if weather_only and not is_weather:
+            continue
+        positions.append({
+            "title":        title,
+            "outcome":      pos.get("outcome"),            # Yes / No
+            "size":         _sf(pos.get("size")) or 0.0,   # shares held
+            "avg_price":    _sf(pos.get("avgPrice")),      # your entry price
+            "cur_price":    _sf(pos.get("curPrice")),      # current price
+            "initial_value":_sf(pos.get("initialValue")),  # what you paid
+            "current_value":_sf(pos.get("currentValue")),  # worth now
+            "cash_pnl":     _sf(pos.get("cashPnl")),        # profit/loss $
+            "percent_pnl":  _sf(pos.get("percentPnl")),     # profit/loss %
+            "redeemable":   pos.get("redeemable", False),   # settled & claimable
+            "event_slug":   pos.get("eventSlug"),
+        })
+    return positions
+
+def compute_edges(distribution: List[Dict], pm: Optional[Dict],
+                  temp_sym: str) -> List[Dict]:
+    """
+    Match model probabilities against Polymarket prices, compute edge per bucket.
+    Returns list of edge dicts sorted by abs(edge) descending.
+    """
+    if not pm or not pm.get("buckets"):
+        return []
+    model = {b["value"]: b["probability"] for b in distribution}
+    pm_buckets = pm["buckets"]
+
+    edges = []
+    all_temps = set(model.keys()) | set(pm_buckets.keys())
+    for temp in all_temps:
+        mp = model.get(temp, 0.0)                    # model probability
+        pb = pm_buckets.get(temp, {})
+        yes = pb.get("yes")                          # market YES price
+        no  = pb.get("no")
+        vol = pb.get("vol", 0)
+        if yes is None:
+            continue
+
+        # ── Tradeability guards ──────────────────────────────────────────────
+        # A price of 0¢ or 100¢ means the order book is empty at that level —
+        # you CANNOT actually buy it. Treat extremes as non-tradeable.
+        yes_buyable = (yes is not None) and (0.02 <= yes <= 0.98)
+        no_buyable  = (no  is not None) and (0.02 <= no  <= 0.98)
+
+        edge_yes = mp - yes                          # +ve → BUY YES
+        edge_no  = (1 - mp) - (no if no is not None else (1 - yes))
+
+        action = "skip"
+        best_edge = max(edge_yes, edge_no)
+
+        # Only suggest a side if BOTH: edge exists AND it's actually buyable
+        # AND the model genuinely supports that side (not a fake edge from 0¢).
+        if edge_yes >= 0.10 and yes_buyable and mp >= 0.40:
+            action, best_edge = "BUY YES", edge_yes
+        elif edge_no >= 0.10 and no_buyable and mp <= 0.30:
+            action, best_edge = "BUY NO", edge_no
+        else:
+            action = "skip"
+            best_edge = max(edge_yes if yes_buyable else -1,
+                            edge_no  if no_buyable  else -1)
+            if best_edge < 0:
+                best_edge = 0
+
+        # liquidity flag
+        thin = vol < 500
+
+        edges.append({
+            "temp":        temp,
+            "model_prob":  round(mp, 3),
+            "yes_price":   yes,
+            "no_price":    no,
+            "edge_yes":    round(edge_yes, 3),
+            "edge_no":     round(edge_no, 3),
+            "best_edge":   round(best_edge, 3),
+            "action":      action,
+            "vol":         vol,
+            "yes_buyable": yes_buyable,
+            "no_buyable":  no_buyable,
+            "thin":        thin,
+        })
+
+    edges.sort(key=lambda x: x["best_edge"], reverse=True)
+    return edges
+
+# ══════════════════════════════════════════════════════════════════════════════
+# DEB — Dynamic Error Blending
+# ══════════════════════════════════════════════════════════════════════════════
+_HISTORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "deb_history.json")
+
+def _load_history() -> dict:
+    try:
+        if os.path.exists(_HISTORY_FILE):
+            with open(_HISTORY_FILE, "r") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+def _save_history(data: dict):
+    try:
+        with open(_HISTORY_FILE, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception:
+        pass
+
+def deb_blend(city: str, forecasts: Dict[str, float],
+              target_date: str = None,
+              lookback: int = 7, decay: float = 0.85) -> Tuple[Optional[float], str]:
+    if not forecasts:
+        return None, "no forecasts"
+    history   = _load_history()
+    city_data = history.get(city.lower(), {})
+    skip_date = target_date or _now_utc().strftime("%Y-%m-%d")
+    errors: Dict[str, list] = {m: [] for m in forecasts}
+    days_used = 0
+    for date in sorted(city_data.keys(), reverse=True):
+        if date >= skip_date:
+            continue
+        rec    = city_data[date]
+        actual = _sf(rec.get("actual_high"))
+        if actual is None:
+            continue
+        past = rec.get("forecasts", {})
+        w    = decay ** days_used
+        for model in forecasts:
+            if model in past and past[model] is not None:
+                errors[model].append((abs(float(past[model]) - actual), w))
+        days_used += 1
+        if days_used >= lookback:
+            break
+
+    if days_used < 2:
+        n       = len(forecasts)
+        blended = sum(forecasts.values()) / n
+        return round(blended, 1), f"equal-weight({n} models, {days_used}d history)"
+
+    maes = {}
+    for model, errs in errors.items():
+        if errs:
+            tw = sum(w for _, w in errs)
+            maes[model] = sum(e * w for e, w in errs) / tw if tw > 0 else 2.0
+        else:
+            maes[model] = 2.0
+
+    inv       = {m: 1.0 / (mae + 0.1) for m, mae in maes.items() if m in forecasts}
+    total_inv = sum(inv.values())
+    if total_inv == 0:
+        return round(sum(forecasts.values()) / len(forecasts), 1), "equal-weight(fallback)"
+    weights   = {m: v / total_inv for m, v in inv.items()}
+    blended   = sum(forecasts[m] * weights[m] for m in weights)
+    top       = sorted(weights.items(), key=lambda x: x[1], reverse=True)[:3]
+    info      = " | ".join(f"{m}({w*100:.0f}%,MAE:{maes[m]:.1f}°)" for m, w in top)
+    return round(blended, 1), info
+
+def record_actual(city: str, date: str, actual_high: float):
+    history  = _load_history()
+    city_key = city.lower()
+    history.setdefault(city_key, {}).setdefault(date, {})["actual_high"] = actual_high
+    cutoff   = (_now_utc() - timedelta(days=180)).strftime("%Y-%m-%d")
+    history[city_key] = {d: v for d, v in history[city_key].items() if d >= cutoff}
+    _save_history(history)
+    print(f"✅ Recorded {city} {date} actual_high={actual_high}")
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PROBABILITY ENGINE — Gaussian buckets
+# ══════════════════════════════════════════════════════════════════════════════
+def _norm_cdf(x: float, mu: float, sigma: float) -> float:
+    return 0.5 * (1.0 + math.erf((x - mu) / (sigma * math.sqrt(2))))
+
+def compute_probabilities(mu: float, sigma: float,
+                          max_so_far: Optional[float],
+                          city: str,
+                          use_hko: bool = False,
+                          predicting_tomorrow: bool = False) -> List[Dict]:
+    if mu is None or sigma is None:
+        return []
+    # When predicting tomorrow, max_so_far is irrelevant (today's data)
+    min_settle = -999
+    if not predicting_tomorrow and max_so_far is not None:
+        v = settlement_round(city, max_so_far)
+        if v is not None:
+            min_settle = v
+
+    target_mu = settlement_round(city, mu) or int(round(mu))
+    search    = max(3, int(sigma * 3))
+    probs     = {}
+    for n in range(target_mu - search, target_mu + search + 1):
+        if n < min_settle:
+            continue
+        if use_hko:
+            p   = _norm_cdf(n + 1.0, mu, sigma) - _norm_cdf(n, mu, sigma)
+            rng = f"[{n}.0~{n+1}.0)"
+        else:
+            p   = _norm_cdf(n + 0.5, mu, sigma) - _norm_cdf(n - 0.5, mu, sigma)
+            rng = f"[{n-0.5}~{n+0.5})"
+        if p > 0.005:
+            probs[n] = (p, rng)
+
+    total = sum(p for p, _ in probs.values())
+    if total <= 0:
+        return []
+    result = [{"value": n, "probability": round(p / total, 3), "range": rng}
+              for n, (p, rng) in probs.items()]
+    result.sort(key=lambda x: x["probability"], reverse=True)
+    return result
+
+# ══════════════════════════════════════════════════════════════════════════════
+# HELPERS
+# ══════════════════════════════════════════════════════════════════════════════
+def estimate_peak_window(lat: float) -> Tuple[int, int]:
+    a = abs(lat)
+    if a < 23:   return 13, 15
+    elif a < 45: return 14, 16
+    else:        return 15, 17
+
+def get_peak_status(hour: int, fp: int, lp: int) -> str:
+    if hour > lp:             return "past"
+    elif fp <= hour <= lp:    return "in_window"
+    return "before"
+
+def is_dead_market_check(local_hour: int, peak_end: int,
+                          max_so_far: Optional[float],
+                          cur: Optional[float],
+                          predicting_tomorrow: bool) -> bool:
+    # Dead market only possible when predicting TODAY
+    if predicting_tomorrow:
+        return False
+    if max_so_far is None or cur is None:
+        return False
+    drop = max_so_far - cur
+    return (local_hour >= 21 and drop >= 3.0) or (local_hour >= peak_end and drop >= 1.5)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MAIN PREDICT FUNCTION
+# ══════════════════════════════════════════════════════════════════════════════
+def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
+    city_key = resolve_city(city_name)
+    meta     = CITIES.get(city_key) if city_key else None
+    if not meta:
+        return {"city": city_name, "error": f"Unknown city: '{city_name}'"}
+
+    lat, lon   = meta["lat"], meta["lon"]
+    tz         = meta["tz"]
+    use_f      = meta.get("f", False)
+    settlement = meta.get("settlement", "metar")
+    icao       = meta["icao"]
+    use_hko    = settlement == "hko"
+    sym        = "°F" if use_f else "°C"
+
+    # ── resolve target date ──────────────────────────────────────────────────
+    t           = resolve_target(city_key)
+    target_date = t["target_date"]
+    target_idx  = t["target_idx"]
+    predicting  = t["predicting"]           # "today" or "tomorrow"
+    local_now   = t["local_now"]
+    local_hour  = t["local_hour"]
+    local_date  = t["local_date"]
+    is_tomorrow = predicting == "tomorrow"
+
+    # ── timing advice (is now a good time?) ──────────────────────────────────
+    timing = timing_advice(city_key)
+
+    # ── fetch all sources in parallel ────────────────────────────────────────
+    res = {}
+    def _om():  res["om"]    = fetch_open_meteo(lat, lon, use_f, target_idx)
+    def _ens(): res["ens"]   = fetch_ensemble(lat, lon, use_f, target_idx)
+    def _mm():  res["mm"]    = fetch_multi_model(lat, lon, use_f, target_idx)
+    def _met(): res["metar"] = fetch_metar(icao, tz, local_date)
+
+    threads = [threading.Thread(target=fn) for fn in (_om, _ens, _mm, _met)]
+    for t_ in threads: t_.start()
+    for t_ in threads: t_.join(timeout=15)
+
+    om    = res.get("om") or {}
+    ens   = res.get("ens") or {}
+    multi = res.get("mm") or {}
+    metar = res.get("metar") or {}
+
+    # ── build forecasts dict using target day ────────────────────────────────
+    forecasts: Dict[str, float] = {}
+
+    om_target = _sf(om.get("_target_max"))
+    if om_target is not None:
+        forecasts["Open-Meteo"] = om_target
+
+    for model, val in (multi or {}).items():
+        if val is not None:
+            forecasts[model] = round(float(val), 1)
+
+    # ── DEB blend ────────────────────────────────────────────────────────────
+    deb, deb_weights = deb_blend(city_key, forecasts, target_date=target_date)
+
+    # ── ensemble spread ───────────────────────────────────────────────────────
+    p10     = _sf(ens.get("p10"))
+    p90     = _sf(ens.get("p90"))
+    ens_med = _sf(ens.get("median"))
+    sigma   = max(0.3, (p90 - p10) / 2.56) if (p10 and p90) else 1.2
+
+    # ── live METAR (always today's observations) ──────────────────────────────
+    cur_temp   = _sf(metar.get("current_temp"))
+    max_so_far = _sf(metar.get("max_so_far"))
+    trend      = metar.get("trend", "unknown")
+    recent     = metar.get("recent_temps", [])
+
+    # ── peak window ───────────────────────────────────────────────────────────
+    fp, lp      = estimate_peak_window(lat)
+    peak_end    = meta.get("peak_end", 17)
+    peak_status = get_peak_status(local_hour, fp, lp) if not is_tomorrow else "before"
+
+    # ── dead market (only for today predictions) ──────────────────────────────
+    dead = is_dead_market_check(local_hour, peak_end, max_so_far, cur_temp, is_tomorrow)
+
+    # ── LIVE vs MODEL conflict detection ─────────────────────────────────────
+    # If the live reading is far above the model consensus, something is off:
+    # either today is unusually hot, OR the live reading is stale/cached/coarse.
+    # A perfectly flat reading (same value 3x) is a stale-data red flag.
+    live_model_conflict = False
+    stale_reading = False
+    conflict_gap = None
+    if not is_tomorrow and max_so_far is not None and deb is not None:
+        conflict_gap = max_so_far - deb
+        # live reading is >1.5° above what every model predicts
+        if conflict_gap >= 1.5 and peak_status in ("before", "in_window"):
+            live_model_conflict = True
+        # stale check: last 3 readings identical to one decimal = suspicious
+        if recent and len(recent) >= 3:
+            vals = [r[1] for r in recent[:3]]
+            if len(set(vals)) == 1:
+                stale_reading = True
+
+    # ── compute mu (probability center) ─────────────────────────────────────
+    if dead and max_so_far is not None:
+        mu = max_so_far
+    elif is_tomorrow:
+        # For tomorrow: use DEB or ensemble median — ignore today's live temp
+        mu = deb or ens_med or om_target
+    elif max_so_far is not None and deb is not None:
+        if peak_status in ("past", "in_window") and max_so_far < (deb or 0) - 2.0:
+            mu = max_so_far if (trend == "falling" or peak_status == "past") else max_so_far + 0.5
+        elif live_model_conflict:
+            # Live reading suspiciously high vs models → DON'T blindly trust it.
+            # Blend halfway between models and live, and widen uncertainty.
+            mu = (deb + max_so_far) / 2.0
+            sigma = max(sigma, abs(conflict_gap) / 2.0)  # widen σ to reflect doubt
+        else:
+            mu = deb
+            if max_so_far > mu:
+                mu = max_so_far + (0.3 if trend != "falling" else 0.0)
+    else:
+        mu = deb or ens_med or om_target
+
+    # Time-decay sigma (only for today predictions)
+    if not is_tomorrow:
+        if   peak_status == "past":      sigma *= 0.3
+        elif peak_status == "in_window": sigma *= 0.7
+
+    # ── probability distribution ──────────────────────────────────────────────
+    if dead and max_so_far is not None:
+        sv   = settlement_round(city_key, max_so_far)
+        dist = [{"value": sv, "probability": 1.0, "range": "LOCKED"}]
+    elif mu is not None:
+        dist = compute_probabilities(mu, sigma,
+                                     max_so_far if not is_tomorrow else None,
+                                     city_key, use_hko, is_tomorrow)
+    else:
+        dist = []
+
+    # ── boundary alert (only for today, only when max is known) ──────────────
+    boundary = None
+    if not is_tomorrow and max_so_far is not None:
+        frac = max_so_far - int(max_so_far)
+        sv   = settlement_round(city_key, max_so_far)
+        if use_hko:
+            d = 1.0 - frac
+            if d <= 0.3:
+                boundary = f"only {d:.1f}° from rounding UP to {(sv or 0)+1}!"
+        else:
+            d = abs(frac - 0.5)
+            if d <= 0.3:
+                boundary = (
+                    f"only {0.5-frac:.1f}° from rounding UP to {(sv or 0)+1}!"
+                    if frac < 0.5 else
+                    f"only {frac-0.5:.1f}° from rounding DOWN to {(sv or 0)-1}!"
+                )
+
+    top        = dist[0] if dist else {}
+    model_prob = top.get("probability") or 0.0
+    confidence = "HIGH" if model_prob >= 0.60 else "MEDIUM" if model_prob >= 0.40 else "LOW"
+
+    # ── model vs ensemble agreement check ────────────────────────────────────
+    # If individual models (DEB) and the ensemble median disagree a lot,
+    # the forecast is unreliable — flag it.
+    agreement = "unknown"
+    disagreement = None
+    if deb is not None and ens_med is not None:
+        disagreement = abs(deb - ens_med)
+        if disagreement <= 0.7:
+            agreement = "strong"
+        elif disagreement <= 1.5:
+            agreement = "moderate"
+        else:
+            agreement = "weak"
+
+    # ── boundary risk: is mu sitting on a rounding edge? ──────────────────────
+    on_boundary = False
+    if mu is not None and not use_hko:
+        frac = mu - math.floor(mu)
+        # WU rounds at .5; danger zone is .35–.65 (model can't tell which bucket)
+        on_boundary = 0.35 <= frac <= 0.65
+
+    # ── TRADE VERDICT — the smart decision ───────────────────────────────────
+    # Combines: confidence, sigma, model agreement, boundary risk, timing
+    reasons = []
+    verdict = "TRADE"
+
+    if dead:
+        verdict = "TRADE"
+        reasons.append("dead market — outcome locked")
+    else:
+        if model_prob < 0.55:
+            verdict = "SKIP"
+            reasons.append(f"top bucket only {model_prob*100:.0f}% (need ≥55%)")
+        if sigma > 0.7:
+            if verdict != "SKIP":
+                verdict = "WAIT"
+            reasons.append(f"high uncertainty σ={sigma:.2f}")
+        if agreement == "weak":
+            verdict = "SKIP"
+            reasons.append(f"models disagree by {disagreement:.1f}° (DEB {deb} vs ens {ens_med})")
+        elif agreement == "moderate" and verdict == "TRADE":
+            verdict = "WAIT"
+            reasons.append(f"models differ {disagreement:.1f}°")
+        if on_boundary and verdict == "TRADE":
+            verdict = "WAIT"
+            reasons.append(f"μ={mu:.1f} on rounding boundary (coin-flip between buckets)")
+        # live-vs-model conflict: live reading way above forecast consensus
+        if live_model_conflict:
+            verdict = "WAIT"
+            reasons.append(f"live obs ({max_so_far:.0f}°) is {conflict_gap:.1f}° above model consensus "
+                          f"(DEB {deb:.1f}°) — either unusually hot OR stale reading")
+        if stale_reading and verdict == "TRADE":
+            verdict = "WAIT"
+            reasons.append(f"live reading flat ({max_so_far:.0f}° x3) — possibly stale/cached data")
+        # timing override
+        if not timing["ok_to_trade"] and verdict == "TRADE":
+            verdict = "WAIT"
+            reasons.append("outside golden window")
+
+    if verdict == "TRADE" and not reasons:
+        reasons.append("clear signal — strong bucket, low uncertainty, models agree")
+
+    # ── Polymarket live prices + edge calculation ────────────────────────────
+    pm_data = None
+    edges   = []
+    best_trade = None
+    if fetch_prices:
+        try:
+            pm_data = fetch_polymarket_market(city_key, target_date)
+            if pm_data:
+                edges = compute_edges(dist, pm_data, sym)
+                # best actionable trade = highest edge that's >= 10%
+                for e in edges:
+                    if e["action"] in ("BUY YES", "BUY NO"):
+                        best_trade = e
+                        break
+        except Exception:
+            pm_data = None
+
+    # ── save forecasts to DEB history ─────────────────────────────────────────
+    if forecasts:
+        history = _load_history()
+        history.setdefault(city_key, {}).setdefault(target_date, {})["forecasts"] = forecasts
+        _save_history(history)
+
+    return {
+        # identity
+        "city":           city_key,
+        "display":        city_name.title(),
+        "local_datetime": local_now.strftime("%Y-%m-%d %H:%M"),
+        "local_date":     local_date,
+        "target_date":    target_date,       # ← the market date on Polymarket
+        "predicting":     predicting,        # "today" or "tomorrow"
+        "temp_unit":      sym,
+        "settlement":     settlement.upper(),
+        "icao":           icao,
+        # timing
+        "timing":         timing,
+        # forecasts
+        "forecasts":      forecasts,
+        "deb":            deb,
+        "deb_weights":    deb_weights,
+        "ensemble":       {"p10": p10, "median": ens_med, "p90": p90,
+                           "members": ens.get("members", 0)},
+        "agreement":      agreement,
+        "disagreement":   round(disagreement, 1) if disagreement is not None else None,
+        "on_boundary":    on_boundary,
+        "live_model_conflict": live_model_conflict,
+        "stale_reading":  stale_reading,
+        "conflict_gap":   round(conflict_gap, 1) if conflict_gap is not None else None,
+        # live (always today's observations)
+        "live": {
+            "current_temp": cur_temp,
+            "max_so_far":   max_so_far,
+            "obs_time":     metar.get("obs_time"),
+            "trend":        trend,
+            "recent":       recent[:3],
+        },
+        # analysis
+        "mu":             round(mu, 2) if mu is not None else None,
+        "sigma":          round(sigma, 2),
+        "peak_window":    f"{fp:02d}:00–{lp:02d}:00",
+        "peak_status":    peak_status,
+        "is_dead_market": dead,
+        # result
+        "distribution":   dist[:6],
+        "top_bucket":     top.get("value"),
+        "top_prob":       model_prob,
+        "confidence":     confidence,
+        "boundary_alert": boundary,
+        "settled_pred":   settlement_round(city_key, mu) if mu is not None else None,
+        # ── THE SMART VERDICT ──
+        "verdict":        verdict,    # TRADE / WAIT / SKIP
+        "verdict_reasons": reasons,
+        # ── POLYMARKET LIVE ──
+        "polymarket":     pm_data,
+        "edges":          edges,
+        "best_trade":     best_trade,
+    }
+
+# ══════════════════════════════════════════════════════════════════════════════
+# DISPLAY
+# ══════════════════════════════════════════════════════════════════════════════
+CONF_EMOJI  = {"HIGH": "🟢", "MEDIUM": "🟡", "LOW": "🔴"}
+TREND_EMOJI = {"rising": "📈", "falling": "📉", "stagnant": "➡️", "unknown": "❓"}
+
+def print_positions(wallet: str, positions: Optional[List[Dict]], weather_only: bool = True):
+    """Print your live Polymarket weather positions with P&L."""
+    masked = wallet[:6] + "…" + wallet[-4:] if wallet else "?"
+    scope  = "WEATHER" if weather_only else "ALL"
+    print(f"\n{'═'*70}")
+    print(f"  💼 YOUR POLYMARKET POSITIONS [{scope}] — wallet {masked}")
+    print(f"{'═'*70}")
+
+    if positions is None:
+        print(f"  ❌ Could not fetch positions (check wallet address / network)")
+        print(f"{'─'*70}")
+        return
+    if not positions:
+        print(f"  (no open {scope.lower()} positions found)")
+        print(f"{'─'*70}")
+        return
+
+    total_paid = 0.0
+    total_now  = 0.0
+    total_pnl  = 0.0
+
+    print(f"  {'MARKET':<38} {'SIDE':>4} {'SHARES':>7} {'ENTRY':>6} {'NOW':>5} {'VALUE':>7} {'P&L':>8}")
+    print(f"  {'─'*38} {'─'*4} {'─'*7} {'─'*6} {'─'*5} {'─'*7} {'─'*8}")
+    for p in positions:
+        title = p["title"][:37]
+        side  = (p.get("outcome") or "?")[:3]
+        shares= p.get("size") or 0
+        entry = p.get("avg_price")
+        now   = p.get("cur_price")
+        val   = p.get("current_value") or 0
+        pnl   = p.get("cash_pnl") or 0
+        ppnl  = p.get("percent_pnl") or 0
+
+        total_paid += p.get("initial_value") or 0
+        total_now  += val
+        total_pnl  += pnl
+
+        entry_s = f"{entry*100:.0f}¢" if entry is not None else "—"
+        now_s   = f"{now*100:.0f}¢"   if now   is not None else "—"
+        pnl_emoji = "🟢" if pnl >= 0 else "🔴"
+        redeem  = " ✅claimable" if p.get("redeemable") else ""
+
+        print(f"  {title:<38} {side:>4} {shares:>7.1f} {entry_s:>6} {now_s:>5} "
+              f"${val:>6.2f} {pnl_emoji}${pnl:>+6.2f}{redeem}")
+
+    print(f"  {'─'*70}")
+    tot_emoji = "🟢" if total_pnl >= 0 else "🔴"
+    roi = (total_pnl / total_paid * 100) if total_paid > 0 else 0
+    print(f"  {'TOTAL':<38} {'':>4} {'':>7} {'':>6} {'':>5} "
+          f"${total_now:>6.2f} {tot_emoji}${total_pnl:>+6.2f}")
+    print(f"  Invested: ${total_paid:.2f}   Now worth: ${total_now:.2f}   "
+          f"P&L: {tot_emoji} ${total_pnl:+.2f} ({roi:+.1f}%)")
+    print(f"{'═'*70}")
+
+    # claimable winnings
+    claimable = [p for p in positions if p.get("redeemable")]
+    if claimable:
+        print(f"\n  ✅ {len(claimable)} position(s) settled & claimable — redeem on Polymarket:")
+        for p in claimable:
+            print(f"     • {p['title'][:50]}  → ${p.get('current_value',0):.2f}")
+    print()
+
+
+def print_city_detail(p: Dict):
+    if "error" in p:
+        print(f"\n❌ {p['city']}: {p['error']}")
+        return
+
+    sym  = p["temp_unit"]
+    live = p.get("live") or {}
+    ens  = p.get("ensemble") or {}
+    dist = p.get("distribution") or []
+    ce   = CONF_EMOJI.get(p.get("confidence", "LOW"), "⚪")
+    te   = TREND_EMOJI.get(live.get("trend", "unknown"), "❓")
+    tmrw = p.get("predicting") == "tomorrow"
+    tim  = p.get("timing") or {}
+    date_label = f"📅 {p.get('target_date')} ({'TOMORROW' if tmrw else 'TODAY'})"
+
+    print(f"\n{'═'*62}")
+    print(f"  📍 {p['city'].upper():<20} {p['local_datetime']}  [{p['settlement']}]")
+    print(f"  {date_label}  ← this is the Polymarket market date")
+    print(f"{'═'*62}")
+
+    # ── TIMING BANNER ──
+    q = tim.get("quality", "?")
+    q_emoji = {"GOLDEN": "🟢", "GOOD": "🟡", "TOMORROW": "🟠", "EARLY": "🔴"}.get(q, "⚪")
+    print(f"\n  {q_emoji} TIMING [{q}] — city local time {tim.get('city_local_now','?')}")
+    print(f"     {tim.get('message','')}")
+    if tim.get("next_run_user_local"):
+        print(f"     ⏰ Best to run again at: {tim['next_run_user_local']} YOUR time "
+              f"(= {tim.get('next_run_city_local')} {p['city']} time, in ~{tim.get('hours_until_golden')}h)")
+
+    if p.get("forecasts"):
+        print(f"\n  📊 MODEL FORECASTS (for {p.get('target_date')}):")
+        for m, v in p["forecasts"].items():
+            print(f"     {m:<15} {v}{sym}")
+
+    if p.get("deb") is not None:
+        print(f"\n  🧬 DEB BLEND: {p['deb']}{sym}")
+        print(f"     {p['deb_weights']}")
+
+    if ens.get("p10") is not None:
+        print(f"  📉 ENSEMBLE:  P10={ens['p10']}{sym}  "
+              f"Median={ens['median']}{sym}  P90={ens['p90']}{sym}  "
+              f"({ens.get('members',0)} members)")
+
+    # Model agreement
+    agr = p.get("agreement", "unknown")
+    if agr != "unknown":
+        agr_emoji = {"strong": "✅", "moderate": "⚠️", "weak": "❌"}.get(agr, "")
+        dis = p.get("disagreement")
+        print(f"  {agr_emoji} MODEL AGREEMENT: {agr.upper()} "
+              f"(DEB vs ensemble differ by {dis}°)")
+
+    # Live always shows TODAY's observations
+    if live.get("current_temp") is not None:
+        obs_label = "TODAY live obs" if not tmrw else "TODAY live obs (context only)"
+        print(f"\n  🌡️  {obs_label} [{live.get('obs_time','?')}]:")
+        print(f"     Current={live['current_temp']}{sym}  "
+              f"Max so far={live.get('max_so_far','?')}{sym}  {te} {live.get('trend','?')}")
+        if live.get("recent"):
+            print(f"     " + "  →  ".join(f"{t}{sym}@{tm}" for tm, t in live["recent"]))
+
+    print(f"\n  🔍 μ={p.get('mu')}{sym}  σ={p.get('sigma')}{sym}  "
+          f"Peak:{p.get('peak_window')}  Status:[{p.get('peak_status').upper()}]")
+
+    if p.get("is_dead_market"):
+        print(f"  🔒 DEAD MARKET — today's max is already locked in!")
+    if p.get("boundary_alert"):
+        print(f"  ⚖️  BOUNDARY: {p['boundary_alert']}")
+    if p.get("on_boundary"):
+        print(f"  ⚠️  μ sits on a rounding boundary — model can't tell which bucket wins")
+    if p.get("live_model_conflict"):
+        print(f"  🚨 CONFLICT: live obs is {p.get('conflict_gap')}° ABOVE model consensus")
+        print(f"     → Either today is unusually hot OR the live reading is stale/cached.")
+        print(f"     → μ was blended (not blindly anchored to live) and σ widened. Trust reduced.")
+    if p.get("stale_reading"):
+        print(f"  🚨 STALE: live reading is flat (same value 3x) — likely cached/coarse data")
+    if tmrw:
+        print(f"  ℹ️  Predicting TOMORROW — today's peak window already passed")
+
+    if dist:
+        print(f"\n  🎲 SETTLEMENT PROBABILITIES (market date: {p.get('target_date')}):")
+        for b in dist:
+            bar = "█" * int(b["probability"] * 32)
+            print(f"     {b['value']:>4}{sym}  {bar:<32} {b['probability']*100:5.1f}%")
+
+    # ── THE VERDICT ──
+    verdict = p.get("verdict", "?")
+    v_emoji = {"TRADE": "🟢🟢", "WAIT": "🟠", "SKIP": "🔴"}.get(verdict, "⚪")
+    print(f"\n  {v_emoji} VERDICT: {verdict}")
+    for r in p.get("verdict_reasons", []):
+        print(f"     • {r}")
+
+    # ── LIVE POLYMARKET EDGE TABLE ──
+    pm    = p.get("polymarket")
+    edges = p.get("edges") or []
+    if pm and edges:
+        print(f"\n  💰 LIVE POLYMARKET EDGE  ({pm.get('title','')[:40]}...)")
+        print(f"     {'BUCKET':>7}  {'MODEL':>6}  {'YES':>5}  {'NO':>5}  "
+              f"{'EDGE':>6}  {'ACTION':>8}  {'VOL':>8}")
+        print(f"     {'─'*7}  {'─'*6}  {'─'*5}  {'─'*5}  {'─'*6}  {'─'*8}  {'─'*8}")
+        for e in edges[:8]:
+            yes_s  = f"{e['yes_price']*100:.0f}¢" if e.get("yes_price") is not None else "  —"
+            no_s   = f"{e['no_price']*100:.0f}¢"  if e.get("no_price")  is not None else "  —"
+            best   = e["best_edge"]
+            be_s   = f"{best*100:+.0f}%"
+            act    = e["action"]
+            act_e  = "🟢" if act in ("BUY YES","BUY NO") else "  "
+            flag   = ""
+            if e.get("thin"):
+                flag = " ⚠️thin"
+            # mark unbuyable extremes
+            if act == "skip" and not e.get("yes_buyable") and not e.get("no_buyable"):
+                flag = " (priced out)"
+            print(f"     {e['temp']:>5}{sym}  {e['model_prob']*100:>5.0f}%  "
+                  f"{yes_s:>5}  {no_s:>5}  {be_s:>6}  {act_e}{act:>6}  ${e['vol']:>7,.0f}{flag}")
+        bt = p.get("best_trade")
+        if bt:
+            print(f"\n     🎯 BEST TRADE: {bt['action']} on {bt['temp']}{sym} "
+                  f"@ {bt['yes_price']*100:.0f}¢ → {bt['best_edge']*100:+.0f}% edge "
+                  f"(model {bt['model_prob']*100:.0f}%)")
+            if bt.get("thin"):
+                print(f"     ⚠️  Low volume (${bt['vol']:,.0f}) — keep size tiny, you may move the price")
+            print(f"     🔗 {pm.get('url')}")
+        else:
+            print(f"\n     ⚠️  No clean tradeable edge — buckets with 'edge' are priced out (0¢/100¢)")
+            print(f"        or the market already agrees with the model. Skip this one.")
+            print(f"     🔗 {pm.get('url')}")
+    elif pm is None and verdict == "TRADE":
+        # prices weren't fetched (no --prices flag) or market not found
+        print(f"\n  ℹ️  Run with --prices to auto-fetch Polymarket edge")
+
+    if verdict == "TRADE" and not (pm and p.get("best_trade")):
+        print(f"\n  {ce} MODEL SIGNAL: {p.get('top_bucket')}{sym} at {p.get('top_prob',0)*100:.0f}% "
+              f"(check Polymarket {p.get('target_date')})")
+    elif verdict == "WAIT":
+        nxt = tim.get("next_run_user_local")
+        print(f"\n  ⏳ HOLD OFF — signal not clean enough yet.")
+        if nxt:
+            print(f"     Re-run at {nxt} your time for a sharper read.")
+    elif verdict == "SKIP":
+        print(f"\n  ⛔ SKIP this city — no clean edge right now.")
+    print(f"{'─'*62}")
+
+
+def print_summary_table(results: List[Dict], min_prob: float = 0.0):
+    valid  = [p for p in results if "error" not in p]
+    errors = [p for p in results if "error" in p]
+
+    # sort by verdict (TRADE first), then confidence, then prob
+    vorder = {"TRADE": 0, "WAIT": 1, "SKIP": 2}
+    order  = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+    valid.sort(key=lambda p: (
+        vorder.get(p.get("verdict", "SKIP"), 3),
+        0 if p.get("is_dead_market") else 1,
+        order.get(p.get("confidence", "LOW"), 2),
+        -p.get("top_prob", 0),
+    ))
+
+    now_str = _now_utc().strftime("%Y-%m-%d %H:%M UTC")
+    W = 104
+    print(f"\n{'═'*W}")
+    print(f"  🌍 POLYWEATHER SCAN — {len(valid)} cities — {now_str}")
+    print(f"{'═'*W}")
+    print(f"  {'VERDICT':>7} {'CITY':<15} {'LOCAL':>5}  {'MKT DATE':>10}  {'DEB':>7}  "
+          f"{'BUCKET':>7}  {'PROB':>5}  {'AGREE':>6}  {'TIMING':>8}")
+    print(f"  {'─'*7} {'─'*15} {'─'*5}  {'─'*10}  {'─'*7}  "
+          f"{'─'*7}  {'─'*5}  {'─'*6}  {'─'*8}")
+
+    V_EMOJI = {"TRADE": "🟢", "WAIT": "🟠", "SKIP": "🔴"}
+    AGR_EMOJI = {"strong": "✅", "moderate": "⚠️", "weak": "❌", "unknown": "  "}
+
+    shown = 0
+    for p in valid:
+        prob = p.get("top_prob", 0)
+        if prob < min_prob:
+            continue
+        shown += 1
+        sym    = p["temp_unit"]
+        v      = p.get("verdict", "SKIP")
+        ve     = V_EMOJI.get(v, "⚪")
+        agr    = p.get("agreement", "unknown")
+        ae     = AGR_EMOJI.get(agr, "  ")
+        tim    = p.get("timing") or {}
+        tq     = tim.get("quality", "?")
+
+        deb_s  = f"{p['deb']}{sym}"          if p.get("deb")        is not None else "  —  "
+        bkt_s  = f"{p.get('top_bucket')}{sym}" if p.get("top_bucket") is not None else "  —  "
+        mkt_dt = p.get("target_date", "?")
+        lhour  = (_now_utc() + timedelta(seconds=CITIES.get(p["city"], {}).get("tz", 0))).strftime("%H:%M")
+        dead   = "🔒" if p.get("is_dead_market") else ""
+
+        print(f"  {ve}{v:>5} {p['city']:<15} {lhour}  "
+              f"{mkt_dt:>10}  {deb_s:>8}  {bkt_s:>7}  {prob*100:>4.0f}%  "
+              f"{ae}{agr[:4]:>5}  {tq:>8} {dead}")
+
+    if shown == 0:
+        print(f"  (no cities with probability >= {min_prob*100:.0f}%)")
+
+    print(f"{'─'*W}")
+    print(f"  VERDICT: 🟢TRADE=act now  🟠WAIT=signal not clean  🔴SKIP=no edge")
+    print(f"  AGREE: ✅strong ⚠️moderate ❌weak (DEB vs ensemble)")
+    print(f"  TIMING: GOLDEN(6-11am) GOOD(11-peak) TOMORROW(eve) EARLY(overnight)")
+    print(f"{'═'*W}")
+
+    # ── ACTIONABLE TRADES ──
+    trades = [p for p in valid if p.get("verdict") == "TRADE" and p.get("top_prob", 0) >= min_prob]
+    if trades:
+        print(f"\n  ✅ TRADES YOU CAN TAKE NOW ({len(trades)}):")
+        for p in trades:
+            sym  = p["temp_unit"]
+            dead = "🔒 DEAD MARKET " if p.get("is_dead_market") else ""
+            bt   = p.get("best_trade")
+            if bt:
+                # we have live polymarket edge
+                print(f"     🟢 {p['city'].upper():<16} [{p.get('target_date')}]  "
+                      f"{bt['action']} {bt['temp']}{sym} @ {bt['yes_price']*100:.0f}¢  "
+                      f"→ EDGE {bt['best_edge']*100:+.0f}%  "
+                      f"(model {bt['model_prob']*100:.0f}%)  {dead}")
+            else:
+                edge_note = ""
+                if p.get("polymarket") is not None:
+                    edge_note = "  (no >10% edge — market efficient)"
+                print(f"     🟢 {p['city'].upper():<16} [{p.get('target_date')}]  "
+                      f"BUY YES = {p.get('top_bucket')}{sym}  "
+                      f"({p.get('top_prob',0)*100:.0f}% prob){edge_note}  {dead}")
+    else:
+        print(f"\n  ⚠️  No clean TRADE signals right now.")
+
+    # ── WAIT cities — show when to recheck ──
+    waits = [p for p in valid if p.get("verdict") == "WAIT" and p.get("top_prob", 0) >= min_prob]
+    if waits:
+        print(f"\n  ⏳ WAIT — recheck these later ({len(waits)}):")
+        for p in waits[:10]:
+            tim = p.get("timing") or {}
+            nxt = tim.get("next_run_user_local")
+            reason = (p.get("verdict_reasons") or ["—"])[0]
+            when = f"recheck {nxt} your time" if nxt else "recheck in golden window"
+            print(f"     🟠 {p['city'].upper():<16} {reason}  →  {when}")
+
+    if errors:
+        print(f"\n  ⚠️  Failed ({len(errors)}): {', '.join(p['city'] for p in errors)}")
+
+    print(f"\n  💡 For each TRADE: Polymarket → search city → click MKT DATE tab → find bucket")
+    print(f"     Edge = model prob% - Polymarket YES price%  →  Buy YES if edge > 10%\n")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SCAN ALL
+# ══════════════════════════════════════════════════════════════════════════════
+def scan_all(cities: List[str], workers: int = 6, fetch_prices: bool = False) -> List[Dict]:
+    results = []
+    total   = len(cities)
+    done    = [0]
+    lock    = threading.Lock()
+
+    print(f"\n  ⏳ Scanning {total} cities ({workers} workers)...")
+    print(f"  Each city: auto-detects if predicting TODAY or TOMORROW\n")
+
+    def _fetch_one(city):
+        p = predict(city, fetch_prices=fetch_prices)
+        with lock:
+            done[0] += 1
+            s   = "✓" if "error" not in p else "✗"
+            pct = done[0] / total
+            bar = "█" * int(pct * 30)
+            print(f"  [{bar:<30}] {done[0]:>2}/{total}  {s} {city}", end="\r", flush=True)
+        return p
+
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        futures = {ex.submit(_fetch_one, c): c for c in cities}
+        for f in as_completed(futures):
+            try:
+                results.append(f.result())
+            except Exception as e:
+                results.append({"city": futures[f], "error": str(e)})
+
+    print()
+    return results
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MAIN
+# ══════════════════════════════════════════════════════════════════════════════
+def main():
+    parser = argparse.ArgumentParser(
+        description="PolyWeather v2.0 — auto detects today vs tomorrow per city",
+        epilog=(
+            "Examples:\n"
+            "  python polyweather_predict.py                        scan all 51 cities\n"
+            "  python polyweather_predict.py tokyo london           specific cities\n"
+            "  python polyweather_predict.py --min-prob 0.6         HIGH confidence only\n"
+            "  python polyweather_predict.py --detail istanbul       full detail\n"
+            "  python polyweather_predict.py --workers 12           faster scan\n"
+            "  python polyweather_predict.py --json                 raw JSON\n"
+            "  python polyweather_predict.py --list                 list all cities\n"
+            "  python polyweather_predict.py --record-actual istanbul 2026-06-13 20"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("cities",          nargs="*")
+    parser.add_argument("--workers",       type=int,   default=6)
+    parser.add_argument("--min-prob",      type=float, default=0.0)
+    parser.add_argument("--detail",        nargs="+")
+    parser.add_argument("--json",          action="store_true")
+    parser.add_argument("--prices",        action="store_true",
+                        help="Fetch live Polymarket prices and compute edge automatically")
+    parser.add_argument("--list",          action="store_true")
+    parser.add_argument("--record-actual", nargs=3, metavar=("CITY", "DATE", "TEMP"))
+    parser.add_argument("--pmtest", nargs="+", metavar="CITY",
+                        help="Debug Polymarket market lookup for a city (shows raw matching)")
+    parser.add_argument("--positions", action="store_true",
+                        help="Show YOUR live Polymarket weather positions + P&L (needs wallet)")
+    parser.add_argument("--wallet", type=str, default=None,
+                        help="Your public wallet address (0x...). Or set POLYMARKET_WALLET env var")
+    parser.add_argument("--all-positions", action="store_true",
+                        help="With --positions: show ALL positions, not just weather")
+    args = parser.parse_args()
+
+    if args.positions:
+        wallet = get_wallet_address(args.wallet)
+        if not wallet:
+            print("\n  ❌ No wallet address provided.")
+            print("     Either: python3 polyweather_predict.py --positions --wallet 0xYourAddress")
+            print("     Or set once: export POLYMARKET_WALLET=0xYourAddress")
+            print("\n  ℹ️  This only needs your PUBLIC address (0x...), never your private key.")
+            print("     Find it on Polymarket → Profile → your address is shown there.\n")
+            return
+        weather_only = not args.all_positions
+        positions = fetch_positions(wallet, weather_only=weather_only)
+        print_positions(wallet, positions, weather_only=weather_only)
+        return
+
+    if args.pmtest:
+        for city in args.pmtest:
+            ck = resolve_city(city)
+            if not ck:
+                print(f"❌ Unknown city: {city}")
+                continue
+            t = resolve_target(ck)
+            print(f"\n🔍 Polymarket lookup: {ck} → market date {t['target_date']}")
+            pm = fetch_polymarket_market(ck, t["target_date"], debug=True)
+            if pm:
+                print(f"\n✅ FOUND: {pm['title']}")
+                print(f"   URL: {pm['url']}")
+                print(f"   Buckets + prices:")
+                for temp in sorted(pm["buckets"].keys()):
+                    b = pm["buckets"][temp]
+                    yes = f"{b['yes']*100:.0f}¢" if b.get("yes") is not None else "—"
+                    print(f"     {temp}°: YES={yes}  vol=${b.get('vol',0):,.0f}")
+            else:
+                print(f"\n❌ No market found. The bot will show model-only signal for this city.")
+                print(f"   Possible reasons: market not listed yet, different title format,")
+                print(f"   or Polymarket has no temperature market for this city/date.")
+        return
+
+    if args.list:
+        print(f"\n  {'CITY':<20} {'ICAO':<6}  {'TZ':>7}s  UNIT  SETTLEMENT  PEAK_END")
+        print(f"  {'─'*20} {'─'*6}  {'─'*8}  {'─'*4}  {'─'*10}  {'─'*8}")
+        for c in sorted(CITIES.keys()):
+            m = CITIES[c]
+            print(f"  {c:<20} {m['icao']:<6}  {m['tz']:>8}  "
+                  f"{'°F' if m.get('f') else '°C'}   {m['settlement'].upper():<10}  "
+                  f"{m.get('peak_end',17):02d}:00")
+        print()
+        return
+
+    if args.record_actual:
+        city_a, date_a, temp_a = args.record_actual
+        record_actual(city_a, date_a, float(temp_a))
+        return
+
+    if args.detail:
+        for city in args.detail:
+            p = predict(city, fetch_prices=args.prices)
+            if args.json:
+                print(json.dumps(p, indent=2))
+            else:
+                print_city_detail(p)
+        return
+
+    target  = args.cities if args.cities else list(CITIES.keys())
+    unknown = [c for c in target if resolve_city(c) is None]
+    if unknown:
+        print(f"❌ Unknown: {unknown}  (run --list to see valid names)")
+        return
+
+    results = scan_all(target, workers=min(max(1, args.workers), 20), fetch_prices=args.prices)
+
+    if args.json:
+        print(json.dumps(results, indent=2))
+    else:
+        print_summary_table(results, min_prob=args.min_prob)
+
+
+if __name__ == "__main__":
+    main()

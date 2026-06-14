@@ -262,31 +262,37 @@ def _user_tz_offset_seconds() -> int:
     except Exception:
         return 0
 
-def timing_advice(city_key: str) -> Dict[str, Any]:
+def timing_advice(city_key: str, is_tomorrow: bool = False) -> Dict[str, Any]:
     """
     Whether NOW gives a RELIABLE signal, based on how much of the day's
     peak has actually been observed.
 
-    Key fact: the daily HIGH is usually locked in by ~2pm local. Before the
-    peak window, a forecast (even 70%) can still shift a lot. After the peak,
-    live observations have constrained the outcome → far more reliable.
-
-    Reliability tiers (local time, today predictions):
-      before peak window         → SPECULATIVE (forecast only, can still move)
-      during peak window         → FIRMING (peak being observed now)
-      after peak window          → RELIABLE (high is locked, settles next AM)
-      late evening / tomorrow     → forecast-only for tomorrow
+    If is_tomorrow=True, the target market's peak is ~a day away — the signal
+    is ALWAYS forecast-only and never 'reliable' yet, regardless of clock.
     """
     meta      = CITIES[city_key]
     tz        = meta["tz"]
     peak_end  = meta.get("peak_end", 17)
-    # peak window start ~ 3 hours before peak_end (e.g. 13:00 if peak_end 16)
     peak_start = max(11, peak_end - 3)
 
     local_now = _now_utc() + timedelta(seconds=tz)
     h         = local_now.hour + local_now.minute / 60.0
 
-    # Decide reliability of acting NOW on a TODAY prediction
+    # ── Tomorrow's market: peak is ~a day out, never reliable yet ──
+    if is_tomorrow:
+        return {
+            "quality":             "FORECAST",
+            "ok_to_trade":         False,
+            "reliable":            False,
+            "message":             ("Tomorrow's market — its peak is ~a day away. "
+                                    "Forecast only; recheck during tomorrow's peak window."),
+            "city_local_now":      local_now.strftime("%H:%M"),
+            "peak_window":         f"{peak_start:02d}:00–{peak_end:02d}:00 (tomorrow)",
+            "hours_until_golden":  None,
+            "next_run_city_local": f"{peak_start:02d}:00 tomorrow",
+            "next_run_user_local": None,
+        }
+
     if h < 6:
         quality, ok, reliable = "OVERNIGHT", False, False
         msg = "Overnight — models not refreshed, no live obs yet. Wait."
@@ -954,7 +960,7 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     is_tomorrow = predicting == "tomorrow"
 
     # ── timing advice (is now a good time?) ──────────────────────────────────
-    timing = timing_advice(city_key)
+    timing = timing_advice(city_key, is_tomorrow=is_tomorrow)
 
     # ── fetch all sources in parallel ────────────────────────────────────────
     res = {}

@@ -131,7 +131,9 @@ def fmt_new_signal(p) -> str:
     lines = [
         f"🟢 <b>NEW SIGNAL — {p['city'].upper()}</b>",
         f"📅 Market date: <b>{p['target_date']}</b> ({p.get('predicting','')})",
-        f"🕐 Timing: {tim.get('quality','?')} (local {tim.get('city_local_now','?')})",
+        f"🕐 Timing: <b>{tim.get('quality','?')}</b> (local {tim.get('city_local_now','?')}, peak {tim.get('peak_window','?')})",
+        ("✅ RELIABLE — peak observed, high essentially locked" if tim.get("reliable")
+         else "⏳ NOT YET RELIABLE — peak still forming, signal can shift"),
         "",
         f"🎯 Predicted: <b>{p['top_bucket']}{sym}</b> at <b>{p['top_prob']*100:.0f}%</b>",
         f"🧬 DEB blend: {p.get('deb')}{sym}  (μ={p.get('mu')}, σ={p.get('sigma')})",
@@ -630,4 +632,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-  

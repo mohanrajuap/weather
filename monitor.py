@@ -44,6 +44,8 @@ INTERVAL_MIN  = int(os.environ.get("CHECK_INTERVAL_MIN", "20"))
 POS_UPDATE_MIN = int(os.environ.get("POSITION_UPDATE_MIN", "15"))
 # Tighter watch on held positions — checks model vs your bucket and alerts on flips
 POS_WATCH_MIN  = int(os.environ.get("POSITION_WATCH_MIN", "5"))
+# Alert to book profit when a position is up this % or more (default 10%)
+PROFIT_TAKE_PCT = float(os.environ.get("PROFIT_TAKE_PCT", "10"))
 # How often to fast-recheck ACTIVE signals (ones we already alerted on) for drops
 SIGNAL_WATCH_MIN = int(os.environ.get("SIGNAL_WATCH_MIN", "5"))
 # If "1", only alert on RELIABLE (post-peak) signals; speculative pre-peak suppressed
@@ -413,6 +415,37 @@ def watch_positions(conn):
         title  = pos.get("title") or ""
         if pos.get("redeemable"):
             continue  # already settled
+
+        # ── PROFIT-TAKE ALERT ──
+        # If this position is up >= PROFIT_TAKE_PCT, suggest booking the gain.
+        pct_pnl = pos.get("percent_pnl")
+        cash    = pos.get("cash_pnl") or 0
+        if pct_pnl is not None and pct_pnl >= PROFIT_TAKE_PCT:
+            pkey = f"profit|{title[:40]}"
+            prev = get_state(conn, pkey)
+            already = prev["alerted_high"] if prev else 0
+            if not already:
+                cur = pos.get("cur_price")
+                ent = pos.get("avg_price")
+                val = pos.get("current_value") or 0
+                lines = [
+                    f"💰 <b>PROFIT ALERT — book the gain?</b>",
+                    f"📈 {title[:46]}",
+                    f"   Up <b>{pct_pnl:+.0f}%</b> (+${cash:.2f}) — now worth ${val:.2f}",
+                ]
+                if ent is not None and cur is not None:
+                    lines.append(f"   Entry {ent*100:.0f}¢ → now {cur*100:.0f}¢")
+                lines.append(f"👉 You're past your {PROFIT_TAKE_PCT:.0f}% target. Consider selling to lock it in.")
+                send_telegram("\n".join(lines))
+                upsert_state(conn, pkey, "profit", "", 0, pct_pnl/100.0, alerted_high=1)
+                print(f"  💰 PROFIT alert: {title[:30]} +{pct_pnl:.0f}%")
+        elif pct_pnl is not None and pct_pnl < (PROFIT_TAKE_PCT * 0.5):
+            # dropped well back below target → reset so we can alert again later
+            pkey = f"profit|{title[:40]}"
+            prev = get_state(conn, pkey)
+            if prev and prev["alerted_high"]:
+                upsert_state(conn, pkey, "profit", "", 0, max(pct_pnl, 0)/100.0, alerted_high=0)
+
         city   = _match_city_from_title(title)
         bucket = _extract_pos_bucket(title)
         if not city or bucket is None:
@@ -632,6 +665,7 @@ def main():
     print(f"  Position updates:  every {POS_UPDATE_MIN} min" if WALLET else "  Position updates:  OFF (no wallet)")
     if WALLET:
         print(f"  Position WATCH:    every {POS_WATCH_MIN} min (alerts on flips)")
+        print(f"  Profit alert:      at +{PROFIT_TAKE_PCT:.0f}% per position")
     print(f"  Cities:            {len(ALERT_CITIES)}")
     print(f"  Prices:            {'on' if USE_PRICES else 'off'}")
     print(f"  State DB:          {STATE_DB}")

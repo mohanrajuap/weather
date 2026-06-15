@@ -36,6 +36,12 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, List, Any, Tuple
 
+import os as _os_for_bias
+# Default upward nudge applied to the model blend when no history exists yet.
+# Numerical weather models systematically under-predict the daily MAX because
+# they smooth the afternoon peak. Override with env PEAK_BIAS (e.g. "0.4").
+DEFAULT_PEAK_BIAS = float(_os_for_bias.environ.get("PEAK_BIAS", "0.3"))
+
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -929,7 +935,12 @@ def deb_blend(city: str, forecasts: Dict[str, float],
     if days_used < 2:
         n       = len(forecasts)
         blended = sum(forecasts.values()) / n
-        return round(blended, 1), f"equal-weight({n} models, {days_used}d history)"
+        # No history yet — apply a small default upward nudge, because numerical
+        # weather models systematically under-predict the daily MAX (they smooth
+        # the afternoon peak). +0.3° is a conservative, literature-backed default.
+        # This is replaced by the learned signed-bias once history accumulates.
+        blended += DEFAULT_PEAK_BIAS
+        return round(blended, 1), f"equal-weight({n} models, {days_used}d history, +{DEFAULT_PEAK_BIAS}° peak-bias)"
 
     maes = {}
     for model, errs in errors.items():
@@ -945,9 +956,55 @@ def deb_blend(city: str, forecasts: Dict[str, float],
         return round(sum(forecasts.values()) / len(forecasts), 1), "equal-weight(fallback)"
     weights   = {m: v / total_inv for m, v in inv.items()}
     blended   = sum(forecasts[m] * weights[m] for m in weights)
+
+    # ── SIGNED bias correction ──
+    # MAE measures error magnitude but not DIRECTION. Models systematically
+    # under-predict the daily MAX (they smooth the peak hour). Compute the
+    # signed mean error (actual - forecast) from history and shift the blend.
+    bias = _signed_bias(city_data, list(forecasts.keys()), skip_date, lookback, decay)
+    if bias is not None:
+        blended += bias
+
     top       = sorted(weights.items(), key=lambda x: x[1], reverse=True)[:3]
     info      = " | ".join(f"{m}({w*100:.0f}%,MAE:{maes[m]:.1f}°)" for m, w in top)
+    if bias is not None and abs(bias) >= 0.05:
+        info += f" | bias{bias:+.1f}°"
     return round(blended, 1), info
+
+def _signed_bias(city_data: dict, models: list, skip_date: str,
+                 lookback: int = 7, decay: float = 0.85) -> Optional[float]:
+    """
+    Mean signed error (actual - model_mean) over history, decay-weighted.
+    Positive → models ran COLD (actual was higher) → shift blend UP.
+    Returns None if not enough history.
+    """
+    diffs = []
+    days_used = 0
+    for date in sorted(city_data.keys(), reverse=True):
+        if date >= skip_date:
+            continue
+        rec    = city_data[date]
+        actual = _sf(rec.get("actual_high"))
+        if actual is None:
+            continue
+        past = rec.get("forecasts", {})
+        mvals = [float(past[m]) for m in models if m in past and past[m] is not None]
+        if not mvals:
+            continue
+        model_mean = sum(mvals) / len(mvals)
+        w = decay ** days_used
+        diffs.append(((actual - model_mean), w))
+        days_used += 1
+        if days_used >= lookback:
+            break
+    if len(diffs) < 2:
+        return None
+    tw = sum(w for _, w in diffs)
+    if tw == 0:
+        return None
+    bias = sum(d * w for d, w in diffs) / tw
+    # clamp to a sane range so one weird day can't swing it wildly
+    return max(-1.5, min(1.5, bias))
 
 def record_actual(city: str, date: str, actual_high: float):
     history  = _load_history()

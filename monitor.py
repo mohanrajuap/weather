@@ -34,6 +34,20 @@ import httpx
 # import the prediction engine (same folder)
 import polyweather_predict as pw
 
+import html as _html
+
+def city_display(name: str) -> str:
+    """Clean, properly-cased city name (Hong Kong, Tel Aviv, São Paulo, etc.)."""
+    if not name:
+        return "?"
+    fixes = {"Nyc": "New York", "Sao Paulo": "São Paulo"}
+    t = name.strip().title()
+    return fixes.get(t, t)
+
+def esc(s) -> str:
+    """HTML-escape so names with & < > don't break Telegram's HTML parser."""
+    return _html.escape(str(s)) if s is not None else ""
+
 # ── Config from environment ───────────────────────────────────────────────────
 TG_TOKEN      = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
 TG_CHAT       = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
@@ -84,6 +98,23 @@ def send_telegram(text: str) -> bool:
     return ok_any
 
 
+def reply_telegram(chat_id, text: str, keyboard=None) -> bool:
+    """Reply to a single chat (used by the command listener)."""
+    if not TG_TOKEN:
+        return False
+    payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML",
+               "disable_web_page_preview": True}
+    if keyboard:
+        payload["reply_markup"] = {"inline_keyboard": keyboard}
+    try:
+        r = httpx.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage",
+                       json=payload, timeout=15.0)
+        return r.status_code == 200
+    except Exception as e:
+        print(f"[telegram] reply error: {e}")
+        return False
+
+
 # ── State store (SQLite) ──────────────────────────────────────────────────────
 def init_db():
     conn = sqlite3.connect(STATE_DB)
@@ -125,75 +156,82 @@ def upsert_state(conn, key, city, target_date, bucket, prob, alerted_high):
 
 
 # ── Alert formatting ──────────────────────────────────────────────────────────
+_DIV = "━━━━━━━━━━━━━━━━━━━━"
+
 def fmt_new_signal(p) -> str:
-    """Full city detail — mirrors what --detail --prices shows."""
+    """Polished signal card."""
     sym  = p["temp_unit"]
     tim  = p.get("timing") or {}
     ens  = p.get("ensemble") or {}
     live = p.get("live") or {}
     bt   = p.get("best_trade")
     edges = p.get("edges") or []
+    city = city_display(p.get("city"))
 
-    lines = [
-        f"🟢 <b>NEW SIGNAL — {p['city'].upper()}</b>",
-        f"📅 Market date: <b>{p['target_date']}</b> ({p.get('predicting','')})",
-        f"🕐 Timing: <b>{tim.get('quality','?')}</b> (local {tim.get('city_local_now','?')}, peak {tim.get('peak_window','?')})",
-        ("✅ RELIABLE — peak observed, high essentially locked" if tim.get("reliable")
-         else "🔮 FORECAST ONLY — tomorrow's peak ~a day away, can shift a lot" if tim.get("quality") == "FORECAST"
-         else "⏳ NOT YET RELIABLE — peak still forming, signal can shift"),
-        "",
-        f"🎯 Predicted: <b>{p['top_bucket']}{sym}</b> at <b>{p['top_prob']*100:.0f}%</b>",
-        f"🧬 DEB blend: {p.get('deb')}{sym}  (μ={p.get('mu')}, σ={p.get('sigma')})",
-    ]
+    # reliability badge
+    if tim.get("reliable"):
+        badge = "✅ <i>Reliable — peak observed</i>"
+    elif tim.get("quality") == "FORECAST":
+        badge = "🔮 <i>Forecast only — tomorrow's peak ~a day away</i>"
+    else:
+        badge = "⏳ <i>Firming — peak still forming, may shift</i>"
 
-    # model forecasts
+    L = []
+    L.append(f"🟢 <b>NEW SIGNAL</b>")
+    L.append(f"📍 <b>{esc(city)}</b>  ·  {esc(p.get('target_date'))} ({esc(p.get('predicting',''))})")
+    L.append(_DIV)
+    L.append(f"🎯 <b>{p['top_bucket']}{sym}</b>  at  <b>{p['top_prob']*100:.0f}%</b>")
+    L.append(f"🕐 {esc(tim.get('quality','?'))} · local {esc(tim.get('city_local_now','?'))} · peak {esc(tim.get('peak_window','?'))}")
+    L.append(badge)
+    L.append("")
+
+    # model section
+    L.append(f"🧬 <b>Model blend:</b> {p.get('deb')}{sym}  (σ {p.get('sigma')})")
     if p.get("forecasts"):
-        fc = "  ".join(f"{m}:{v}" for m, v in p["forecasts"].items())
-        lines.append(f"📊 Models: {fc}")
-    # ensemble
+        fc = " · ".join(f"{esc(m)} {v}" for m, v in p["forecasts"].items())
+        L.append(f"📊 {fc}")
     if ens.get("p10") is not None:
-        lines.append(f"📉 Ensemble: P10={ens['p10']} Med={ens['median']} P90={ens['p90']}")
-    # agreement
+        L.append(f"📈 Ensemble: {ens['p10']} / {ens['median']} / {ens['p90']}  (P10/Med/P90)")
     agr = p.get("agreement")
     if agr:
         ae = {"strong":"✅","moderate":"⚠️","weak":"❌"}.get(agr,"")
-        lines.append(f"{ae} Agreement: {agr} (differ {p.get('disagreement')}°)")
-    # live obs
+        L.append(f"{ae} Agreement: {esc(agr)}")
     if live.get("current_temp") is not None:
-        lines.append(f"🌡️ Live: {live['current_temp']}{sym} (max {live.get('max_so_far')}{sym}, {live.get('trend')})")
+        src = "🎯 Wunderground" if live.get("source") == "wunderground" else "METAR"
+        L.append(f"🌡️ Live: {live['current_temp']}{sym} (max {live.get('max_so_far')}{sym}, {esc(live.get('trend'))}) · {src}")
 
-    # probability distribution (top 3)
+    # probabilities
     dist = p.get("distribution") or []
     if dist:
-        lines.append("")
-        lines.append("🎲 <b>Probabilities:</b>")
+        L.append("")
+        L.append("🎲 <b>Probabilities</b>")
         for b in dist[:4]:
-            lines.append(f"   {b['value']}{sym}: {b['probability']*100:.0f}%")
+            bar = "▰" * max(1, round(b['probability'] * 10))
+            L.append(f"   {b['value']}{sym}  {bar} {b['probability']*100:.0f}%")
 
-    # live polymarket edge table
-    if edges:
-        lines.append("")
-        lines.append("💰 <b>Polymarket edge:</b>")
-        shown = 0
-        for e in edges:
-            if e["action"] in ("BUY YES", "BUY NO") and shown < 4:
-                ys = f"{e['yes_price']*100:.0f}¢" if e.get("yes_price") is not None else "—"
-                lines.append(f"   {e['action']} {e['temp']}{sym} @ {ys} → {e['best_edge']*100:+.0f}% (model {e['model_prob']*100:.0f}%)")
-                shown += 1
-        if shown == 0:
-            lines.append("   (no >10% edge — market efficient)")
-
-    # best trade headline
+    # best trade — the headline action
     if bt:
-        lines.append("")
-        lines.append(f"🏆 <b>BEST: {bt['action']} {bt['temp']}{sym} @ {bt['yes_price']*100:.0f}¢ → {bt['best_edge']*100:+.0f}% edge</b>")
+        L.append("")
+        L.append(_DIV)
+        L.append(f"🏆 <b>{esc(bt['action'])} {bt['temp']}{sym} @ {bt['yes_price']*100:.0f}¢</b>")
+        L.append(f"    edge <b>{bt['best_edge']*100:+.0f}%</b> · model {bt['model_prob']*100:.0f}%")
         if bt.get("thin"):
-            lines.append(f"⚠️ Low volume (${bt.get('vol',0):,.0f}) — keep size tiny")
+            L.append(f"    ⚠️ thin volume (${bt.get('vol',0):,.0f}) — size small")
+    elif edges:
+        # show edges even if no single 'best'
+        actionable = [e for e in edges if e["action"] in ("BUY YES","BUY NO")][:3]
+        if actionable:
+            L.append("")
+            L.append("💰 <b>Edges</b>")
+            for e in actionable:
+                ys = f"{e['yes_price']*100:.0f}¢" if e.get("yes_price") is not None else "—"
+                L.append(f"   {esc(e['action'])} {e['temp']}{sym} @ {ys} → {e['best_edge']*100:+.0f}%")
 
     pm = p.get("polymarket")
     if pm and pm.get("url"):
-        lines.append(f'🔗 {pm["url"]}')
-    return "\n".join(lines)
+        L.append("")
+        L.append(f'🔗 <a href="{esc(pm["url"])}">Open on Polymarket</a>')
+    return "\n".join(L)
 
 
 def fmt_collapse(p, prev_prob) -> str:
@@ -201,33 +239,33 @@ def fmt_collapse(p, prev_prob) -> str:
     new_prob  = p.get("top_prob", 0)
     verdict   = p.get("verdict")
     reasons   = p.get("verdict_reasons") or []
+    city      = city_display(p.get("city"))
 
-    # Work out the REAL reason it collapsed (not the TRADE 'clear signal' text).
     if verdict != "TRADE":
-        # it failed a quality check — use that reason (it's a genuine warning)
         bad = [r for r in reasons if "clear signal" not in r.lower()]
         reason = bad[0] if bad else "signal no longer clean"
         headline = "model no longer confident"
     else:
-        # still a TRADE verdict, but probability fell below YOUR alert threshold
-        reason = (f"probability fell below your {THRESHOLD*100:.0f}% alert bar "
-                  f"(still a {new_prob*100:.0f}% lean, but less certain)")
+        reason = (f"slipped below your {THRESHOLD*100:.0f}% alert bar "
+                  f"(still a {new_prob*100:.0f}% lean)")
         headline = "confidence easing"
 
-    lines = [
-        f"🔴 <b>SIGNAL WEAKENED — {p['city'].upper()}</b>",
-        f"📅 Market date: {p['target_date']}",
-        f"📉 {p['top_bucket']}{sym}: {prev_prob*100:.0f}% → <b>{new_prob*100:.0f}%</b>  ({headline})",
-        f"⚠️ {reason}",
+    L = [
+        f"🔴 <b>SIGNAL WEAKENED</b>",
+        f"📍 <b>{esc(city)}</b>  ·  {esc(p.get('target_date'))}",
+        _DIV,
+        f"📉 {p['top_bucket']}{sym}:  {prev_prob*100:.0f}% → <b>{new_prob*100:.0f}%</b>",
+        f"<i>{esc(headline)}</i>",
+        f"⚠️ {esc(reason)}",
     ]
-    # if a conflict/stale flag is present, surface it explicitly
     for r in reasons:
         rl = r.lower()
         if ("conflict" in rl or "stale" in rl or "boundary" in rl or "disagree" in rl) and r not in reason:
-            lines.append(f"🚨 {r}")
+            L.append(f"🚨 {esc(r)}")
             break
-    lines.append(f"👉 If you hold {p['top_bucket']}{sym}, reconsider — edge is shrinking.")
-    return "\n".join(lines)
+    L.append("")
+    L.append(f"👉 If you hold {p['top_bucket']}{sym}, reconsider — edge shrinking.")
+    return "\n".join(L)
 
 
 def fmt_bucket_shift(p, prev_bucket, prev_prob) -> str:
@@ -237,27 +275,27 @@ def fmt_bucket_shift(p, prev_bucket, prev_prob) -> str:
     new_bucket = p["top_bucket"]
     new_prob   = p["top_prob"]
     direction = "📈 higher" if new_bucket > prev_bucket else "📉 lower"
+    city = city_display(p.get("city"))
     lines = [
-        f"🔄 <b>PREDICTION CHANGED — {p['city'].upper()}</b>",
-        f"📅 Market date: {p['target_date']}",
-        "",
-        f"⚠️ The model's prediction MOVED ({direction}):",
-        f"   BEFORE: <b>{prev_bucket}{sym}</b> at {prev_prob*100:.0f}%",
-        f"   NOW:    <b>{new_bucket}{sym}</b> at {new_prob*100:.0f}%",
-        "",
-        f"👉 This is a DIFFERENT bucket than before.",
-        f"   If you bought {prev_bucket}{sym}, the model no longer favors it!",
+        f"🔄 <b>PREDICTION CHANGED</b>",
+        f"📍 <b>{esc(city)}</b>  ·  {esc(p.get('target_date'))}",
+        _DIV,
+        f"Moved {direction}:",
+        f"   before  <b>{prev_bucket}{sym}</b> @ {prev_prob*100:.0f}%",
+        f"   now     <b>{new_bucket}{sym}</b> @ {new_prob*100:.0f}%",
     ]
     # show where the old bucket sits now
     dist = {b["value"]: b["probability"] for b in p.get("distribution", [])}
     old_now = dist.get(prev_bucket)
     if old_now is not None:
-        lines.append(f"   Your old {prev_bucket}{sym} is now only {old_now*100:.0f}%.")
+        lines.append(f"   your old {prev_bucket}{sym} is now {old_now*100:.0f}%")
+    lines.append("")
+    lines.append(f"👉 Different bucket than before — if you hold {prev_bucket}{sym}, reconsider.")
     # edge on the new bucket
     bt = p.get("best_trade")
     if bt:
         lines.append("")
-        lines.append(f"💰 New best: {bt['action']} {bt['temp']}{sym} @ {bt['yes_price']*100:.0f}¢ → {bt['best_edge']*100:+.0f}%")
+        lines.append(f"💰 New best: {esc(bt['action'])} {bt['temp']}{sym} @ {bt['yes_price']*100:.0f}¢ → {bt['best_edge']*100:+.0f}%")
     pm = p.get("polymarket")
     if pm and pm.get("url"):
         lines.append(f'🔗 {pm["url"]}')
@@ -341,6 +379,7 @@ def fmt_positions_update(wallet: str, positions) -> str:
         # ── live model read for THIS position's bucket ──
         city   = _match_city_from_title(title)
         bucket = _extract_pos_bucket(title)
+        cur_price = pos.get("cur_price")   # market's current price for your side
         if city and bucket is not None:
             try:
                 pred = pw.predict(city, fetch_prices=False)
@@ -349,22 +388,29 @@ def fmt_positions_update(wallet: str, positions) -> str:
                 your_prob = dist.get(bucket, 0.0)
                 top_b   = pred.get("top_bucket")
                 top_p   = pred.get("top_prob", 0)
-                verdict = pred.get("verdict")
-                # model's current view of YOUR bucket
-                if your_prob >= 0.55:
-                    icon = "🟢"
-                elif your_prob >= 0.30:
-                    icon = "🟡"
+                tim     = pred.get("timing") or {}
+                peak_passed = tim.get("quality") == "RELIABLE"  # post-peak, high locked
+
+                # ── The MARKET is the source of truth once the peak is in. ──
+                # If your position is priced high (market thinks you'll win) OR the
+                # peak has passed, the model's "forecast" of a higher bucket is stale
+                # (it's still predicting a peak that already happened). Trust the market.
+                market_winning = cur_price is not None and cur_price >= 0.80
+
+                if market_winning:
+                    lines.append(f"   🟢 Market: {bucket}{sym} winning at {cur_price*100:.0f}¢ — likely settles in your favor")
+                elif peak_passed and cur_price is not None and cur_price >= 0.50:
+                    lines.append(f"   🟢 Peak passed · {bucket}{sym} holding at {cur_price*100:.0f}¢")
                 else:
-                    icon = "🔴"
-                lines.append(f"   {icon} Model now: your {bucket}{sym}={your_prob*100:.0f}% "
-                             f"| top pick {top_b}{sym}={top_p*100:.0f}%")
-                # warn if model has moved away from your bucket
-                if your_prob < 0.30 and top_b != bucket:
-                    lines.append(f"   ⚠️ Model favors {top_b}{sym} now — your bucket weakening")
-                # conflict/stale flags
-                if pred.get("live_model_conflict"):
-                    lines.append(f"   🚨 live/model conflict — uncertain")
+                    # model read is meaningful only PRE/DURING peak
+                    icon = "🟢" if your_prob >= 0.55 else "🟡" if your_prob >= 0.30 else "🔴"
+                    lines.append(f"   {icon} Model: your {bucket}{sym}={your_prob*100:.0f}% "
+                                 f"| top {top_b}{sym}={top_p*100:.0f}%")
+                    # only warn if NOT already winning on the market AND peak not passed
+                    if your_prob < 0.30 and top_b != bucket and not peak_passed:
+                        lines.append(f"   ⚠️ Model favors {top_b}{sym} — watch closely")
+                    if pred.get("live_model_conflict"):
+                        lines.append(f"   🚨 live/model conflict — uncertain")
             except Exception:
                 pass
         lines.append("")
@@ -461,6 +507,14 @@ def watch_positions(conn):
         your_prob = dist.get(bucket, 0.0)
         top_b     = pred.get("top_bucket")
         top_p     = pred.get("top_prob", 0)
+        tim       = pred.get("timing") or {}
+        peak_passed = tim.get("quality") == "RELIABLE"
+
+        # Market truth: your position's current price. If the market already
+        # prices your bucket as a likely winner, the model's stale forecast of a
+        # higher bucket is NOISE — don't fire a scary "flipped away" alert.
+        cur_price = pos.get("cur_price")
+        market_winning = cur_price is not None and cur_price >= 0.70
 
         # state key for the watch (per position bucket)
         wkey = f"watch|{city}|{pred.get('target_date')}|{bucket}"
@@ -472,12 +526,18 @@ def watch_positions(conn):
         big_drop     = (prev_prob - your_prob) >= 0.15   # dropped 15+ pts since last watch
         conflict     = pred.get("live_model_conflict")
 
+        # Suppress the alert entirely if the market says you're winning, or the
+        # peak already passed (the model can't "un-happen" a locked-in high).
+        if market_winning or peak_passed:
+            upsert_state(conn, wkey, city, pred.get("target_date"), bucket, your_prob, alerted_high=0)
+            continue
+
         # only alert once per worsening state — track with alerted_high flag
         already = prev["alerted_high"] if prev else 0
 
         if (flipped_away or big_drop) and not already:
             lines = [
-                f"⚡ <b>POSITION WATCH — {city.upper()}</b>",
+                f"⚡ <b>POSITION WATCH — {esc(city_display(city))}</b>",
                 f"📅 {pred.get('target_date')}  |  you hold <b>{bucket}{sym}</b>",
                 "",
             ]
@@ -638,6 +698,139 @@ def run_scan(conn):
     return new_alerts, collapses
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# TELEGRAM COMMAND LISTENER — /scan on demand
+# Polls getUpdates in a background thread so you can trigger scans from the app.
+# ══════════════════════════════════════════════════════════════════════════════
+REGION_CITIES = {
+    "asia":   ["tokyo", "hong kong", "singapore", "manila", "seoul", "taipei",
+               "shanghai", "jakarta", "bangkok", "mumbai", "lucknow", "busan"],
+    "europe": ["london", "paris", "milan", "madrid", "munich", "warsaw",
+               "amsterdam", "helsinki", "istanbul"],
+    "americas": ["new york", "toronto", "sao paulo", "buenos aires", "mexico city"],
+}
+
+def scan_for_command(scope="all", reply_to=None):
+    """Run a scan on demand and reply with tradeable signals (TRADE + edge)."""
+    if scope == "all":
+        cities = ALERT_CITIES
+        header = f"🔍 <b>Scan: ALL {len(cities)} markets</b>"
+    elif scope in REGION_CITIES:
+        cities = [c for c in REGION_CITIES[scope] if c in pw.CITIES]
+        header = f"🔍 <b>Scan: {scope.upper()} ({len(cities)} cities)</b>"
+    else:
+        cities = [scope] if scope in pw.CITIES else []
+        header = f"🔍 <b>Scan: {scope.upper()}</b>"
+
+    if not cities:
+        reply_telegram(reply_to, f"❓ Unknown market '{scope}'. Try /scan or /scan europe.")
+        return
+
+    reply_telegram(reply_to, f"{header}\n⏳ Scanning… (may take ~1 min)")
+
+    hits = []
+    for city in cities:
+        try:
+            p = pw.predict(city, fetch_prices=USE_PRICES)
+        except Exception:
+            continue
+        if "error" in p:
+            continue
+        prob = p.get("top_prob", 0)
+        if p.get("verdict") == "TRADE" and prob >= THRESHOLD and p.get("best_trade"):
+            hits.append(p)
+
+    if not hits:
+        reply_telegram(reply_to, f"{header}\n\n😴 No clean tradeable signals right now "
+                                 f"(TRADE + ≥{THRESHOLD*100:.0f}% + real edge).")
+        return
+
+    # sort by probability, reply with each
+    hits.sort(key=lambda x: x.get("top_prob", 0), reverse=True)
+    reply_telegram(reply_to, f"{header}\n\n✅ {len(hits)} tradeable signal(s):")
+    for p in hits[:10]:
+        reply_telegram(reply_to, fmt_new_signal(p))
+
+
+def handle_command(text, chat_id):
+    """Parse a /command and act."""
+    text = (text or "").strip()
+    low = text.lower()
+
+    if low in ("/start", "/help"):
+        reply_telegram(chat_id,
+            "🤖 <b>PolyWeather commands</b>\n\n"
+            "/scan — scan ALL markets now\n"
+            "/scan europe — scan a region (asia/europe/americas)\n"
+            "/scan munich — scan one city\n"
+            "/pick — choose a market with buttons\n"
+            "/positions — show your positions now\n"
+            "/help — this message")
+        return
+
+    if low == "/positions":
+        if WALLET:
+            positions = pw.fetch_positions(WALLET, weather_only=True)
+            reply_telegram(chat_id, fmt_positions_update(WALLET, positions))
+        else:
+            reply_telegram(chat_id, "No wallet set (POLYMARKET_WALLET).")
+        return
+
+    if low == "/pick":
+        kb = [
+            [{"text": "🌍 All markets", "callback_data": "scan:all"}],
+            [{"text": "🌏 Asia", "callback_data": "scan:asia"},
+             {"text": "🌍 Europe", "callback_data": "scan:europe"}],
+            [{"text": "🌎 Americas", "callback_data": "scan:americas"}],
+        ]
+        reply_telegram(chat_id, "Pick what to scan:", keyboard=kb)
+        return
+
+    if low.startswith("/scan"):
+        parts = text.split(maxsplit=1)
+        scope = parts[1].strip().lower() if len(parts) > 1 else "all"
+        scan_for_command(scope, reply_to=chat_id)
+        return
+
+    # unknown
+    reply_telegram(chat_id, "❓ Unknown command. Send /help for options.")
+
+
+def command_listener():
+    """Background thread: long-poll Telegram for /commands."""
+    if not TG_TOKEN:
+        return
+    offset = None
+    print("[listener] Telegram command listener started (/scan, /positions, /pick, /help)")
+    while True:
+        try:
+            params = {"timeout": 30}
+            if offset is not None:
+                params["offset"] = offset
+            r = httpx.get(f"https://api.telegram.org/bot{TG_TOKEN}/getUpdates",
+                          params=params, timeout=40.0)
+            if r.status_code != 200:
+                time.sleep(5); continue
+            for upd in r.json().get("result", []):
+                offset = upd["update_id"] + 1
+                # text message commands
+                msg = upd.get("message") or {}
+                text = msg.get("text", "")
+                chat_id = (msg.get("chat") or {}).get("id")
+                if text and chat_id and text.startswith("/"):
+                    handle_command(text, chat_id)
+                # inline button taps
+                cq = upd.get("callback_query")
+                if cq:
+                    data = cq.get("data", "")
+                    cq_chat = (cq.get("message") or {}).get("chat", {}).get("id")
+                    if data.startswith("scan:") and cq_chat:
+                        scan_for_command(data.split(":", 1)[1], reply_to=cq_chat)
+        except Exception as e:
+            print(f"[listener] error: {e}")
+            time.sleep(5)
+
+
 # ── Main loop ─────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description="PolyWeather Telegram monitor")
@@ -682,6 +875,7 @@ def main():
     )
     if WALLET:
         startup += f"\n💼 Position updates every {POS_UPDATE_MIN} min."
+    startup += "\n\n💬 Commands: /scan  /scan europe  /scan munich  /pick  /positions  /help"
     send_telegram(startup)
 
     if args.once:
@@ -689,6 +883,11 @@ def main():
         if WALLET:
             send_position_update()
         return
+
+    # start the Telegram command listener in a background thread
+    import threading
+    listener = threading.Thread(target=command_listener, daemon=True)
+    listener.start()
 
     # independent timers
     last_scan = 0.0

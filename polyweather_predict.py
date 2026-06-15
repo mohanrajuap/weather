@@ -427,6 +427,101 @@ def fetch_multi_model(lat: float, lon: float,
                 forecasts[display_name] = round(float(vals[target_idx]), 1)
     return forecasts if forecasts else None
 
+# ══════════════════════════════════════════════════════════════════════════════
+# WUNDERGROUND — the ACTUAL settlement source Polymarket uses.
+# Tries the public api.weather.com endpoint. If it fails, caller falls back
+# to METAR. Returns same shape as fetch_metar so it's a drop-in.
+# ══════════════════════════════════════════════════════════════════════════════
+# ICAO → ISO country code (for the WU station path STATION:9:COUNTRY)
+_ICAO_COUNTRY = {
+    "LT": "TR", "UU": "RU", "EG": "GB", "LF": "FR", "ED": "DE", "LI": "IT",
+    "EP": "PL", "LE": "ES", "LL": "IL", "EH": "NL", "EF": "FI", "DN": "NG",
+    "FA": "ZA", "OE": "SA", "RK": "KR", "VH": "HK", "RC": "TW", "ZS": "CN",
+    "ZB": "CN", "ZH": "CN", "ZU": "CN", "ZG": "CN", "WS": "SG", "RJ": "JP",
+    "WM": "MY", "WI": "ID", "RP": "PH", "NZ": "NZ", "CY": "CA", "KJ": "US",
+    "KL": "US", "KS": "US", "KB": "US", "KA": "US", "KI": "US", "KO": "US",
+    "KD": "US", "KM": "US", "KAT": "US", "MM": "MX", "SA": "AR", "SB": "BR",
+    "MP": "PA", "VI": "IN", "OP": "PK", "K": "US",
+}
+
+_WU_KEYS = [
+    "e1f10a1e78da46f5b10a1e78da96f525",
+    "6532d6454b8aa370768e63d6ba5a832e",
+]
+
+def _icao_country(icao: str) -> str:
+    """Best-effort ISO country for a WU station path."""
+    for prefix in (icao[:3], icao[:2], icao[:1]):
+        if prefix in _ICAO_COUNTRY:
+            return _ICAO_COUNTRY[prefix]
+    return "US"
+
+def fetch_wunderground(icao: str, tz_offset: int = 0,
+                       use_fahrenheit: bool = False,
+                       local_date: str = None) -> Optional[Dict]:
+    """
+    Pull today's observations from Wunderground (Polymarket's settlement source).
+    Returns the same dict shape as fetch_metar, or None on failure.
+    """
+    country = _icao_country(icao)
+    units   = "e" if use_fahrenheit else "m"   # e=imperial(F), m=metric(C)
+    today_local = (_now_utc() + timedelta(seconds=tz_offset)).strftime("%Y%m%d")
+
+    obs = None
+    for key in _WU_KEYS:
+        try:
+            r = _SESSION.get(
+                f"https://api.weather.com/v1/location/{icao}:9:{country}/observations/historical.json",
+                params={"apiKey": key, "units": units, "startDate": today_local},
+                timeout=8.0,
+            )
+            if r.status_code == 200:
+                j = r.json()
+                if j.get("observations"):
+                    obs = j["observations"]
+                    break
+        except Exception:
+            continue
+    if not obs:
+        return None
+
+    # Build the same structure fetch_metar returns
+    rows = []
+    for o in obs:
+        temp = _sf(o.get("temp"))
+        if temp is None:
+            continue
+        ts = o.get("valid_time_gmt")
+        try:
+            obs_dt = datetime.fromtimestamp(int(ts), tz=timezone.utc).replace(tzinfo=None) if ts else None
+        except Exception:
+            obs_dt = None
+        local_t = (obs_dt + timedelta(seconds=tz_offset)).strftime("%H:%M") if obs_dt else "?"
+        rows.append({"temp": round(temp, 1), "time": local_t, "obs_dt": obs_dt})
+
+    rows = [r for r in rows if r["obs_dt"] is not None]
+    if not rows:
+        return None
+    rows.sort(key=lambda x: x["obs_dt"], reverse=True)
+
+    max_so_far = max(r["temp"] for r in rows)
+    curr = rows[0]
+    recent = [(r["time"], r["temp"]) for r in rows[:4]]
+    trend = "unknown"
+    if len(recent) >= 2:
+        diff = recent[0][1] - recent[1][1]
+        trend = "rising" if diff > 0.1 else "falling" if diff < -0.1 else "stagnant"
+
+    return {
+        "current_temp": curr["temp"],
+        "max_so_far":   max_so_far,
+        "obs_time":     curr["time"],
+        "recent_temps": recent,
+        "trend":        trend,
+        "obs_count":    len(rows),
+        "source":       "wunderground",
+    }
+
 def fetch_metar(icao: str, tz_offset: int = 0,
                 local_date: str = None) -> Optional[Dict]:
     """
@@ -967,7 +1062,10 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     def _om():  res["om"]    = fetch_open_meteo(lat, lon, use_f, target_idx)
     def _ens(): res["ens"]   = fetch_ensemble(lat, lon, use_f, target_idx)
     def _mm():  res["mm"]    = fetch_multi_model(lat, lon, use_f, target_idx)
-    def _met(): res["metar"] = fetch_metar(icao, tz, local_date)
+    def _met():
+        # Try Wunderground (Polymarket's settlement source) first; fall back to METAR
+        wu = fetch_wunderground(icao, tz, use_f, local_date)
+        res["metar"] = wu if wu else fetch_metar(icao, tz, local_date)
 
     threads = [threading.Thread(target=fn) for fn in (_om, _ens, _mm, _met)]
     for t_ in threads: t_.start()
@@ -1218,6 +1316,7 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
             "obs_time":     metar.get("obs_time"),
             "trend":        trend,
             "recent":       recent[:3],
+            "source":       metar.get("source", "metar"),
         },
         # analysis
         "mu":             round(mu, 2) if mu is not None else None,
@@ -1363,8 +1462,10 @@ def print_city_detail(p: Dict):
 
     # Live always shows TODAY's observations
     if live.get("current_temp") is not None:
+        src = live.get("source", "metar")
+        src_label = "🎯 Wunderground (settlement source)" if src == "wunderground" else "METAR (aviation)"
         obs_label = "TODAY live obs" if not tmrw else "TODAY live obs (context only)"
-        print(f"\n  🌡️  {obs_label} [{live.get('obs_time','?')}]:")
+        print(f"\n  🌡️  {obs_label} [{live.get('obs_time','?')}] — {src_label}:")
         print(f"     Current={live['current_temp']}{sym}  "
               f"Max so far={live.get('max_so_far','?')}{sym}  {te} {live.get('trend','?')}")
         if live.get("recent"):

@@ -1111,9 +1111,6 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     dead = is_dead_market_check(local_hour, peak_end, max_so_far, cur_temp, is_tomorrow)
 
     # ── LIVE vs MODEL conflict detection ─────────────────────────────────────
-    # If the live reading is far above the model consensus, something is off:
-    # either today is unusually hot, OR the live reading is stale/cached/coarse.
-    # A perfectly flat reading (same value 3x) is a stale-data red flag.
     live_model_conflict = False
     stale_reading = False
     conflict_gap = None
@@ -1122,11 +1119,18 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         # live reading is >1.5° above what every model predicts
         if conflict_gap >= 1.5 and peak_status in ("before", "in_window"):
             live_model_conflict = True
-        # stale check: last 3 readings identical to one decimal = suspicious
+        # Stale check: flat reading is ONLY suspicious when it does NOT match
+        # the models. A temp sitting flat AT its peak (and matching the model
+        # consensus) is normal plateau behaviour, not stale data.
         if recent and len(recent) >= 3:
             vals = [r[1] for r in recent[:3]]
-            if len(set(vals)) == 1:
+            flat = len(set(vals)) == 1
+            # how far the flat live value is from the model blend
+            gap_from_model = abs(max_so_far - deb)
+            # flat AND far from models (>1.5°) AND not yet at peak = likely cached
+            if flat and gap_from_model >= 1.5 and peak_status == "before":
                 stale_reading = True
+            # flat reading that MATCHES models during/after peak = legit plateau, NOT stale
 
     # ── compute mu (probability center) ─────────────────────────────────────
     if dead and max_so_far is not None:

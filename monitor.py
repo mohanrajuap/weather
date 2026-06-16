@@ -193,8 +193,8 @@ def fmt_new_signal(p) -> str:
     if ens.get("p10") is not None:
         L.append(f"📈 Ensemble: {ens['p10']} / {ens['median']} / {ens['p90']}  (P10/Med/P90)")
     agr = p.get("agreement")
-    if agr:
-        ae = {"strong":"✅","moderate":"⚠️","weak":"❌"}.get(agr,"")
+    if agr and agr != "unknown":
+        ae = {"strong":"✅","moderate":"⚠️","weak":"❌"}.get(agr,"•")
         L.append(f"{ae} Agreement: {esc(agr)}")
     if live.get("current_temp") is not None:
         src = "🎯 Wunderground" if live.get("source") == "wunderground" else "METAR"

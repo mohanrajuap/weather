@@ -1298,8 +1298,15 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
             verdict = "SKIP"
             reasons.append(f"models disagree by {disagreement:.1f}° (DEB {deb} vs ens {ens_med})")
         elif agreement == "moderate" and verdict == "TRADE":
-            verdict = "WAIT"
-            reasons.append(f"models differ {disagreement:.1f}°")
+            # Moderate model spread only matters when the bucket is BORDERLINE.
+            # If the top bucket is already high-probability (≥75%), a moderate
+            # spread between DEB and ensemble doesn't change the call — the
+            # distribution still concentrates on one bucket. Only downgrade
+            # moderate-agreement signals when probability is in the soft zone.
+            if model_prob < 0.75:
+                verdict = "WAIT"
+                reasons.append(f"models differ {disagreement:.1f}° and prob only {model_prob*100:.0f}%")
+            # else: high prob + moderate spread → still tradeable, no downgrade
         if on_boundary and verdict == "TRADE":
             verdict = "WAIT"
             reasons.append(f"μ={mu:.1f} on rounding boundary (coin-flip between buckets)")

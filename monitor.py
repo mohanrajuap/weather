@@ -754,7 +754,9 @@ REGION_CITIES = {
 }
 
 def scan_for_command(scope="all", reply_to=None):
-    """Run a scan on demand and reply with tradeable signals (TRADE + edge)."""
+    """Run a scan on demand. Logs full per-city detail to Railway, and for a
+    single named city ALWAYS sends full detail (even if not a clean TRADE)."""
+    single_city = False
     if scope == "all":
         cities = ALERT_CITIES
         header = f"🔍 <b>Scan: ALL {len(cities)} markets</b>"
@@ -762,37 +764,79 @@ def scan_for_command(scope="all", reply_to=None):
         cities = [c for c in REGION_CITIES[scope] if c in pw.CITIES]
         header = f"🔍 <b>Scan: {scope.upper()} ({len(cities)} cities)</b>"
     else:
-        cities = [scope] if scope in pw.CITIES else []
-        header = f"🔍 <b>Scan: {scope.upper()}</b>"
+        resolved = pw.resolve_city(scope) if hasattr(pw, "resolve_city") else scope
+        cities = [resolved] if resolved in pw.CITIES else []
+        header = f"🔍 <b>Scan: {city_display(resolved)}</b>"
+        single_city = True
+
+    ts = datetime.now(timezone.utc).strftime("%H:%M UTC")
+    print(f"\n[{ts}] /scan {scope} → {len(cities)} city(ies)")
 
     if not cities:
+        print(f"  ❓ unknown market '{scope}'")
         reply_telegram(reply_to, f"❓ Unknown market '{scope}'. Try /scan or /scan europe.")
         return
 
-    reply_telegram(reply_to, f"{header}\n⏳ Scanning… (may take ~1 min)")
+    reply_telegram(reply_to, f"{header}\n⏳ Scanning…")
 
     hits = []
+    single_pred = None
     for city in cities:
         try:
             p = pw.predict(city, fetch_prices=USE_PRICES)
-        except Exception:
+        except Exception as e:
+            print(f"  {city}: error {e}")
             continue
         if "error" in p:
+            print(f"  {city}: {p['error']}")
             continue
-        prob = p.get("top_prob", 0)
-        if p.get("verdict") == "TRADE" and prob >= THRESHOLD and p.get("best_trade"):
+
+        if single_city:
+            single_pred = p
+
+        prob    = p.get("top_prob", 0)
+        bucket  = p.get("top_bucket")
+        verdict = p.get("verdict")
+        tq      = (p.get("timing") or {}).get("quality", "?")
+        bt      = p.get("best_trade")
+        edge_s  = f" edge{bt['best_edge']*100:+.0f}%" if bt else " no-edge"
+
+        # FULL per-city log line (this is what shows in Railway)
+        print(f"  {city:<14} {bucket}° {prob*100:>3.0f}% {verdict:<5} {tq:<11}{edge_s}")
+
+        # for a single-city scan, log the FULL detail card to Railway too
+        if single_city:
+            detail = fmt_new_signal(p)
+            import re
+            clean = re.sub(r"<[^>]+>", "", detail)
+            print("  ┌─ full detail ─────────────────")
+            for ln in clean.splitlines():
+                print(f"  │ {ln}")
+            print("  └───────────────────────────────")
+
+        if verdict == "TRADE" and prob >= THRESHOLD and bt:
             hits.append(p)
+
+    # ── Telegram replies ──
+    if single_city:
+        if single_pred:
+            reply_telegram(reply_to, fmt_new_signal(single_pred))
+        else:
+            reply_telegram(reply_to, f"{header}\n\n❌ Could not fetch data.")
+        print(f"[{ts}] /scan {scope} done")
+        return
 
     if not hits:
         reply_telegram(reply_to, f"{header}\n\n😴 No clean tradeable signals right now "
                                  f"(TRADE + ≥{THRESHOLD*100:.0f}% + real edge).")
+        print(f"[{ts}] /scan {scope} done — 0 tradeable")
         return
 
-    # sort by probability, reply with each
     hits.sort(key=lambda x: x.get("top_prob", 0), reverse=True)
     reply_telegram(reply_to, f"{header}\n\n✅ {len(hits)} tradeable signal(s):")
     for p in hits[:10]:
         reply_telegram(reply_to, fmt_new_signal(p))
+    print(f"[{ts}] /scan {scope} done — {len(hits)} tradeable")
 
 
 def handle_command(text, chat_id):

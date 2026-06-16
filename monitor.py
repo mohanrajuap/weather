@@ -64,6 +64,8 @@ PROFIT_TAKE_PCT = float(os.environ.get("PROFIT_TAKE_PCT", "10"))
 SIGNAL_WATCH_MIN = int(os.environ.get("SIGNAL_WATCH_MIN", "5"))
 # If "1", only alert on RELIABLE (post-peak) signals; speculative pre-peak suppressed
 RELIABLE_ONLY  = os.environ.get("RELIABLE_ONLY", "0") == "1"
+# Print per-city status during each scan (why each city qualifies or not)
+VERBOSE_LOG    = os.environ.get("VERBOSE_LOG", "0") == "1"
 THRESHOLD     = float(os.environ.get("PROB_THRESHOLD", "0.70"))
 USE_PRICES    = os.environ.get("USE_PRICES", "1") == "1"
 STATE_DB      = os.environ.get("STATE_DB", "/data/monitor_state.db")
@@ -629,6 +631,8 @@ def run_scan(conn):
     new_alerts = 0
     collapses  = 0
     shifts     = 0
+    # near-miss tally: cities that were close but filtered
+    nm = {"no_edge": 0, "pre_peak": 0, "below_thresh": 0, "not_trade": 0, "high_ok": 0}
 
     for city in ALERT_CITIES:
         try:
@@ -670,6 +674,40 @@ def run_scan(conn):
         bucket_shifted = (prev_alerted and clean and prob >= THRESHOLD
                           and prev_bucket is not None and bucket != prev_bucket)
 
+        # ── verbose per-city logging — shows WHY a city does/doesn't alert ──
+        if prob >= 0.50:
+            # tally reason
+            if not clean:
+                nm["not_trade"] += 1
+            elif prob < THRESHOLD:
+                nm["below_thresh"] += 1
+            elif USE_PRICES and not has_edge:
+                nm["no_edge"] += 1
+            elif not reliable_ok:
+                nm["pre_peak"] += 1
+            else:
+                nm["high_ok"] += 1
+
+        if VERBOSE_LOG and prob >= 0.50:
+            if not clean:
+                why = f"verdict={verdict}"
+            elif prob < THRESHOLD:
+                why = f"prob {prob*100:.0f}%<{THRESHOLD*100:.0f}%"
+            elif USE_PRICES and not has_edge:
+                why = "no edge (market efficient)"
+            elif not reliable_ok:
+                why = "not reliable (pre-peak)"
+            elif prev_alerted:
+                why = "already alerted"
+            else:
+                why = "WOULD ALERT"
+            tq = (p.get("timing") or {}).get("quality", "?")
+            edge = ""
+            bt = p.get("best_trade")
+            if bt:
+                edge = f" edge{bt['best_edge']*100:+.0f}%"
+            print(f"    {city:<14} {bucket}° {prob*100:>3.0f}% {tq:<11} {why}{edge}")
+
         if crossed_up:
             msg = fmt_new_signal(p)
             send_telegram(msg)
@@ -695,6 +733,11 @@ def run_scan(conn):
                 upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=prev_alerted)
 
     print(f"[{ts}] done — {new_alerts} new, {shifts} shifted, {collapses} collapsed")
+    # always show WHY nothing alerted (even without full verbose)
+    if new_alerts == 0 and (nm["no_edge"] or nm["pre_peak"] or nm["below_thresh"] or nm["not_trade"]):
+        print(f"           ({nm['no_edge']} no-edge, {nm['pre_peak']} pre-peak, "
+              f"{nm['below_thresh']} below-{THRESHOLD*100:.0f}%, {nm['not_trade']} not-clean, "
+              f"{nm['high_ok']} ready)")
     return new_alerts, collapses
 
 

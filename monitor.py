@@ -161,7 +161,7 @@ def upsert_state(conn, key, city, target_date, bucket, prob, alerted_high):
 _DIV = "━━━━━━━━━━━━━━━━━━━━"
 
 def fmt_new_signal(p) -> str:
-    """Polished signal card."""
+    """Polished signal card with an HONEST header reflecting verdict + timing."""
     sym  = p["temp_unit"]
     tim  = p.get("timing") or {}
     ens  = p.get("ensemble") or {}
@@ -169,17 +169,40 @@ def fmt_new_signal(p) -> str:
     bt   = p.get("best_trade")
     edges = p.get("edges") or []
     city = city_display(p.get("city"))
+    verdict = p.get("verdict")
+    quality = tim.get("quality")
 
-    # reliability badge
-    if tim.get("reliable"):
-        badge = "✅ <i>Reliable — peak observed</i>"
-    elif tim.get("quality") == "FORECAST":
-        badge = "🔮 <i>Forecast only — tomorrow's peak ~a day away</i>"
+    # ── Honest header + badge based on the REAL state ──
+    # A signal is only "BUY NOW" when verdict is TRADE *and* timing is at least
+    # firming (peak forming/done). Pre-peak speculative = WAIT, not buy.
+    if quality == "FORECAST":
+        head  = "🔮 <b>FORECAST (tomorrow)</b>"
+        badge = "🔮 <i>Tomorrow's peak ~a day away — forecast only, may shift a lot</i>"
+        action_ok = False
+    elif quality in ("SPECULATIVE", "OVERNIGHT"):
+        head  = "⏳ <b>TOO EARLY — WAIT</b>"
+        ps = tim.get("peak_window", "peak")
+        badge = f"⏳ <i>Pre-peak (local {tim.get('city_local_now','?')}). Day's high not formed yet — wait until ~{ps}. A {p['top_prob']*100:.0f}% now can still flip.</i>"
+        action_ok = False
+    elif verdict == "TRADE" and bt:
+        head  = "🟢 <b>SIGNAL — tradeable now</b>"
+        badge = ("✅ <i>Reliable — peak observed, high essentially locked</i>"
+                 if tim.get("reliable") else
+                 "🟡 <i>Firming — peak forming now, watch live obs</i>")
+        action_ok = True
+    elif verdict == "TRADE" and not bt:
+        head  = "⚪ <b>NO EDGE — skip</b>"
+        badge = "⚪ <i>Model agrees with market — nothing to trade here</i>"
+        action_ok = False
     else:
-        badge = "⏳ <i>Firming — peak still forming, may shift</i>"
+        head  = "🟠 <b>WAIT — not clean</b>"
+        reasons = p.get("verdict_reasons") or []
+        why = next((r for r in reasons if "clear signal" not in r.lower()), "signal not clean")
+        badge = f"🟠 <i>{esc(why)}</i>"
+        action_ok = False
 
     L = []
-    L.append(f"🟢 <b>NEW SIGNAL</b>")
+    L.append(head)
     L.append(f"📍 <b>{esc(city)}</b>  ·  {esc(p.get('target_date'))} ({esc(p.get('predicting',''))})")
     L.append(_DIV)
     L.append(f"🎯 <b>{p['top_bucket']}{sym}</b>  at  <b>{p['top_prob']*100:.0f}%</b>")
@@ -211,16 +234,22 @@ def fmt_new_signal(p) -> str:
             bar = "▰" * max(1, round(b['probability'] * 10))
             L.append(f"   {b['value']}{sym}  {bar} {b['probability']*100:.0f}%")
 
-    # best trade — the headline action
+    # best trade — only call it a BUY when action_ok; else show as "if it holds"
     if bt:
         L.append("")
         L.append(_DIV)
-        L.append(f"🏆 <b>{esc(bt['action'])} {bt['temp']}{sym} @ {bt['yes_price']*100:.0f}¢</b>")
-        L.append(f"    edge <b>{bt['best_edge']*100:+.0f}%</b> · model {bt['model_prob']*100:.0f}%")
-        if bt.get("thin"):
-            L.append(f"    ⚠️ thin volume (${bt.get('vol',0):,.0f}) — size small")
-    elif edges:
-        # show edges even if no single 'best'
+        if action_ok:
+            L.append(f"🏆 <b>{esc(bt['action'])} {bt['temp']}{sym} @ {bt['yes_price']*100:.0f}¢</b>")
+            L.append(f"    edge <b>{bt['best_edge']*100:+.0f}%</b> · model {bt['model_prob']*100:.0f}%")
+            if bt.get("thin"):
+                L.append(f"    ⚠️ thin volume (${bt.get('vol',0):,.0f}) — size small")
+        else:
+            # NOT tradeable yet — show the potential trade but tell them to WAIT
+            L.append(f"⏳ <b>Potential (don't buy yet):</b> {esc(bt['action'])} {bt['temp']}{sym} @ {bt['yes_price']*100:.0f}¢")
+            L.append(f"    would be {bt['best_edge']*100:+.0f}% edge — but wait for the peak to confirm.")
+            if quality in ("SPECULATIVE", "OVERNIGHT"):
+                L.append(f"    👉 Re-check during the peak window ({esc(tim.get('peak_window','?'))}).")
+    elif edges and action_ok:
         actionable = [e for e in edges if e["action"] in ("BUY YES","BUY NO")][:3]
         if actionable:
             L.append("")

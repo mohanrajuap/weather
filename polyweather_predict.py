@@ -1153,6 +1153,15 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     ens_med = _sf(ens.get("median"))
     sigma   = max(0.3, (p90 - p10) / 2.56) if (p10 and p90) else 1.2
 
+    # Fallback: if the multi-model fetch returned nothing, deb_blend gave None.
+    # Use the ensemble median so the prediction never shows "None°C" and the
+    # downstream probability math still has a center to work from.
+    if deb is None:
+        deb = ens_med if ens_med is not None else _sf(om.get("_target_max"))
+        if deb is not None:
+            deb = round(deb + DEFAULT_PEAK_BIAS, 1)
+            deb_weights = "ensemble-median fallback (multi-model fetch empty)"
+
     # ── live METAR (always today's observations) ──────────────────────────────
     cur_temp   = _sf(metar.get("current_temp"))
     max_so_far = _sf(metar.get("max_so_far"))

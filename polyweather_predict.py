@@ -189,7 +189,29 @@ _SESSION = httpx.Client(
     limits=httpx.Limits(max_connections=50, max_keepalive_connections=20),
 )
 
+# ── Response cache ────────────────────────────────────────────────────────────
+# The monitor calls predict() far more often than the data actually changes:
+# the 20-min scan PLUS the position-watch, signal-watch and position-update loops
+# all re-fetch the same Open-Meteo forecasts for the same cities. Open-Meteo only
+# refreshes hourly, so without caching we hammer the free quota and get the 429
+# storm seen in the logs. Cache successful GETs for HTTP_CACHE_TTL seconds, keyed
+# on URL+params, and on a 429 serve the last cached value (even if stale) so a
+# rate-limit degrades gracefully instead of nuking the signal.
+import time as _time
+_CACHE: Dict[str, Tuple[float, Any]] = {}
+_CACHE_TTL = float(os.environ.get("HTTP_CACHE_TTL", "900"))   # 15 min default
+_CACHE_LOCK = threading.Lock()
+
+def _cache_key(url: str, params: dict) -> str:
+    return url + "?" + json.dumps(params or {}, sort_keys=True, default=str)
+
 def _get(url: str, params: dict = None, timeout: float = 10.0) -> Optional[Any]:
+    key = _cache_key(url, params)
+    now = _time.time()
+    with _CACHE_LOCK:
+        hit = _CACHE.get(key)
+    if hit and (now - hit[0]) < _CACHE_TTL:
+        return hit[1]
     try:
         r = _SESSION.get(url, params=params or {}, timeout=timeout)
         # Surface rate-limiting / server errors instead of silently returning
@@ -197,15 +219,20 @@ def _get(url: str, params: dict = None, timeout: float = 10.0) -> Optional[Any]:
         # "the weather API is blocking us" — make it visible in the logs.
         if r.status_code == 429:
             print(f"[http] 429 RATE LIMITED by {httpx.URL(url).host} "
-                  f"— daily/short-term Open-Meteo quota likely exhausted")
-            return None
+                  f"— daily/short-term Open-Meteo quota likely exhausted"
+                  f"{' (serving cached)' if hit else ''}")
+            # Degrade gracefully: reuse the last good response if we have one.
+            return hit[1] if hit else None
         r.raise_for_status()
-        return r.json()
+        data = r.json()
+        with _CACHE_LOCK:
+            _CACHE[key] = (now, data)
+        return data
     except httpx.HTTPStatusError as e:
         print(f"[http] {e.response.status_code} from {httpx.URL(url).host}")
-        return None
+        return hit[1] if hit else None
     except Exception:
-        return None
+        return hit[1] if hit else None
 
 def _sf(v) -> Optional[float]:
     try:
@@ -459,6 +486,51 @@ def fetch_multi_model(lat: float, lon: float,
         if target_idx < len(vals) and vals[target_idx] is not None:
             forecasts[display_name] = round(float(vals[target_idx]), 1)
     return forecasts if forecasts else None
+
+def fetch_metno(lat: float, lon: float, tz_offset: int = 0,
+                use_fahrenheit: bool = False,
+                target_date: Optional[str] = None) -> Optional[float]:
+    """MET Norway (Yr) locationforecast — FREE, no API key, global coverage.
+
+    Independent ECMWF-based model. Used as a fallback/extra source so the bot
+    still has a forecast (and real model spread for σ) when Open-Meteo is
+    rate-limited. MET requires an identifying User-Agent — already set on
+    _SESSION — and rejects coordinates with >4 decimals, so we round.
+
+    Returns the forecast daily MAX for the target LOCAL date (°C, or °F if the
+    city settles in Fahrenheit), or None.
+    """
+    data = _get("https://api.met.no/weatherapi/locationforecast/2.0/compact",
+                {"lat": round(lat, 4), "lon": round(lon, 4)}, timeout=8.0)
+    if not data:
+        return None
+    series = ((data.get("properties") or {}).get("timeseries")) or []
+    if not series:
+        return None
+
+    highs: List[float] = []
+    for entry in series:
+        ts = entry.get("time")
+        try:
+            dt_utc = datetime.fromisoformat(str(ts).replace("Z", "+00:00")).replace(tzinfo=None)
+        except Exception:
+            continue
+        local_d = (dt_utc + timedelta(seconds=tz_offset)).strftime("%Y-%m-%d")
+        # Only keep points falling on the target LOCAL day. If no target given,
+        # fall back to whatever the series holds (still better than nothing).
+        if target_date and local_d != target_date:
+            continue
+        t = _sf((((entry.get("data") or {}).get("instant") or {})
+                 .get("details") or {}).get("air_temperature"))
+        if t is not None:
+            highs.append(t)
+    if not highs:
+        return None
+
+    hi = max(highs)                      # MET temps are always Celsius
+    if use_fahrenheit:
+        hi = hi * 9.0 / 5.0 + 32.0
+    return round(hi, 1)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # WUNDERGROUND — the ACTUAL settlement source Polymarket uses.
@@ -1215,12 +1287,13 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     def _om():  res["om"]    = fetch_open_meteo(lat, lon, use_f, target_idx)
     def _ens(): res["ens"]   = fetch_ensemble(lat, lon, use_f, target_idx)
     def _mm():  res["mm"]    = fetch_multi_model(lat, lon, use_f, target_idx)
+    def _mn():  res["mn"]    = fetch_metno(lat, lon, tz, use_f, target_date)
     def _met():
         # Try Wunderground (Polymarket's settlement source) first; fall back to METAR
         wu = fetch_wunderground(icao, tz, use_f, local_date)
         res["metar"] = wu if wu else fetch_metar(icao, tz, local_date)
 
-    threads = [threading.Thread(target=fn) for fn in (_om, _ens, _mm, _met)]
+    threads = [threading.Thread(target=fn) for fn in (_om, _ens, _mm, _mn, _met)]
     for t_ in threads: t_.start()
     for t_ in threads: t_.join(timeout=15)
 
@@ -1240,6 +1313,13 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         if val is not None:
             forecasts[model] = round(float(val), 1)
 
+    # MET Norway (Yr) — independent ECMWF-based source, free + no key. Always
+    # included when available so the blend is genuinely multi-provider; it also
+    # carries the forecast alone when Open-Meteo is rate-limited (429).
+    metno_val = _sf(res.get("mn"))
+    if metno_val is not None:
+        forecasts["MET.no"] = round(metno_val, 1)
+
     # ── DEB blend ────────────────────────────────────────────────────────────
     deb, deb_weights = deb_blend(city_key, forecasts, target_date=target_date)
 
@@ -1247,7 +1327,26 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     p10     = _sf(ens.get("p10"))
     p90     = _sf(ens.get("p90"))
     ens_med = _sf(ens.get("median"))
-    sigma   = max(0.3, (p90 - p10) / 2.56) if (p10 and p90) else 1.2
+    if p10 and p90:
+        # Best case: real ensemble P10–P90 spread.
+        sigma = max(0.3, (p90 - p10) / 2.56)
+    else:
+        # Ensemble endpoint unavailable (e.g. rate-limited). Do NOT fall back to a
+        # blanket σ=1.2 — that always trips the `σ>0.7` uncertainty gate below and
+        # forces EVERY city to WAIT, so the bot can never trade while the ensemble
+        # API is down. Instead estimate σ from the spread of the individual NWP
+        # models we DID get (ECMWF/GFS/ICON/GEM/Open-Meteo): tight model agreement
+        # → low σ (tradeable), wide disagreement → high σ (correctly cautious).
+        _fvals = [v for v in forecasts.values() if v is not None]
+        if len(_fvals) >= 2:
+            _mean  = sum(_fvals) / len(_fvals)
+            _stdev = (sum((x - _mean) ** 2 for x in _fvals) / len(_fvals)) ** 0.5
+            # Floor at 0.5° (models are correlated and understate true uncertainty);
+            # cap at 2.0° so one outlier model can't peg σ absurdly high.
+            sigma = max(0.5, min(2.0, _stdev))
+        else:
+            # Truly no spread information (≤1 model) — stay cautious.
+            sigma = 1.2
 
     # Fallback: if the multi-model fetch returned nothing, deb_blend gave None.
     # Use the ensemble median so the prediction never shows "None°C" and the

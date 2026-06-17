@@ -99,12 +99,17 @@ def send_ntfy(text: str) -> bool:
     lines = body.splitlines()
     title = lines[0][:100] if lines else "PolyWeather"
     rest  = "\n".join(lines[1:]).strip() or title
+    # ntfy sends the title as an HTTP header. Stripping emoji with ascii-ignore
+    # can leave leading/trailing spaces (e.g. "🌡️ PolyWeather" → " PolyWeather"),
+    # and header values may not start with whitespace — that raises "Illegal
+    # header value". Sanitize: drop non-ascii, collapse whitespace, fall back.
+    safe_title = " ".join(title.encode("ascii", "ignore").decode().split()) or "PolyWeather"
     try:
         r = httpx.post(
             f"{NTFY_SERVER}/{NTFY_TOPIC}",
             data=rest.encode("utf-8"),
             headers={
-                "Title": title.encode("ascii", "ignore").decode(),
+                "Title": safe_title,
                 "Tags": "chart_with_upwards_trend",
                 "Priority": "default",
             },

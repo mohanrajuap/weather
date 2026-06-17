@@ -761,15 +761,27 @@ def run_scan(conn):
     shifts     = 0
     # near-miss tally: cities that were close but filtered
     nm = {"no_edge": 0, "pre_peak": 0, "below_thresh": 0, "not_trade": 0, "high_ok": 0}
+    # data-health tally: how many cities we could actually evaluate vs lost to
+    # errors / missing forecast data. Without this, a total upstream outage looks
+    # identical to a calm "0 new" market in the logs.
+    health = {"total": len(ALERT_CITIES), "errored": 0, "no_data": 0, "evaluated": 0}
 
     for city in ALERT_CITIES:
         try:
             p = pw.predict(city, fetch_prices=USE_PRICES)
         except Exception as e:
             print(f"  {city}: error {e}")
+            health["errored"] += 1
             continue
         if "error" in p:
+            health["errored"] += 1
             continue
+        # A city with no probability distribution had no usable forecast data
+        # (all upstream fetches failed) — it was scanned but never truly evaluated.
+        if not p.get("distribution"):
+            health["no_data"] += 1
+            continue
+        health["evaluated"] += 1
 
         prob   = p.get("top_prob", 0.0)
         bucket = p.get("top_bucket")
@@ -861,6 +873,15 @@ def run_scan(conn):
                 upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=prev_alerted)
 
     print(f"[{ts}] done — {new_alerts} new, {shifts} shifted, {collapses} collapsed")
+    # data health: how many cities we could actually evaluate this pass.
+    print(f"           data: {health['evaluated']}/{health['total']} evaluated, "
+          f"{health['no_data']} no-data, {health['errored']} errored")
+    # if most cities had no usable data, the run is unreliable — flag it loudly so
+    # a "0 new" line isn't mistaken for a calm market when it's really an outage.
+    lost = health["no_data"] + health["errored"]
+    if lost >= max(1, health["total"] // 2):
+        print(f"           ⚠️  WARNING: {lost}/{health['total']} cities had no usable "
+              f"data — upstream weather API likely degraded/rate-limited; signals unreliable")
     # always show WHY nothing alerted (even without full verbose)
     if new_alerts == 0 and (nm["no_edge"] or nm["pre_peak"] or nm["below_thresh"] or nm["not_trade"]):
         print(f"           ({nm['no_edge']} no-edge, {nm['pre_peak']} pre-peak, "

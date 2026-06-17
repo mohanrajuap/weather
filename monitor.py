@@ -53,6 +53,10 @@ TG_TOKEN      = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
 TG_CHAT       = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
 # Support multiple recipients: comma-separated in TELEGRAM_CHAT_ID
 TG_CHAT_IDS   = [c.strip() for c in TG_CHAT.split(",") if c.strip()]
+# ntfy.sh push notifications — extra layer alongside Telegram (works in India).
+# Set NTFY_TOPIC to a secret topic name; subscribe to it in the ntfy phone app.
+NTFY_TOPIC    = os.environ.get("NTFY_TOPIC", "").strip()
+NTFY_SERVER   = os.environ.get("NTFY_SERVER", "https://ntfy.sh").strip().rstrip("/")
 WALLET        = os.environ.get("POLYMARKET_WALLET", "").strip()
 INTERVAL_MIN  = int(os.environ.get("CHECK_INTERVAL_MIN", "20"))
 POS_UPDATE_MIN = int(os.environ.get("POSITION_UPDATE_MIN", "15"))
@@ -78,10 +82,51 @@ if not os.path.isdir(os.path.dirname(STATE_DB) or "."):
 
 
 # ── Telegram ──────────────────────────────────────────────────────────────────
-def send_telegram(text: str) -> bool:
-    if not TG_TOKEN or not TG_CHAT_IDS:
-        print(f"[telegram] not configured — would send:\n{text}\n")
+def _strip_html(text: str) -> str:
+    """ntfy is plain-text — remove HTML tags Telegram uses."""
+    import re
+    t = re.sub(r"<a href=\"([^\"]*)\">([^<]*)</a>", r"\2: \1", text)  # keep links readable
+    t = re.sub(r"<[^>]+>", "", t)
+    return t
+
+
+def send_ntfy(text: str) -> bool:
+    """Push to ntfy.sh (extra layer alongside Telegram; works in India)."""
+    if not NTFY_TOPIC:
         return False
+    body = _strip_html(text)
+    # title = first line, rest = body
+    lines = body.splitlines()
+    title = lines[0][:100] if lines else "PolyWeather"
+    rest  = "\n".join(lines[1:]).strip() or title
+    try:
+        r = httpx.post(
+            f"{NTFY_SERVER}/{NTFY_TOPIC}",
+            data=rest.encode("utf-8"),
+            headers={
+                "Title": title.encode("ascii", "ignore").decode(),
+                "Tags": "chart_with_upwards_trend",
+                "Priority": "default",
+            },
+            timeout=15.0,
+        )
+        if r.status_code not in (200, 201):
+            print(f"[ntfy] error: {r.status_code} {r.text[:120]}")
+            return False
+        return True
+    except Exception as e:
+        print(f"[ntfy] exception: {e}")
+        return False
+
+
+def send_telegram(text: str) -> bool:
+    # extra layer: always also push to ntfy (no-op if NTFY_TOPIC unset)
+    send_ntfy(text)
+
+    if not TG_TOKEN or not TG_CHAT_IDS:
+        if not NTFY_TOPIC:
+            print(f"[telegram] not configured — would send:\n{text}\n")
+        return bool(NTFY_TOPIC)
     ok_any = False
     for chat_id in TG_CHAT_IDS:
         try:
@@ -102,8 +147,11 @@ def send_telegram(text: str) -> bool:
 
 def reply_telegram(chat_id, text: str, keyboard=None) -> bool:
     """Reply to a single chat (used by the command listener)."""
+    # extra layer: also push command results to ntfy (skip the button menus)
+    if not keyboard:
+        send_ntfy(text)
     if not TG_TOKEN:
-        return False
+        return bool(NTFY_TOPIC) and not keyboard
     payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML",
                "disable_web_page_preview": True}
     if keyboard:
@@ -979,6 +1027,7 @@ def main():
     print(f"  Prices:            {'on' if USE_PRICES else 'off'}")
     print(f"  State DB:          {STATE_DB}")
     print(f"  Telegram:          {len(TG_CHAT_IDS)} recipient(s)" if (TG_TOKEN and TG_CHAT_IDS) else "  Telegram:          NOT configured")
+    print(f"  ntfy push:         {NTFY_SERVER}/{NTFY_TOPIC}" if NTFY_TOPIC else "  ntfy push:         NOT configured")
     print("="*60)
 
     conn = init_db()

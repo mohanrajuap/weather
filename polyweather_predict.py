@@ -183,8 +183,18 @@ _SESSION = httpx.Client(
 def _get(url: str, params: dict = None, timeout: float = 10.0) -> Optional[Any]:
     try:
         r = _SESSION.get(url, params=params or {}, timeout=timeout)
+        # Surface rate-limiting / server errors instead of silently returning
+        # None. A flood of 429s here is the difference between "no trades" and
+        # "the weather API is blocking us" — make it visible in the logs.
+        if r.status_code == 429:
+            print(f"[http] 429 RATE LIMITED by {httpx.URL(url).host} "
+                  f"— daily/short-term Open-Meteo quota likely exhausted")
+            return None
         r.raise_for_status()
         return r.json()
+    except httpx.HTTPStatusError as e:
+        print(f"[http] {e.response.status_code} from {httpx.URL(url).host}")
+        return None
     except Exception:
         return None
 
@@ -409,7 +419,13 @@ def fetch_ensemble(lat: float, lon: float,
 def fetch_multi_model(lat: float, lon: float,
                       use_fahrenheit: bool = False,
                       target_idx: int = 0) -> Optional[Dict[str, float]]:
-    """Fetch individual NWP model forecasts for target day."""
+    """Fetch individual NWP model forecasts for target day.
+
+    All four models are requested in a SINGLE Open-Meteo call (comma-separated
+    `models=`). The response suffixes each daily field with the model name, e.g.
+    `temperature_2m_max_gfs_seamless`. This cuts the per-city call count from 4
+    to 1, which keeps us well under Open-Meteo's free daily limit.
+    """
     unit = "fahrenheit" if use_fahrenheit else "celsius"
     model_names = {
         "ecmwf_ifs025": "ECMWF",
@@ -417,20 +433,22 @@ def fetch_multi_model(lat: float, lon: float,
         "icon_seamless": "ICON",
         "gem_seamless":  "GEM",
     }
+    d = _get("https://api.open-meteo.com/v1/forecast", {
+        "latitude": lat, "longitude": lon,
+        "daily": "temperature_2m_max",
+        "temperature_unit": unit,
+        "timezone": "UTC",
+        "models": ",".join(model_names.keys()),
+        "forecast_days": 3,               # need 3 days so idx=1 works
+    }, timeout=8.0)
+    if not d:
+        return None
+    daily = d.get("daily") or {}
     forecasts = {}
     for api_name, display_name in model_names.items():
-        d = _get("https://api.open-meteo.com/v1/forecast", {
-            "latitude": lat, "longitude": lon,
-            "daily": "temperature_2m_max",
-            "temperature_unit": unit,
-            "timezone": "UTC",
-            "models": api_name,
-            "forecast_days": 3,           # need 3 days so idx=1 works
-        }, timeout=6.0)
-        if d:
-            vals = (d.get("daily") or {}).get("temperature_2m_max") or []
-            if target_idx < len(vals) and vals[target_idx] is not None:
-                forecasts[display_name] = round(float(vals[target_idx]), 1)
+        vals = daily.get(f"temperature_2m_max_{api_name}") or []
+        if target_idx < len(vals) and vals[target_idx] is not None:
+            forecasts[display_name] = round(float(vals[target_idx]), 1)
     return forecasts if forecasts else None
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -824,6 +842,12 @@ def compute_edges(distribution: List[Dict], pm: Optional[Dict],
     Returns list of edge dicts sorted by abs(edge) descending.
     """
     if not pm or not pm.get("buckets"):
+        return []
+    # No model distribution = no data (e.g. all weather fetches failed). Without
+    # this guard, model prob falls through as 0 for every bucket, and the BUY NO
+    # branch below (which only needs mp <= 0.30) manufactures phantom "edges"
+    # against an empty model — the bogus edge+38% lines seen in the logs.
+    if not distribution:
         return []
     model = {b["value"]: b["probability"] for b in distribution}
     pm_buckets = pm["buckets"]

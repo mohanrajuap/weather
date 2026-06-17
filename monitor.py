@@ -705,6 +705,52 @@ def watch_active_signals(conn):
             upsert_state(conn, key, city, tdate, bucket, prob, alerted_high=1)
 
 
+# ── Learning: record yesterday's actual highs ─────────────────────────────────
+def backfill_actuals():
+    """
+    Close the learning loop. For every city, look at the last couple of COMPLETED
+    local days that we saved forecasts for but haven't recorded an actual high
+    for yet, fetch the settled daily max, and store it. Once a city has >=2 days
+    of actuals, deb_blend stops using the flat PEAK_BIAS and switches to the
+    learned per-city signed bias automatically.
+
+    Cheap to run repeatedly: it only hits the network for day/city pairs that
+    have forecasts but no actual yet, and skips everything already recorded.
+    """
+    try:
+        history = pw._load_history()
+    except Exception as e:
+        print(f"  [learn] could not load history: {e}")
+        return 0
+
+    now_utc  = pw._now_utc()
+    recorded = 0
+    for city_key, meta in pw.CITIES.items():
+        city_hist = history.get(city_key, {})
+        if not city_hist:
+            continue
+        local_now = now_utc + timedelta(seconds=meta.get("tz", 0))
+        # yesterday and the day before, in this city's local time (both complete)
+        for back in (1, 2):
+            d = (local_now - timedelta(days=back)).strftime("%Y-%m-%d")
+            rec = city_hist.get(d)
+            if not rec or not rec.get("forecasts"):
+                continue                       # no forecast saved → nothing to learn
+            if rec.get("actual_high") is not None:
+                continue                       # already recorded
+            try:
+                actual = pw.fetch_actual_high(city_key, d)
+            except Exception:
+                actual = None
+            if actual is not None:
+                pw.record_actual(city_key, d, actual)
+                recorded += 1
+
+    if recorded:
+        print(f"  [learn] recorded {recorded} actual high(s) — DEB will adapt")
+    return recorded
+
+
 # ── One monitoring pass ───────────────────────────────────────────────────────
 def run_scan(conn):
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
@@ -1048,6 +1094,12 @@ def main():
     startup += "\n\n💬 Commands: /scan  /scan europe  /scan munich  /pick  /positions  /help"
     send_telegram(startup)
 
+    # record any outstanding actual highs so the model can learn its bias
+    try:
+        backfill_actuals()
+    except Exception as e:
+        print(f"[learn] backfill error: {e}")
+
     if args.once:
         run_scan(conn)
         if WALLET:
@@ -1069,6 +1121,8 @@ def main():
 
     last_watch = 0.0
     last_sigwatch = 0.0
+    last_backfill = time.time()   # already ran once above, just before the loop
+    BACKFILL_SEC  = int(os.environ.get("BACKFILL_HOURS", "6")) * 3600
     while True:
         now = time.time()
 
@@ -1079,6 +1133,14 @@ def main():
             except Exception as e:
                 print(f"[loop] scan error: {e}")
             last_scan = time.time()
+
+        # learning: periodically record completed-day actual highs
+        if now - last_backfill >= BACKFILL_SEC:
+            try:
+                backfill_actuals()
+            except Exception as e:
+                print(f"[loop] backfill error: {e}")
+            last_backfill = time.time()
 
         # tight position WATCH timer (alerts on model flipping against held bucket)
         if WALLET and (now - last_watch >= POS_WATCH_MIN * 60):

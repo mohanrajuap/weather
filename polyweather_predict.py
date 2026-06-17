@@ -199,37 +199,73 @@ _SESSION = httpx.Client(
 # rate-limit degrades gracefully instead of nuking the signal.
 import time as _time
 _CACHE: Dict[str, Tuple[float, Any]] = {}
-_CACHE_TTL = float(os.environ.get("HTTP_CACHE_TTL", "900"))   # 15 min default
+_CACHE_TTL = float(os.environ.get("HTTP_CACHE_TTL", "1800"))  # 30 min default —
+# bridges the 20-min scan interval so consecutive scans reuse forecasts instead
+# of re-hitting Open-Meteo; daily-max forecasts barely move within half an hour.
 _CACHE_LOCK = threading.Lock()
+
+# ── Circuit breaker ───────────────────────────────────────────────────────────
+# When a host's quota is fully exhausted, EVERY call returns 429 — so the cache
+# (which only stores successes) never helps, and a single scan fires ~150 doomed
+# Open-Meteo calls. After RATE_LIMIT_TRIP consecutive 429s from a host we "open
+# the circuit": stop calling that host for RATE_LIMIT_COOLDOWN seconds and serve
+# cache instead. This is per-host, so Met.no / METAR / Polymarket are unaffected,
+# and it auto-closes the moment a real request to that host succeeds again.
+_CB_LOCK = threading.Lock()
+_CB_FAILS: Dict[str, int]   = {}     # host -> consecutive 429 count
+_CB_UNTIL: Dict[str, float] = {}     # host -> blocked-until epoch seconds
+_CB_TRIP     = int(os.environ.get("RATE_LIMIT_TRIP", "3"))
+_CB_COOLDOWN = float(os.environ.get("RATE_LIMIT_COOLDOWN", "600"))   # 10 min
 
 def _cache_key(url: str, params: dict) -> str:
     return url + "?" + json.dumps(params or {}, sort_keys=True, default=str)
 
 def _get(url: str, params: dict = None, timeout: float = 10.0) -> Optional[Any]:
-    key = _cache_key(url, params)
-    now = _time.time()
+    key  = _cache_key(url, params)
+    host = httpx.URL(url).host
+    now  = _time.time()
     with _CACHE_LOCK:
         hit = _CACHE.get(key)
     if hit and (now - hit[0]) < _CACHE_TTL:
         return hit[1]
+    # Circuit open for this host? Skip the doomed call entirely, serve cache.
+    with _CB_LOCK:
+        blocked = now < _CB_UNTIL.get(host, 0.0)
+    if blocked:
+        return hit[1] if hit else None
     try:
         r = _SESSION.get(url, params=params or {}, timeout=timeout)
-        # Surface rate-limiting / server errors instead of silently returning
-        # None. A flood of 429s here is the difference between "no trades" and
-        # "the weather API is blocking us" — make it visible in the logs.
         if r.status_code == 429:
-            print(f"[http] 429 RATE LIMITED by {httpx.URL(url).host} "
-                  f"— daily/short-term Open-Meteo quota likely exhausted"
-                  f"{' (serving cached)' if hit else ''}")
-            # Degrade gracefully: reuse the last good response if we have one.
+            # Count the failure; trip the breaker once we cross the threshold so
+            # we stop hammering a host whose quota is clearly gone.
+            with _CB_LOCK:
+                _CB_FAILS[host] = _CB_FAILS.get(host, 0) + 1
+                fails   = _CB_FAILS[host]
+                tripped = fails >= _CB_TRIP and now >= _CB_UNTIL.get(host, 0.0)
+                if tripped:
+                    _CB_UNTIL[host] = now + _CB_COOLDOWN
+            if tripped:
+                print(f"[http] ⛔ circuit breaker OPEN for {host} after {fails} "
+                      f"rate-limits — pausing calls for {int(_CB_COOLDOWN)}s "
+                      f"(running on cache / fallback sources)")
+            else:
+                print(f"[http] 429 RATE LIMITED by {host} — quota likely exhausted"
+                      f"{' (serving cached)' if hit else ''}")
             return hit[1] if hit else None
         r.raise_for_status()
         data = r.json()
         with _CACHE_LOCK:
             _CACHE[key] = (now, data)
+        # Success → close the breaker for this host.
+        with _CB_LOCK:
+            if _CB_FAILS.pop(host, 0):
+                _CB_UNTIL.pop(host, None)
         return data
     except httpx.HTTPStatusError as e:
-        print(f"[http] {e.response.status_code} from {httpx.URL(url).host}")
+        code = e.response.status_code
+        # 404 is benign (e.g. NWS has no grid for non-US cities) — don't log it.
+        if code != 404:
+            print(f"[http] {code} from {host}")
         return hit[1] if hit else None
     except Exception:
         return hit[1] if hit else None
@@ -528,6 +564,83 @@ def fetch_metno(lat: float, lon: float, tz_offset: int = 0,
         return None
 
     hi = max(highs)                      # MET temps are always Celsius
+    if use_fahrenheit:
+        hi = hi * 9.0 / 5.0 + 32.0
+    return round(hi, 1)
+
+def fetch_nws(lat: float, lon: float, use_fahrenheit: bool = False,
+              target_date: Optional[str] = None) -> Optional[float]:
+    """US National Weather Service (api.weather.gov) — FREE, no API key.
+
+    US-only (returns None elsewhere). Highest-quality source for the US cities.
+    Two steps: /points/{lat},{lon} → the gridpoint forecast URL → daytime period
+    high for the target LOCAL day. NWS `startTime` is already in the location's
+    local timezone, so its date matches our city-local target_date directly.
+    """
+    pts = _get(f"https://api.weather.gov/points/{round(lat, 4)},{round(lon, 4)}",
+               timeout=8.0)
+    if not pts:
+        return None
+    fc_url = (pts.get("properties") or {}).get("forecast")
+    if not fc_url:
+        return None
+    fc = _get(fc_url, timeout=8.0)
+    if not fc:
+        return None
+    for p in ((fc.get("properties") or {}).get("periods") or []):
+        if not p.get("isDaytime"):          # daytime period high ≈ daily max
+            continue
+        try:
+            d = datetime.fromisoformat(str(p.get("startTime"))).strftime("%Y-%m-%d")
+        except Exception:
+            continue
+        if target_date and d != target_date:
+            continue
+        t = _sf(p.get("temperature"))
+        if t is None:
+            continue
+        unit = (p.get("temperatureUnit") or "F").upper()
+        if unit == "F" and not use_fahrenheit:
+            t = (t - 32) * 5.0 / 9.0
+        elif unit == "C" and use_fahrenheit:
+            t = t * 9.0 / 5.0 + 32.0
+        return round(t, 1)
+    return None
+
+def fetch_7timer(lat: float, lon: float, tz_offset: int = 0,
+                 use_fahrenheit: bool = False,
+                 target_date: Optional[str] = None) -> Optional[float]:
+    """7Timer! (free, no API key, GLOBAL) — coarse but independent third opinion.
+
+    Returns the forecast daily MAX for the target LOCAL date. `dataseries` gives
+    temp2m (°C, integer) at 3-hourly steps measured from `init` (UTC).
+    """
+    data = _get("https://www.7timer.info/bin/api.pl",
+                {"lon": round(lon, 3), "lat": round(lat, 3),
+                 "product": "civil", "output": "json"}, timeout=8.0)
+    if not data:
+        return None
+    init   = data.get("init")               # "YYYYMMDDHH" in UTC
+    series = data.get("dataseries") or []
+    if not init or not series:
+        return None
+    try:
+        init_dt = datetime.strptime(str(init), "%Y%m%d%H")
+    except Exception:
+        return None
+    highs: List[float] = []
+    for e in series:
+        tp = e.get("timepoint")
+        t  = _sf(e.get("temp2m"))
+        if tp is None or t is None:
+            continue
+        local_d = (init_dt + timedelta(hours=float(tp), seconds=tz_offset)).strftime("%Y-%m-%d")
+        if target_date and local_d != target_date:
+            continue
+        highs.append(t)
+    if not highs:
+        return None
+    hi = max(highs)                          # 7Timer temps are Celsius
     if use_fahrenheit:
         hi = hi * 9.0 / 5.0 + 32.0
     return round(hi, 1)
@@ -1288,12 +1401,14 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     def _ens(): res["ens"]   = fetch_ensemble(lat, lon, use_f, target_idx)
     def _mm():  res["mm"]    = fetch_multi_model(lat, lon, use_f, target_idx)
     def _mn():  res["mn"]    = fetch_metno(lat, lon, tz, use_f, target_date)
+    def _nws(): res["nws"]   = fetch_nws(lat, lon, use_f, target_date)
+    def _7t():  res["t7"]    = fetch_7timer(lat, lon, tz, use_f, target_date)
     def _met():
         # Try Wunderground (Polymarket's settlement source) first; fall back to METAR
         wu = fetch_wunderground(icao, tz, use_f, local_date)
         res["metar"] = wu if wu else fetch_metar(icao, tz, local_date)
 
-    threads = [threading.Thread(target=fn) for fn in (_om, _ens, _mm, _mn, _met)]
+    threads = [threading.Thread(target=fn) for fn in (_om, _ens, _mm, _mn, _nws, _7t, _met)]
     for t_ in threads: t_.start()
     for t_ in threads: t_.join(timeout=15)
 
@@ -1319,6 +1434,17 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     metno_val = _sf(res.get("mn"))
     if metno_val is not None:
         forecasts["MET.no"] = round(metno_val, 1)
+
+    # US NWS (weather.gov) — best-quality US source; None for non-US cities.
+    nws_val = _sf(res.get("nws"))
+    if nws_val is not None:
+        forecasts["NWS"] = round(nws_val, 1)
+
+    # 7Timer — free global third opinion, so non-US cities still get ≥2 sources
+    # (MET.no + 7Timer) even when Open-Meteo is rate-limited.
+    t7_val = _sf(res.get("t7"))
+    if t7_val is not None:
+        forecasts["7Timer"] = round(t7_val, 1)
 
     # ── DEB blend ────────────────────────────────────────────────────────────
     deb, deb_weights = deb_blend(city_key, forecasts, target_date=target_date)

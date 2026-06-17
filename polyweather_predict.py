@@ -42,6 +42,15 @@ import os as _os_for_bias
 # they smooth the afternoon peak. Override with env PEAK_BIAS (e.g. "0.4").
 DEFAULT_PEAK_BIAS = float(_os_for_bias.environ.get("PEAK_BIAS", "0.3"))
 
+# A Polymarket bucket priced at/above this YES means the market has effectively
+# DECIDED the outcome. If our model disagrees with an already-decided market,
+# the model is almost certainly the one that's wrong (it's predicting a peak the
+# market has already priced past) — suppress those signals entirely.
+MARKET_DECIDED_YES = float(_os_for_bias.environ.get("MARKET_DECIDED_YES", "0.90"))
+# A softer band: market leans hard one way but isn't fully locked. If the model
+# disagrees here, downgrade a TRADE to WAIT rather than firing a buy.
+MARKET_LEAN_YES    = float(_os_for_bias.environ.get("MARKET_LEAN_YES", "0.75"))
+
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -489,14 +498,20 @@ def fetch_wunderground(icao: str, tz_offset: int = 0,
     """
     country = _icao_country(icao)
     units   = "e" if use_fahrenheit else "m"   # e=imperial(F), m=metric(C)
-    today_local = (_now_utc() + timedelta(seconds=tz_offset)).strftime("%Y%m%d")
+    # Query date: explicit local_date ("YYYY-MM-DD") if given, else today (local).
+    # Passing a PAST date returns that whole day's observations, so max_so_far
+    # becomes the settled daily high — used by fetch_actual_high() for learning.
+    if local_date:
+        query_date = local_date.replace("-", "")
+    else:
+        query_date = (_now_utc() + timedelta(seconds=tz_offset)).strftime("%Y%m%d")
 
     obs = None
     for key in _WU_KEYS:
         try:
             r = _SESSION.get(
                 f"https://api.weather.com/v1/location/{icao}:9:{country}/observations/historical.json",
-                params={"apiKey": key, "units": units, "startDate": today_local},
+                params={"apiKey": key, "units": units, "startDate": query_date},
                 timeout=8.0,
             )
             if r.status_code == 200:
@@ -545,6 +560,48 @@ def fetch_wunderground(icao: str, tz_offset: int = 0,
         "obs_count":    len(rows),
         "source":       "wunderground",
     }
+
+def _om_past_max(lat: float, lon: float, date: str,
+                 use_fahrenheit: bool = False) -> Optional[float]:
+    """Fallback actual: Open-Meteo's analysed daily max for a recent past date."""
+    unit = "fahrenheit" if use_fahrenheit else "celsius"
+    data = _get("https://api.open-meteo.com/v1/forecast", {
+        "latitude": lat, "longitude": lon,
+        "daily": "temperature_2m_max",
+        "temperature_unit": unit,
+        "timezone": "UTC",
+        "past_days": 7,
+        "forecast_days": 1,
+    }, timeout=8.0)
+    if not data:
+        return None
+    daily = data.get("daily", {})
+    dates = daily.get("time", []) or []
+    highs = daily.get("temperature_2m_max", []) or []
+    for i, d in enumerate(dates):
+        if d == date and i < len(highs) and highs[i] is not None:
+            return round(float(highs[i]), 1)
+    return None
+
+def fetch_actual_high(city_key: str, date: str) -> Optional[float]:
+    """
+    The SETTLED daily high for a completed past date, used to teach the model
+    its per-city bias (see deb_blend / _signed_bias). Prefers Wunderground —
+    Polymarket's settlement source — and falls back to Open-Meteo's analysis.
+    `date` is the city-local date "YYYY-MM-DD". Returns °C/°F per city, or None.
+    """
+    meta = CITIES.get(city_key)
+    if not meta:
+        return None
+    icao  = meta["icao"]
+    tz    = meta["tz"]
+    use_f = meta.get("f", False)
+    # 1) Wunderground historical for that exact local day → settled max
+    wu = fetch_wunderground(icao, tz, use_f, local_date=date)
+    if wu and wu.get("max_so_far") is not None:
+        return round(float(wu["max_so_far"]), 1)
+    # 2) Open-Meteo analysed max as fallback
+    return _om_past_max(meta["lat"], meta["lon"], date, use_f)
 
 def fetch_metar(icao: str, tz_offset: int = 0,
                 local_date: str = None) -> Optional[Dict]:
@@ -912,7 +969,22 @@ def compute_edges(distribution: List[Dict], pm: Optional[Dict],
 # ══════════════════════════════════════════════════════════════════════════════
 # DEB — Dynamic Error Blending
 # ══════════════════════════════════════════════════════════════════════════════
-_HISTORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "deb_history.json")
+def _resolve_history_file() -> str:
+    """Where to persist learned forecast/actual history.
+
+    On Railway the code directory is wiped on every redeploy, which would reset
+    the model's learning each deploy. Prefer an explicit DEB_HISTORY_FILE, then
+    the persistent /data volume (same place the monitor's state DB lives), and
+    only fall back to the code dir for local runs.
+    """
+    env = os.environ.get("DEB_HISTORY_FILE")
+    if env:
+        return env
+    if os.path.isdir("/data"):
+        return "/data/deb_history.json"
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "deb_history.json")
+
+_HISTORY_FILE = _resolve_history_file()
 
 def _load_history() -> dict:
     try:
@@ -1377,6 +1449,36 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
                         break
         except Exception:
             pm_data = None
+
+    # ── MARKET-DECIDED GUARD ──────────────────────────────────────────────────
+    # The market is the source of truth once it concentrates on a bucket. If one
+    # bucket's YES is very high and it's NOT the bucket our model favours, the
+    # model is predicting a peak the market has already settled past — the "edge"
+    # is fake (e.g. Wellington 15°@73% "edge+69%" while the market had 16°@97%
+    # and priced 15° at 0.1¢). Trust the market: kill the trade.
+    market_decided = False
+    pm_top_bucket  = None
+    pm_top_yes     = None
+    model_bucket   = top.get("value")
+    if pm_data and pm_data.get("buckets"):
+        for b_temp, b in pm_data["buckets"].items():
+            y = _sf(b.get("yes"))
+            if y is not None and (pm_top_yes is None or y > pm_top_yes):
+                pm_top_yes, pm_top_bucket = y, b_temp
+        if pm_top_yes is not None and pm_top_bucket != model_bucket:
+            if pm_top_yes >= MARKET_DECIDED_YES:
+                market_decided = True
+                verdict = "SKIP"
+                reasons.append(
+                    f"market already decided: {pm_top_bucket}{sym} at "
+                    f"{pm_top_yes*100:.0f}¢ — model's {model_bucket}{sym} disagrees, "
+                    f"model is wrong here")
+                best_trade = None
+            elif pm_top_yes >= MARKET_LEAN_YES and verdict == "TRADE":
+                verdict = "WAIT"
+                reasons.append(
+                    f"market leans {pm_top_bucket}{sym} at {pm_top_yes*100:.0f}¢ "
+                    f"but model favours {model_bucket}{sym} — wait for them to agree")
 
     # ── save forecasts to DEB history ─────────────────────────────────────────
     if forecasts:

@@ -29,6 +29,14 @@ import sqlite3
 import argparse
 from datetime import datetime, timezone, timedelta
 
+# Force line-buffered stdout so Railway shows the app's logs immediately instead
+# of holding them in a buffer (which makes a running bot look "frozen").
+try:
+    sys.stdout.reconfigure(line_buffering=True)
+    sys.stderr.reconfigure(line_buffering=True)
+except Exception:
+    pass
+
 import httpx
 
 # import the prediction engine (same folder)

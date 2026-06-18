@@ -59,6 +59,9 @@ TG_CHAT_IDS   = [c.strip() for c in TG_CHAT.split(",") if c.strip()]
 # Set NTFY_TOPIC to a secret topic name; subscribe to it in the ntfy phone app.
 NTFY_TOPIC    = os.environ.get("NTFY_TOPIC", "").strip()
 NTFY_SERVER   = os.environ.get("NTFY_SERVER", "https://ntfy.sh").strip().rstrip("/")
+# Topic the bot LISTENS on for /commands (publish to it from the ntfy app/web).
+# Defaults to NTFY_TOPIC so commands and alerts share one topic.
+NTFY_CMD_TOPIC = os.environ.get("NTFY_CMD_TOPIC", NTFY_TOPIC).strip()
 WALLET        = os.environ.get("POLYMARKET_WALLET", "").strip()
 INTERVAL_MIN  = int(os.environ.get("CHECK_INTERVAL_MIN", "20"))
 POS_UPDATE_MIN = int(os.environ.get("POSITION_UPDATE_MIN", "15"))
@@ -1149,6 +1152,49 @@ def command_listener():
             time.sleep(5)
 
 
+def ntfy_command_listener():
+    """Background thread: receive /commands published to the ntfy topic.
+
+    ntfy is normally push-only, but you can PUBLISH a message to a topic (from the
+    ntfy app's 'send' box, the web UI at <server>/<topic>, or curl). We stream the
+    topic's JSON feed and treat any message starting with '/' as a command — the
+    bot's own outgoing notifications don't start with '/', so there's no loop.
+    Replies go back out through reply_telegram (which also pushes to ntfy).
+    """
+    if not NTFY_CMD_TOPIC:
+        return
+    url   = f"{NTFY_SERVER}/{NTFY_CMD_TOPIC}/json"
+    start = time.time()
+    print(f"[ntfy] command listener on {url} (publish /scan, /learn, /positions there)")
+    while True:
+        try:
+            with httpx.stream("GET", url, params={"since": int(start)},
+                              timeout=httpx.Timeout(120.0, connect=10.0)) as r:
+                for line in r.iter_lines():
+                    if not line:
+                        continue
+                    try:
+                        m = json.loads(line)
+                    except Exception:
+                        continue
+                    if m.get("event") != "message":
+                        continue                      # skip open/keepalive events
+                    text = (m.get("message") or "").strip()
+                    if not text.startswith("/"):
+                        continue                      # not a command (ignore alerts)
+                    if m.get("time", 0) < start - 5:
+                        continue                      # stale, from before we started
+                    print(f"[ntfy] command: {text}")
+                    reply_to = TG_CHAT_IDS[0] if TG_CHAT_IDS else None
+                    try:
+                        handle_command(text, reply_to)
+                    except Exception as e:
+                        print(f"[ntfy] command error: {e}")
+        except Exception as e:
+            print(f"[ntfy] listener error: {e}")
+            time.sleep(5)
+
+
 # ── Main loop ─────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description="PolyWeather Telegram monitor")
@@ -1219,10 +1265,10 @@ def main():
             send_position_update()
         return
 
-    # start the Telegram command listener in a background thread
+    # start the Telegram + ntfy command listeners in background threads
     import threading
-    listener = threading.Thread(target=command_listener, daemon=True)
-    listener.start()
+    threading.Thread(target=command_listener, daemon=True).start()
+    threading.Thread(target=ntfy_command_listener, daemon=True).start()
 
     # independent timers
     last_scan = 0.0

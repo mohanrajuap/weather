@@ -1041,8 +1041,11 @@ def handle_command(text, chat_id):
 
     if low.startswith("/learn"):
         parts = text.split()
-        if len(parts) > 1 and parts[1].lower() == "all":
+        arg = parts[1].lower() if len(parts) > 1 else ""
+        if arg == "all":
             reply_telegram(chat_id, learn.report(all_time=True))
+        elif arg in ("calib", "calibration"):
+            reply_telegram(chat_id, learn.report_calibration())
         else:
             # optional explicit date as second arg, else most recent settled day
             date = next((x for x in parts[1:] if x.count("-") == 2), None)

@@ -71,6 +71,16 @@ WEATHERAPI_KEY      = _os_for_bias.environ.get("WEATHERAPI_KEY", "").strip()
 VISUALCROSSING_KEY  = _os_for_bias.environ.get("VISUALCROSSING_KEY", "").strip()
 TOMORROW_API_KEY    = _os_for_bias.environ.get("TOMORROW_API_KEY", "").strip()
 
+# ── Edge & learning knobs (all configurable in Railway) ───────────────────────
+# Minimum model-vs-market edge (probability points) to call a bucket tradeable.
+# Raise it to be MORE selective — fewer but higher-quality trades. Default 10%.
+EDGE_MIN     = float(_os_for_bias.environ.get("EDGE_MIN", "0.10"))
+# DEB learner memory: how many past days each source's bias is learned from, and
+# how fast older days fade (0-1; higher = longer memory). More days = steadier
+# learning once enough history exists.
+DEB_LOOKBACK = int(_os_for_bias.environ.get("DEB_LOOKBACK", "10"))
+DEB_DECAY    = float(_os_for_bias.environ.get("DEB_DECAY", "0.85"))
+
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -331,6 +341,32 @@ def _convert_temp(value: Optional[float], src_unit: str, dst_is_fahrenheit: bool
     if (not src_is_f) and dst_is_fahrenheit:
         return round(value * 9.0 / 5.0 + 32.0, 1)        # C → F
     return round(value, 1)                                # already matching
+
+def _series_daily_max(points, target_date: Optional[str], tz_offset: int,
+                      time_fn, temp_fn, src_unit: str = "C",
+                      use_fahrenheit: bool = False) -> Optional[float]:
+    """Daily MAX from a sub-daily forecast series, converted to the city's unit.
+
+    Shared by every source that returns timestamped points (Met.no, OpenWeather,
+    7Timer): walk the points, keep those whose LOCAL date matches target_date,
+    take the max temperature, convert from src_unit to the city's unit.
+      time_fn(point) -> naive UTC datetime (or None to skip)
+      temp_fn(point) -> temperature in src_unit (or None to skip)
+    """
+    highs: List[float] = []
+    for pt in points or []:
+        dt = time_fn(pt)
+        if dt is None:
+            continue
+        local_d = (dt + timedelta(seconds=tz_offset)).strftime("%Y-%m-%d")
+        if target_date and local_d != target_date:
+            continue
+        t = _sf(temp_fn(pt))
+        if t is not None:
+            highs.append(t)
+    if not highs:
+        return None
+    return _convert_temp(max(highs), src_unit, use_fahrenheit)
 
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
@@ -597,32 +633,18 @@ def fetch_metno(lat: float, lon: float, tz_offset: int = 0,
     if not data:
         return None
     series = ((data.get("properties") or {}).get("timeseries")) or []
-    if not series:
-        return None
 
-    highs: List[float] = []
-    for entry in series:
-        ts = entry.get("time")
+    def _time(entry):
         try:
-            dt_utc = datetime.fromisoformat(str(ts).replace("Z", "+00:00")).replace(tzinfo=None)
+            return datetime.fromisoformat(str(entry.get("time")).replace("Z", "+00:00")).replace(tzinfo=None)
         except Exception:
-            continue
-        local_d = (dt_utc + timedelta(seconds=tz_offset)).strftime("%Y-%m-%d")
-        # Only keep points falling on the target LOCAL day. If no target given,
-        # fall back to whatever the series holds (still better than nothing).
-        if target_date and local_d != target_date:
-            continue
-        t = _sf((((entry.get("data") or {}).get("instant") or {})
-                 .get("details") or {}).get("air_temperature"))
-        if t is not None:
-            highs.append(t)
-    if not highs:
-        return None
+            return None
+    def _temp(entry):
+        return (((entry.get("data") or {}).get("instant") or {})
+                .get("details") or {}).get("air_temperature")
 
-    hi = max(highs)                      # MET temps are always Celsius
-    if use_fahrenheit:
-        hi = hi * 9.0 / 5.0 + 32.0
-    return round(hi, 1)
+    return _series_daily_max(series, target_date, tz_offset, _time, _temp,
+                             src_unit="C", use_fahrenheit=use_fahrenheit)
 
 def fetch_nws(lat: float, lon: float, use_fahrenheit: bool = False,
               target_date: Optional[str] = None) -> Optional[float]:
@@ -684,22 +706,14 @@ def fetch_7timer(lat: float, lon: float, tz_offset: int = 0,
         init_dt = datetime.strptime(str(init), "%Y%m%d%H")
     except Exception:
         return None
-    highs: List[float] = []
-    for e in series:
+
+    def _time(e):
         tp = e.get("timepoint")
-        t  = _sf(e.get("temp2m"))
-        if tp is None or t is None:
-            continue
-        local_d = (init_dt + timedelta(hours=float(tp), seconds=tz_offset)).strftime("%Y-%m-%d")
-        if target_date and local_d != target_date:
-            continue
-        highs.append(t)
-    if not highs:
-        return None
-    hi = max(highs)                          # 7Timer temps are Celsius
-    if use_fahrenheit:
-        hi = hi * 9.0 / 5.0 + 32.0
-    return round(hi, 1)
+        return init_dt + timedelta(hours=float(tp)) if tp is not None else None
+
+    return _series_daily_max(series, target_date, tz_offset,
+                             _time, lambda e: e.get("temp2m"),
+                             src_unit="C", use_fahrenheit=use_fahrenheit)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # OPTIONAL KEYED SOURCES — each enabled by its Railway env var (see top of file).
@@ -720,27 +734,19 @@ def fetch_openweather(lat: float, lon: float, tz_offset: int = 0,
                  "appid": api_key, "units": "metric"}, timeout=8.0)
     if not data:
         return None
-    highs: List[float] = []
-    for row in (data.get("list") or []):
+
+    def _time(row):
         ts = row.get("dt")
-        if ts is None:
-            continue
         try:
-            utc = datetime.fromtimestamp(int(ts), tz=timezone.utc).replace(tzinfo=None)
+            return datetime.fromtimestamp(int(ts), tz=timezone.utc).replace(tzinfo=None) if ts is not None else None
         except Exception:
-            continue
-        local_d = (utc + timedelta(seconds=tz_offset)).strftime("%Y-%m-%d")
-        if target_date and local_d != target_date:
-            continue
+            return None
+    def _temp(row):
         main = row.get("main") or {}
-        t = _sf(main.get("temp_max"))
-        if t is None:
-            t = _sf(main.get("temp"))
-        if t is not None:
-            highs.append(t)
-    if not highs:
-        return None
-    return _convert_temp(max(highs), "C", use_fahrenheit)
+        return main.get("temp_max", main.get("temp"))
+
+    return _series_daily_max(data.get("list") or [], target_date, tz_offset,
+                             _time, _temp, src_unit="C", use_fahrenheit=use_fahrenheit)
 
 def fetch_weatherapi(lat: float, lon: float, tz_offset: int = 0,
                      use_fahrenheit: bool = False, target_date: Optional[str] = None,
@@ -1249,13 +1255,25 @@ def fetch_positions(wallet: str, weather_only: bool = True) -> Optional[List[Dic
     return positions
 
 def compute_edges(distribution: List[Dict], pm: Optional[Dict],
-                  temp_sym: str) -> List[Dict]:
+                  temp_sym: str, confidence: float = 1.0,
+                  edge_min: Optional[float] = None) -> List[Dict]:
     """
     Match model probabilities against Polymarket prices, compute edge per bucket.
-    Returns list of edge dicts sorted by abs(edge) descending.
+
+    confidence (0-1): how much to trust the model right now (from σ / agreement /
+      timing). Lower confidence REQUIRES a bigger edge before a bucket is called
+      tradeable — this is the main protection against marginal losing bets.
+    edge_min: base edge threshold (defaults to EDGE_MIN env). The effective
+      threshold is edge_min / confidence, so a shaky read must clear a higher bar.
+
+    Each edge also carries `ev` (expected return per $1 staked) and `kelly` (full
+    Kelly fraction) so position size can be tied to the real edge, not a guess.
+    Returns list of edge dicts sorted by best_edge descending.
     """
     if not pm or not pm.get("buckets"):
         return []
+    base_min = EDGE_MIN if edge_min is None else edge_min
+    req      = base_min / max(0.5, min(1.0, confidence))   # higher bar when unsure
     # No model distribution = no data (e.g. all weather fetches failed). Without
     # this guard, model prob falls through as 0 for every bucket, and the BUY NO
     # branch below (which only needs mp <= 0.30) manufactures phantom "edges"
@@ -1288,11 +1306,11 @@ def compute_edges(distribution: List[Dict], pm: Optional[Dict],
         action = "skip"
         best_edge = max(edge_yes, edge_no)
 
-        # Only suggest a side if BOTH: edge exists AND it's actually buyable
-        # AND the model genuinely supports that side (not a fake edge from 0¢).
-        if edge_yes >= 0.10 and yes_buyable and mp >= 0.40:
+        # Only suggest a side if BOTH: edge clears the (confidence-adjusted) bar
+        # AND it's actually buyable AND the model genuinely supports that side.
+        if edge_yes >= req and yes_buyable and mp >= 0.40:
             action, best_edge = "BUY YES", edge_yes
-        elif edge_no >= 0.10 and no_buyable and mp <= 0.30:
+        elif edge_no >= req and no_buyable and mp <= 0.30:
             action, best_edge = "BUY NO", edge_no
         else:
             action = "skip"
@@ -1300,6 +1318,20 @@ def compute_edges(distribution: List[Dict], pm: Optional[Dict],
                             edge_no  if no_buyable  else -1)
             if best_edge < 0:
                 best_edge = 0
+
+        # ── EV + Kelly sizing for the chosen side ────────────────────────────
+        # ev    = expected return per $1 staked (e.g. 0.25 = +25% expected)
+        # kelly = full Kelly fraction of bankroll; USE A FRACTION of it (quarter-
+        #         Kelly) in practice — full Kelly is too aggressive and one bad
+        #         streak ruins it. kelly_quarter is provided for convenience.
+        ev = kelly = 0.0
+        if action == "BUY YES" and yes and yes < 1.0:
+            ev    = (mp - yes) / yes
+            kelly = max(0.0, (mp - yes) / (1.0 - yes))
+        elif action == "BUY NO" and no and no < 1.0:
+            qn    = 1.0 - mp
+            ev    = (qn - no) / no
+            kelly = max(0.0, (qn - no) / (1.0 - no))
 
         # liquidity flag
         thin = vol < 500
@@ -1313,6 +1345,9 @@ def compute_edges(distribution: List[Dict], pm: Optional[Dict],
             "edge_no":     round(edge_no, 3),
             "best_edge":   round(best_edge, 3),
             "action":      action,
+            "ev":          round(ev, 3),                 # expected return per $1
+            "kelly":       round(kelly, 3),              # full Kelly fraction
+            "kelly_quarter": round(kelly / 4.0, 3),      # safer suggested stake
             "vol":         vol,
             "yes_buyable": yes_buyable,
             "no_buyable":  no_buyable,
@@ -1360,7 +1395,7 @@ def _save_history(data: dict):
 
 def deb_blend(city: str, forecasts: Dict[str, float],
               target_date: str = None,
-              lookback: int = 7, decay: float = 0.85) -> Tuple[Optional[float], str]:
+              lookback: int = DEB_LOOKBACK, decay: float = DEB_DECAY) -> Tuple[Optional[float], str]:
     if not forecasts:
         return None, "no forecasts"
     history   = _load_history()
@@ -1424,7 +1459,7 @@ def deb_blend(city: str, forecasts: Dict[str, float],
     return round(blended, 1), info
 
 def _signed_bias(city_data: dict, models: list, skip_date: str,
-                 lookback: int = 7, decay: float = 0.85) -> Optional[float]:
+                 lookback: int = DEB_LOOKBACK, decay: float = DEB_DECAY) -> Optional[float]:
     """
     Mean signed error (actual - model_mean) over history, decay-weighted.
     Positive → models ran COLD (actual was higher) → shift blend UP.
@@ -1857,8 +1892,19 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         try:
             pm_data = fetch_polymarket_market(city_key, target_date)
             if pm_data:
-                edges = compute_edges(dist, pm_data, sym)
-                # best actionable trade = highest edge that's >= 10%
+                # Confidence (0-1) from how clean the read is: shaky reads (high σ,
+                # models disagree, pre-peak) must clear a HIGHER edge bar to trade.
+                conf = 1.0
+                if agreement == "weak":
+                    conf *= 0.55
+                elif agreement == "moderate":
+                    conf *= 0.80
+                if sigma and sigma > 0.7:
+                    conf *= 0.80
+                if not timing.get("reliable", False):
+                    conf *= 0.85
+                edges = compute_edges(dist, pm_data, sym, confidence=conf)
+                # best actionable trade = highest edge that cleared the bar
                 for e in edges:
                     if e["action"] in ("BUY YES", "BUY NO"):
                         best_trade = e

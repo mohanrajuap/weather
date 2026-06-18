@@ -1100,8 +1100,18 @@ def command_listener():
     """Background thread: long-poll Telegram for /commands."""
     if not TG_TOKEN:
         return
+    # getUpdates is blocked if a webhook is set OR another instance is polling.
+    # Clearing any stale webhook fixes the most common "/scan does nothing" case.
+    try:
+        wi = httpx.get(f"https://api.telegram.org/bot{TG_TOKEN}/getWebhookInfo", timeout=15.0)
+        url = (wi.json().get("result") or {}).get("url") if wi.status_code == 200 else None
+        if url:
+            httpx.get(f"https://api.telegram.org/bot{TG_TOKEN}/deleteWebhook", timeout=15.0)
+            print(f"[listener] cleared a webhook ({url}) that was blocking commands")
+    except Exception as e:
+        print(f"[listener] webhook check failed: {e}")
     offset = None
-    print("[listener] Telegram command listener started (/scan, /positions, /pick, /help)")
+    print("[listener] Telegram command listener started (/scan, /positions, /learn, /pick, /help)")
     while True:
         try:
             params = {"timeout": 30}
@@ -1110,6 +1120,14 @@ def command_listener():
             r = httpx.get(f"https://api.telegram.org/bot{TG_TOKEN}/getUpdates",
                           params=params, timeout=40.0)
             if r.status_code != 200:
+                # 409 = a webhook is set or ANOTHER instance is polling. Surface it
+                # so the cause is visible instead of commands silently failing.
+                body = r.text[:160].replace("\n", " ")
+                print(f"[listener] getUpdates {r.status_code}: {body}")
+                if r.status_code == 409:
+                    print("[listener] ⚠️ CONFLICT — another bot instance is running "
+                          "(old Railway deploy or a local run). Stop the duplicate so "
+                          "/scan, /learn, /positions work.")
                 time.sleep(5); continue
             for upd in r.json().get("result", []):
                 offset = upd["update_id"] + 1

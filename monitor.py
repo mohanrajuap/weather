@@ -72,6 +72,12 @@ SIGNAL_WATCH_MIN = int(os.environ.get("SIGNAL_WATCH_MIN", "5"))
 RELIABLE_ONLY  = os.environ.get("RELIABLE_ONLY", "0") == "1"
 # Print per-city status during each scan (why each city qualifies or not)
 VERBOSE_LOG    = os.environ.get("VERBOSE_LOG", "0") == "1"
+# TRADE_MODE — "LIVE" sends buy/sell signal alerts (default); "OBSERVE" keeps the
+# bot scanning, learning and tracking your held positions but SUPPRESSES new-trade
+# signal alerts, so it gathers calibration data hands-off while you decide whether
+# to trust it. Position-management alerts (held positions, profit-taking) still fire.
+TRADE_MODE     = os.environ.get("TRADE_MODE", "LIVE").strip().upper()
+OBSERVE_ONLY   = TRADE_MODE in ("OBSERVE", "OBSERVER", "OBSERVE_ONLY", "PAPER")
 THRESHOLD     = float(os.environ.get("PROB_THRESHOLD", "0.70"))
 USE_PRICES    = os.environ.get("USE_PRICES", "1") == "1"
 STATE_DB      = os.environ.get("STATE_DB", "/data/monitor_state.db")
@@ -150,6 +156,18 @@ def send_telegram(text: str) -> bool:
         except Exception as e:
             print(f"[telegram] exception to {chat_id}: {e}")
     return ok_any
+
+
+def alert_signal(text: str) -> bool:
+    """Send a NEW-TRADE signal alert (buy / bucket-shift / collapse).
+
+    In TRADE_MODE=OBSERVE these are suppressed — the bot still scans, learns and
+    tracks held positions, it just doesn't prompt you to trade. Position-management
+    alerts go through send_telegram directly and are NOT affected.
+    """
+    if OBSERVE_ONLY:
+        return False
+    return send_telegram(text)
 
 
 def reply_telegram(chat_id, text: str, keyboard=None) -> bool:
@@ -718,11 +736,11 @@ def watch_active_signals(conn):
                           and prev_bucket is not None and bucket != prev_bucket)
 
         if bucket_shifted:
-            send_telegram(fmt_bucket_shift(p, prev_bucket, prev_prob))
+            alert_signal(fmt_bucket_shift(p, prev_bucket, prev_prob))
             upsert_state(conn, key, city, tdate, bucket, prob, alerted_high=1)
             print(f"  ⚡🔄 FAST SHIFT {city} {prev_bucket}°→{bucket}°")
         elif collapsed:
-            send_telegram(fmt_collapse(p, prev_prob if prev_prob is not None else prob))
+            alert_signal(fmt_collapse(p, prev_prob if prev_prob is not None else prob))
             upsert_state(conn, key, city, tdate, bucket, prob, alerted_high=0)
             print(f"  ⚡🔴 FAST COLLAPSE {city} {prob*100:.0f}%")
         else:
@@ -875,25 +893,23 @@ def run_scan(conn):
                 edge = f" edge{bt['best_edge']*100:+.0f}%"
             print(f"    {city:<14} {bucket}° {prob*100:>3.0f}% {tq:<11} {why}{edge}")
 
+        mode_tag = " [observe]" if OBSERVE_ONLY else ""
         if crossed_up:
-            msg = fmt_new_signal(p)
-            send_telegram(msg)
+            alert_signal(fmt_new_signal(p))   # suppressed in OBSERVE mode
             upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=1)
             new_alerts += 1
-            print(f"  🟢 ALERT {city} {bucket}° {prob*100:.0f}%")
+            print(f"  🟢 ALERT {city} {bucket}° {prob*100:.0f}%{mode_tag}")
         elif bucket_shifted:
-            msg = fmt_bucket_shift(p, prev_bucket, prev_prob if prev_prob is not None else prob)
-            send_telegram(msg)
+            alert_signal(fmt_bucket_shift(p, prev_bucket, prev_prob if prev_prob is not None else prob))
             # keep alerted_high=1 since it's still a high-conf signal, just a new bucket
             upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=1)
             shifts += 1
-            print(f"  🔄 SHIFT {city} {prev_bucket}°→{bucket}° {prob*100:.0f}%")
+            print(f"  🔄 SHIFT {city} {prev_bucket}°→{bucket}° {prob*100:.0f}%{mode_tag}")
         elif collapsed:
-            msg = fmt_collapse(p, prev_prob if prev_prob is not None else prob)
-            send_telegram(msg)
+            alert_signal(fmt_collapse(p, prev_prob if prev_prob is not None else prob))
             upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=0)
             collapses += 1
-            print(f"  🔴 COLLAPSE {city} {prob*100:.0f}%")
+            print(f"  🔴 COLLAPSE {city} {prob*100:.0f}%{mode_tag}")
         else:
             # update stored prob without alerting
             if prev:
@@ -1041,8 +1057,11 @@ def handle_command(text, chat_id):
 
     if low.startswith("/learn"):
         parts = text.split()
-        if len(parts) > 1 and parts[1].lower() == "all":
+        arg = parts[1].lower() if len(parts) > 1 else ""
+        if arg == "all":
             reply_telegram(chat_id, learn.report(all_time=True))
+        elif arg in ("calib", "calibration"):
+            reply_telegram(chat_id, learn.report_calibration())
         else:
             # optional explicit date as second arg, else most recent settled day
             date = next((x for x in parts[1:] if x.count("-") == 2), None)
@@ -1134,6 +1153,8 @@ def main():
 
     print("="*60)
     print("  PolyWeather Monitor starting")
+    print(f"  Trade mode:        {TRADE_MODE}"
+          + ("  (OBSERVE — learning only, NO buy alerts)" if OBSERVE_ONLY else "  (LIVE — sending alerts)"))
     print(f"  Signal threshold:  {THRESHOLD*100:.0f}%")
     print(f"  Scan interval:     {INTERVAL_MIN} min")
     print(f"  Position updates:  every {POS_UPDATE_MIN} min" if WALLET else "  Position updates:  OFF (no wallet)")
@@ -1150,14 +1171,22 @@ def main():
     conn = init_db()
 
     # startup ping
-    startup = (
-        f"🌡️ <b>PolyWeather monitor online</b>\n"
-        f"Watching {len(ALERT_CITIES)} cities every {INTERVAL_MIN} min.\n"
-        f"Alerts when a city crosses {THRESHOLD*100:.0f}% (and when it collapses)."
-    )
+    if OBSERVE_ONLY:
+        startup = (
+            f"🔭 <b>PolyWeather monitor online — OBSERVE mode</b>\n"
+            f"Watching {len(ALERT_CITIES)} cities every {INTERVAL_MIN} min, "
+            f"<b>learning only — no buy alerts</b>.\n"
+            f"Gathering accuracy data; check /learn and /learn calib."
+        )
+    else:
+        startup = (
+            f"🌡️ <b>PolyWeather monitor online — LIVE mode</b>\n"
+            f"Watching {len(ALERT_CITIES)} cities every {INTERVAL_MIN} min.\n"
+            f"Alerts when a city crosses {THRESHOLD*100:.0f}% (and when it collapses)."
+        )
     if WALLET:
         startup += f"\n💼 Position updates every {POS_UPDATE_MIN} min."
-    startup += "\n\n💬 Commands: /scan  /scan europe  /scan munich  /pick  /positions  /help"
+    startup += "\n\n💬 Commands: /scan  /positions  /learn  /learn calib  /help"
     send_telegram(startup)
 
     # record any outstanding actual highs so the model can learn its bias

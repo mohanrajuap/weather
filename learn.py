@@ -374,6 +374,51 @@ def _report_all_time(data: dict) -> str:
     return "\n".join(L)
 
 
+def report_calibration() -> str:
+    """Calibration: does a predicted '70%' actually win ~70% of the time?
+
+    Bins every settled prediction by the bot's stated top-bucket probability and
+    compares it to the REALISED hit rate. This is the single most important
+    learning signal — if the bot is over-confident (says 80%, wins 55%), you do
+    NOT trust its calls yet; if it's well-calibrated, its edges are real.
+    """
+    data = _load()
+    bins = [(0.50, 0.60), (0.60, 0.70), (0.70, 0.80), (0.80, 0.90), (0.90, 1.01)]
+    tally = {b: [0, 0] for b in bins}   # bin -> [hits, total]
+    for day in data.values():
+        for rec in day.values():
+            s = rec.get("score")
+            p = rec.get("pred")
+            if not s or not p:
+                continue
+            prob = p.get("top_prob")
+            if prob is None:
+                continue
+            for b in bins:
+                if b[0] <= prob < b[1]:
+                    tally[b][1] += 1
+                    tally[b][0] += 1 if s.get("hit") else 0
+                    break
+    total = sum(t[1] for t in tally.values())
+    if total == 0:
+        return "📊 No settled predictions yet — calibration needs a few days of data."
+
+    L = ["📊 <b>CALIBRATION</b>  (predicted confidence vs actual win rate)"]
+    for b in bins:
+        hits, n = tally[b]
+        if n == 0:
+            continue
+        actual = hits / n * 100
+        mid    = (b[0] + b[1]) / 2 * 100
+        flag   = "✅" if abs(actual - mid) <= 12 else "⚠️"   # within ~one bin = OK
+        L.append(f"   {int(b[0]*100)}–{int(b[1]*100)}% said → {actual:>3.0f}% won "
+                 f"({hits}/{n}) {flag}")
+    L.append("")
+    L.append("✅ = roughly honest · ⚠️ = over/under-confident in that band")
+    L.append(f"<i>{total} settled predictions analysed.</i>")
+    return "\n".join(L)
+
+
 def settle_and_report() -> str:
     """Settle anything newly complete, then return the latest scoreboard.
     Used by the monitor for the once-a-day Telegram learning digest."""
@@ -391,6 +436,7 @@ def main():
                     help="record | settle | report | run")
     ap.add_argument("args", nargs="*", help="cities (for record) or date (for report)")
     ap.add_argument("--all", action="store_true", help="report: lifetime accuracy")
+    ap.add_argument("--calib", action="store_true", help="report: calibration table")
     a = ap.parse_args()
 
     if a.cmd == "record":
@@ -398,8 +444,11 @@ def main():
     elif a.cmd == "settle":
         settle()
     elif a.cmd == "report":
-        date = next((x for x in a.args if x.count("-") == 2), None)
-        print(_strip(report(date, all_time=a.all)))
+        if a.calib:
+            print(_strip(report_calibration()))
+        else:
+            date = next((x for x in a.args if x.count("-") == 2), None)
+            print(_strip(report(date, all_time=a.all)))
     elif a.cmd == "run":
         record_all()
         settle()

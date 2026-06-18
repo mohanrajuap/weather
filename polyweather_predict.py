@@ -81,6 +81,50 @@ EDGE_MIN     = float(_os_for_bias.environ.get("EDGE_MIN", "0.10"))
 DEB_LOOKBACK = int(_os_for_bias.environ.get("DEB_LOOKBACK", "10"))
 DEB_DECAY    = float(_os_for_bias.environ.get("DEB_DECAY", "0.85"))
 
+# ══════════════════════════════════════════════════════════════════════════════
+# API ENDPOINTS & SOURCE TOGGLES — nothing is hard-coded; everything below is a
+# Railway-overridable variable that simply DEFAULTS to the current value. Turn a
+# source off with ENABLE_<SOURCE>=0, or point it at a new URL if an API changes.
+# ══════════════════════════════════════════════════════════════════════════════
+def _env(name: str, default: str) -> str:
+    v = _os_for_bias.environ.get(name)
+    return v.strip() if v else default
+
+def _env_bool(name: str, default: bool = True) -> bool:
+    v = _os_for_bias.environ.get(name)
+    if v is None or v.strip() == "":
+        return default
+    return v.strip().lower() in ("1", "true", "yes", "on")
+
+# ── Endpoints (override only if an API changes its URL) ───────────────────────
+OPEN_METEO_URL          = _env("OPEN_METEO_URL",          "https://api.open-meteo.com/v1/forecast")
+OPEN_METEO_ENSEMBLE_URL = _env("OPEN_METEO_ENSEMBLE_URL", "https://ensemble-api.open-meteo.com/v1/ensemble")
+METNO_URL               = _env("METNO_URL",               "https://api.met.no/weatherapi/locationforecast/2.0/compact")
+NWS_POINTS_URL          = _env("NWS_POINTS_URL",          "https://api.weather.gov/points")
+SEVENTIMER_URL          = _env("SEVENTIMER_URL",          "https://www.7timer.info/bin/api.pl")
+OPENWEATHER_URL         = _env("OPENWEATHER_URL",         "https://api.openweathermap.org/data/2.5/forecast")
+WEATHERAPI_URL          = _env("WEATHERAPI_URL",          "https://api.weatherapi.com/v1/forecast.json")
+VISUALCROSSING_URL      = _env("VISUALCROSSING_URL",      "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline")
+TOMORROW_URL            = _env("TOMORROW_URL",            "https://api.tomorrow.io/v4/weather/forecast")
+METAR_URL               = _env("METAR_URL",               "https://aviationweather.gov/api/data/metar")
+WUNDERGROUND_URL        = _env("WUNDERGROUND_URL",        "https://api.weather.com/v1/location")
+GAMMA = _env("POLYMARKET_GAMMA_URL", "https://gamma-api.polymarket.com")
+CLOB  = _env("POLYMARKET_CLOB_URL",  "https://clob.polymarket.com")
+DATA  = _env("POLYMARKET_DATA_URL",  "https://data-api.polymarket.com")
+
+# ── Per-source on/off (free no-key sources default ON; keyed ones turn on when
+#    their API key is set). Flip any to 0 in Railway to drop that source. ──────
+ENABLE_OPEN_METEO = _env_bool("ENABLE_OPEN_METEO", True)
+ENABLE_ENSEMBLE   = _env_bool("ENABLE_ENSEMBLE",   True)
+ENABLE_MULTIMODEL = _env_bool("ENABLE_MULTIMODEL", True)
+ENABLE_METNO      = _env_bool("ENABLE_METNO",      True)
+ENABLE_NWS        = _env_bool("ENABLE_NWS",        True)
+ENABLE_7TIMER     = _env_bool("ENABLE_7TIMER",     True)
+
+# How far (in °C) a source may sit from the consensus before it's treated as
+# suspect — likely a broken API or the wrong unit. Raise to be more lenient.
+SOURCE_OUTLIER_TOL = float(_os_for_bias.environ.get("SOURCE_OUTLIER_TOL", "8.0"))
+
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -368,6 +412,70 @@ def _series_daily_max(points, target_date: Optional[str], tz_offset: int,
         return None
     return _convert_temp(max(highs), src_unit, use_fahrenheit)
 
+def _vet_forecasts(forecasts: Dict[str, float], use_fahrenheit: bool):
+    """Validate every source's forecast before it enters the blend.
+
+    This is the safety net for configurable/new APIs: a source can return garbage
+    or the WRONG UNIT (°F where we expected °C). For each value we:
+      1. drop it if it's missing / not a finite number,
+      2. drop it if it's outside a plausible temperature range (bad API),
+      3. if it's a big outlier vs the consensus of the other sources BUT a C↔F
+         flip brings it in line → AUTO-CORRECT it and warn (wrong-unit detection),
+      4. otherwise drop it and warn that the API looks broken.
+    Returns (clean_forecasts, warnings). The blend only ever sees clean values.
+    """
+    warnings: List[str] = []
+    sym = "°F" if use_fahrenheit else "°C"
+    # Plausible daily-max range expressed in the CITY's unit (≈ -70..60 °C).
+    lo, hi = (-94.0, 140.0) if use_fahrenheit else (-70.0, 60.0)
+    def plausible(x: float) -> bool:
+        return lo <= x <= hi
+    def as_other_unit(x: float) -> float:
+        # Re-interpret x as the OTHER unit and express it in the city's unit:
+        #   °C city → x was probably °F  → convert F→C
+        #   °F city → x was probably °C  → convert C→F
+        return (x - 32.0) * 5.0 / 9.0 if not use_fahrenheit else x * 9.0 / 5.0 + 32.0
+
+    # Pass 1: collect well-formed numbers; anchors are those already plausible.
+    prelim: Dict[str, float] = {}
+    anchors: List[float] = []
+    for label, v in forecasts.items():
+        if v is None or not isinstance(v, (int, float)) or not math.isfinite(v):
+            warnings.append(f"{label}: no/invalid value — dropped")
+            continue
+        v = float(v)
+        prelim[label] = v
+        if plausible(v):
+            anchors.append(v)
+
+    consensus = sorted(anchors)[len(anchors) // 2] if len(anchors) >= 3 else None
+    tol       = SOURCE_OUTLIER_TOL * (9.0 / 5.0 if use_fahrenheit else 1.0)
+
+    # Pass 2: keep / auto-correct / drop each source.
+    clean: Dict[str, float] = {}
+    for label, v in prelim.items():
+        # Not enough anchors to judge outliers — keep what's in range, drop the rest.
+        if consensus is None:
+            if plausible(v):
+                clean[label] = round(v, 1)
+            else:
+                warnings.append(f"{label}: {v}{sym} out of plausible range — dropped (bad API?)")
+            continue
+        if plausible(v) and abs(v - consensus) <= tol:
+            clean[label] = round(v, 1)
+            continue
+        flipped = as_other_unit(v)                    # maybe it's the wrong unit
+        if plausible(flipped) and abs(flipped - consensus) <= tol:
+            clean[label] = round(flipped, 1)
+            warnings.append(f"{label}: {v}{sym} looked like the wrong unit "
+                            f"— auto-corrected to {clean[label]}{sym}")
+        elif plausible(v):
+            warnings.append(f"{label}: {v}{sym} is {abs(v-consensus):.0f}° from consensus "
+                            f"{consensus:.0f}{sym} — dropped (API may be broken/wrong unit)")
+        else:
+            warnings.append(f"{label}: {v}{sym} out of plausible range — dropped (bad API?)")
+    return clean, warnings
+
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
@@ -528,7 +636,7 @@ def fetch_open_meteo(lat: float, lon: float,
                      target_idx: int = 0) -> Optional[Dict]:
     """Fetch forecast. Returns today's max (idx=0) or tomorrow's (idx=1)."""
     unit = "fahrenheit" if use_fahrenheit else "celsius"
-    data = _get("https://api.open-meteo.com/v1/forecast", {
+    data = _get(OPEN_METEO_URL, {
         "latitude": lat, "longitude": lon,
         "daily": "temperature_2m_max,temperature_2m_min",
         "hourly": "temperature_2m",
@@ -552,7 +660,7 @@ def fetch_ensemble(lat: float, lon: float,
                    target_idx: int = 0) -> Optional[Dict]:
     """Fetch ensemble spread for target day."""
     unit = "fahrenheit" if use_fahrenheit else "celsius"
-    data = _get("https://ensemble-api.open-meteo.com/v1/ensemble", {
+    data = _get(OPEN_METEO_ENSEMBLE_URL, {
         "latitude": lat, "longitude": lon,
         "daily": "temperature_2m_max",
         "temperature_unit": unit,
@@ -597,7 +705,7 @@ def fetch_multi_model(lat: float, lon: float,
         "icon_seamless": "ICON",
         "gem_seamless":  "GEM",
     }
-    d = _get("https://api.open-meteo.com/v1/forecast", {
+    d = _get(OPEN_METEO_URL, {
         "latitude": lat, "longitude": lon,
         "daily": "temperature_2m_max",
         "temperature_unit": unit,
@@ -628,7 +736,7 @@ def fetch_metno(lat: float, lon: float, tz_offset: int = 0,
     Returns the forecast daily MAX for the target LOCAL date (°C, or °F if the
     city settles in Fahrenheit), or None.
     """
-    data = _get("https://api.met.no/weatherapi/locationforecast/2.0/compact",
+    data = _get(METNO_URL,
                 {"lat": round(lat, 4), "lon": round(lon, 4)}, timeout=8.0)
     if not data:
         return None
@@ -655,7 +763,7 @@ def fetch_nws(lat: float, lon: float, use_fahrenheit: bool = False,
     high for the target LOCAL day. NWS `startTime` is already in the location's
     local timezone, so its date matches our city-local target_date directly.
     """
-    pts = _get(f"https://api.weather.gov/points/{round(lat, 4)},{round(lon, 4)}",
+    pts = _get(f"{NWS_POINTS_URL}/{round(lat, 4)},{round(lon, 4)}",
                timeout=8.0)
     if not pts:
         return None
@@ -693,7 +801,7 @@ def fetch_7timer(lat: float, lon: float, tz_offset: int = 0,
     Returns the forecast daily MAX for the target LOCAL date. `dataseries` gives
     temp2m (°C, integer) at 3-hourly steps measured from `init` (UTC).
     """
-    data = _get("https://www.7timer.info/bin/api.pl",
+    data = _get(SEVENTIMER_URL,
                 {"lon": round(lon, 3), "lat": round(lat, 3),
                  "product": "civil", "output": "json"}, timeout=8.0)
     if not data:
@@ -729,7 +837,7 @@ def fetch_openweather(lat: float, lon: float, tz_offset: int = 0,
     target LOCAL day."""
     if not api_key:
         return None
-    data = _get("https://api.openweathermap.org/data/2.5/forecast",
+    data = _get(OPENWEATHER_URL,
                 {"lat": round(lat, 4), "lon": round(lon, 4),
                  "appid": api_key, "units": "metric"}, timeout=8.0)
     if not data:
@@ -755,7 +863,7 @@ def fetch_weatherapi(lat: float, lon: float, tz_offset: int = 0,
     maxtemp_f, so we just pick the city's unit — no conversion math needed."""
     if not api_key:
         return None
-    data = _get("https://api.weatherapi.com/v1/forecast.json",
+    data = _get(WEATHERAPI_URL,
                 {"key": api_key, "q": f"{round(lat, 4)},{round(lon, 4)}",
                  "days": 3, "aqi": "no", "alerts": "no"}, timeout=8.0)
     if not data:
@@ -783,8 +891,7 @@ def fetch_visualcrossing(lat: float, lon: float, tz_offset: int = 0,
     if not api_key or not target_date:
         return None
     loc = f"{round(lat, 4)},{round(lon, 4)}"
-    data = _get(f"https://weather.visualcrossing.com/VisualCrossingWebServices/"
-                f"rest/services/timeline/{loc}/{target_date}",
+    data = _get(f"{VISUALCROSSING_URL}/{loc}/{target_date}",
                 {"key": api_key, "unitGroup": "metric", "include": "days",
                  "elements": "datetime,tempmax"}, timeout=10.0)
     if not data:
@@ -803,7 +910,7 @@ def fetch_tomorrow(lat: float, lon: float, tz_offset: int = 0,
     converted to the city's unit. `temperatureMax` per daily timeline entry."""
     if not api_key:
         return None
-    data = _get("https://api.tomorrow.io/v4/weather/forecast",
+    data = _get(TOMORROW_URL,
                 {"location": f"{round(lat, 4)},{round(lon, 4)}",
                  "apikey": api_key, "timesteps": "1d", "units": "metric"}, timeout=8.0)
     if not data:
@@ -882,7 +989,7 @@ def fetch_wunderground(icao: str, tz_offset: int = 0,
     for key in _WU_KEYS:
         try:
             r = _SESSION.get(
-                f"https://api.weather.com/v1/location/{icao}:9:{country}/observations/historical.json",
+                f"{WUNDERGROUND_URL}/{icao}:9:{country}/observations/historical.json",
                 params={"apiKey": key, "units": units, "startDate": query_date},
                 timeout=8.0,
             )
@@ -937,7 +1044,7 @@ def _om_past_max(lat: float, lon: float, date: str,
                  use_fahrenheit: bool = False) -> Optional[float]:
     """Fallback actual: Open-Meteo's analysed daily max for a recent past date."""
     unit = "fahrenheit" if use_fahrenheit else "celsius"
-    data = _get("https://api.open-meteo.com/v1/forecast", {
+    data = _get(OPEN_METEO_URL, {
         "latitude": lat, "longitude": lon,
         "daily": "temperature_2m_max",
         "temperature_unit": unit,
@@ -983,7 +1090,7 @@ def fetch_metar(icao: str, tz_offset: int = 0,
     If predicting tomorrow, live data still shows today's current conditions.
     """
     data = _get(
-        "https://aviationweather.gov/api/data/metar",
+        METAR_URL,
         {"ids": icao, "format": "json", "hours": 8},
         timeout=6.0,
     )
@@ -1049,9 +1156,7 @@ def fetch_metar(icao: str, tz_offset: int = 0,
 #   2. event.markets[] → each bucket market has clobTokenIds + outcomes
 #   3. CLOB /price?token_id=<YES token>&side=buy → live YES price
 # ══════════════════════════════════════════════════════════════════════════════
-GAMMA = "https://gamma-api.polymarket.com"
-CLOB  = "https://clob.polymarket.com"
-DATA  = "https://data-api.polymarket.com"
+# (GAMMA / CLOB / DATA are configured at the top of the file — env-overridable)
 
 # Month names for building search queries
 _MONTHS = ["January","February","March","April","May","June",
@@ -1614,7 +1719,15 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         wu = fetch_wunderground(icao, tz, use_f, local_date)
         res["metar"] = wu if wu else fetch_metar(icao, tz, local_date)
 
-    fetchers = [_om, _ens, _mm, _mn, _nws, _7t, _met]
+    # Free no-key sources, each toggleable via ENABLE_<SOURCE>. _met (live obs) is
+    # always on — it provides max_so_far, not a forecast.
+    fetchers = [_met]
+    if ENABLE_OPEN_METEO: fetchers.append(_om)
+    if ENABLE_ENSEMBLE:   fetchers.append(_ens)
+    if ENABLE_MULTIMODEL: fetchers.append(_mm)
+    if ENABLE_METNO:      fetchers.append(_mn)
+    if ENABLE_NWS:        fetchers.append(_nws)
+    if ENABLE_7TIMER:     fetchers.append(_7t)
 
     # Optional keyed sources, configured via Railway env vars. Each one that has a
     # key set adds an independent forecast (auto-converted to the city's unit).
@@ -1671,6 +1784,13 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         v = _sf(res.get(label))
         if v is not None:
             forecasts[label] = round(v, 1)
+
+    # ── Validate every source before blending ────────────────────────────────
+    # Drops garbage, AUTO-CORRECTS wrong-unit values, and flags broken APIs so a
+    # newly-configured source can never silently poison the consensus.
+    forecasts, source_warnings = _vet_forecasts(forecasts, use_f)
+    for w in source_warnings:
+        print(f"  ⚠️ source check [{city_key}] — {w}")
 
     # ── DEB blend ────────────────────────────────────────────────────────────
     deb, deb_weights = deb_blend(city_key, forecasts, target_date=target_date)
@@ -1964,6 +2084,7 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         "reliable":       timing.get("reliable", False),
         # forecasts
         "forecasts":      forecasts,
+        "source_warnings": source_warnings,
         "deb":            deb,
         "deb_weights":    deb_weights,
         "ensemble":       {"p10": p10, "median": ens_med, "p90": p90,

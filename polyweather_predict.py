@@ -51,6 +51,26 @@ MARKET_DECIDED_YES = float(_os_for_bias.environ.get("MARKET_DECIDED_YES", "0.90"
 # disagrees here, downgrade a TRADE to WAIT rather than firing a buy.
 MARKET_LEAN_YES    = float(_os_for_bias.environ.get("MARKET_LEAN_YES", "0.75"))
 
+# ══════════════════════════════════════════════════════════════════════════════
+# OPTIONAL KEYED FORECAST SOURCES — configure in Railway variables
+# ──────────────────────────────────────────────────────────────────────────────
+# Each of these weather APIs is FREE-tier but needs an API key. Set the matching
+# env var in Railway and that source automatically joins the blend for every city
+# (more independent models → tighter σ, better agreement, better trades). Leave a
+# key unset and that source is simply skipped. All values are auto-converted to
+# each city's settlement unit (°C/°F) via _convert_temp, so you never have to
+# worry about which unit an API returns.
+#
+#   OPENWEATHER_API_KEY   → OpenWeatherMap   (free 1M/mo)  openweathermap.org/api
+#   WEATHERAPI_KEY        → WeatherAPI.com   (free 1M/mo)  weatherapi.com
+#   VISUALCROSSING_KEY    → Visual Crossing  (free 1k/day) visualcrossing.com
+#   TOMORROW_API_KEY      → Tomorrow.io      (free ~500/day) tomorrow.io
+# ══════════════════════════════════════════════════════════════════════════════
+OPENWEATHER_API_KEY = _os_for_bias.environ.get("OPENWEATHER_API_KEY", "").strip()
+WEATHERAPI_KEY      = _os_for_bias.environ.get("WEATHERAPI_KEY", "").strip()
+VISUALCROSSING_KEY  = _os_for_bias.environ.get("VISUALCROSSING_KEY", "").strip()
+TOMORROW_API_KEY    = _os_for_bias.environ.get("TOMORROW_API_KEY", "").strip()
+
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -293,6 +313,24 @@ def _sf(v) -> Optional[float]:
         return float(v)
     except Exception:
         return None
+
+def _convert_temp(value: Optional[float], src_unit: str, dst_is_fahrenheit: bool) -> Optional[float]:
+    """Convert a temperature from a source's native unit to the CITY's unit.
+
+    Every forecast source reports in either °C or °F. Cities settle in different
+    units (CITIES[..]['f']), so each source's value must be converted to match
+    before it goes into the blend — otherwise a US city in °F would be averaged
+    against a °C reading and the model would be wildly wrong. `src_unit` is "C"
+    or "F"; `dst_is_fahrenheit` is the city's settlement unit.
+    """
+    if value is None:
+        return None
+    src_is_f = str(src_unit).strip().upper().startswith("F")
+    if src_is_f and not dst_is_fahrenheit:
+        return round((value - 32.0) * 5.0 / 9.0, 1)      # F → C
+    if (not src_is_f) and dst_is_fahrenheit:
+        return round(value * 9.0 / 5.0 + 32.0, 1)        # C → F
+    return round(value, 1)                                # already matching
 
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
@@ -662,6 +700,131 @@ def fetch_7timer(lat: float, lon: float, tz_offset: int = 0,
     if use_fahrenheit:
         hi = hi * 9.0 / 5.0 + 32.0
     return round(hi, 1)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# OPTIONAL KEYED SOURCES — each enabled by its Railway env var (see top of file).
+# All share one signature so predict() can drive them generically, and all return
+# the forecast daily MAX already converted to the city's settlement unit.
+#   fetch_xxx(lat, lon, tz_offset, use_fahrenheit, target_date, api_key) -> float|None
+# ══════════════════════════════════════════════════════════════════════════════
+def fetch_openweather(lat: float, lon: float, tz_offset: int = 0,
+                      use_fahrenheit: bool = False, target_date: Optional[str] = None,
+                      api_key: str = "") -> Optional[float]:
+    """OpenWeatherMap 5-day/3-hour forecast (free tier). Requested in °C, then
+    converted to the city's unit. Daily max = max of the 3-hourly highs on the
+    target LOCAL day."""
+    if not api_key:
+        return None
+    data = _get("https://api.openweathermap.org/data/2.5/forecast",
+                {"lat": round(lat, 4), "lon": round(lon, 4),
+                 "appid": api_key, "units": "metric"}, timeout=8.0)
+    if not data:
+        return None
+    highs: List[float] = []
+    for row in (data.get("list") or []):
+        ts = row.get("dt")
+        if ts is None:
+            continue
+        try:
+            utc = datetime.fromtimestamp(int(ts), tz=timezone.utc).replace(tzinfo=None)
+        except Exception:
+            continue
+        local_d = (utc + timedelta(seconds=tz_offset)).strftime("%Y-%m-%d")
+        if target_date and local_d != target_date:
+            continue
+        main = row.get("main") or {}
+        t = _sf(main.get("temp_max"))
+        if t is None:
+            t = _sf(main.get("temp"))
+        if t is not None:
+            highs.append(t)
+    if not highs:
+        return None
+    return _convert_temp(max(highs), "C", use_fahrenheit)
+
+def fetch_weatherapi(lat: float, lon: float, tz_offset: int = 0,
+                     use_fahrenheit: bool = False, target_date: Optional[str] = None,
+                     api_key: str = "") -> Optional[float]:
+    """WeatherAPI.com 3-day forecast (free 1M/mo). It returns BOTH maxtemp_c and
+    maxtemp_f, so we just pick the city's unit — no conversion math needed."""
+    if not api_key:
+        return None
+    data = _get("https://api.weatherapi.com/v1/forecast.json",
+                {"key": api_key, "q": f"{round(lat, 4)},{round(lon, 4)}",
+                 "days": 3, "aqi": "no", "alerts": "no"}, timeout=8.0)
+    if not data:
+        return None
+    days = ((data.get("forecast") or {}).get("forecastday")) or []
+    chosen = None
+    for d in days:
+        if target_date and d.get("date") != target_date:
+            continue
+        chosen = d
+        break
+    if chosen is None and days:
+        chosen = days[0]                      # target out of range → nearest day
+    if chosen is None:
+        return None
+    day = chosen.get("day") or {}
+    t = _sf(day.get("maxtemp_f")) if use_fahrenheit else _sf(day.get("maxtemp_c"))
+    return round(t, 1) if t is not None else None
+
+def fetch_visualcrossing(lat: float, lon: float, tz_offset: int = 0,
+                         use_fahrenheit: bool = False, target_date: Optional[str] = None,
+                         api_key: str = "") -> Optional[float]:
+    """Visual Crossing Timeline API (free 1k records/day). Requested in metric
+    (°C) for the exact target day, then converted to the city's unit."""
+    if not api_key or not target_date:
+        return None
+    loc = f"{round(lat, 4)},{round(lon, 4)}"
+    data = _get(f"https://weather.visualcrossing.com/VisualCrossingWebServices/"
+                f"rest/services/timeline/{loc}/{target_date}",
+                {"key": api_key, "unitGroup": "metric", "include": "days",
+                 "elements": "datetime,tempmax"}, timeout=10.0)
+    if not data:
+        return None
+    for d in (data.get("days") or []):
+        if d.get("datetime") == target_date or target_date is None:
+            t = _sf(d.get("tempmax"))
+            if t is not None:
+                return _convert_temp(t, "C", use_fahrenheit)
+    return None
+
+def fetch_tomorrow(lat: float, lon: float, tz_offset: int = 0,
+                   use_fahrenheit: bool = False, target_date: Optional[str] = None,
+                   api_key: str = "") -> Optional[float]:
+    """Tomorrow.io daily forecast (free ~500/day). Requested in metric (°C),
+    converted to the city's unit. `temperatureMax` per daily timeline entry."""
+    if not api_key:
+        return None
+    data = _get("https://api.tomorrow.io/v4/weather/forecast",
+                {"location": f"{round(lat, 4)},{round(lon, 4)}",
+                 "apikey": api_key, "timesteps": "1d", "units": "metric"}, timeout=8.0)
+    if not data:
+        return None
+    for d in (((data.get("timelines") or {}).get("daily")) or []):
+        day = str(d.get("time") or "")[:10]
+        if target_date and day != target_date:
+            continue
+        t = _sf((d.get("values") or {}).get("temperatureMax"))
+        if t is not None:
+            return _convert_temp(t, "C", use_fahrenheit)
+    return None
+
+def _keyed_sources():
+    """Return the optional keyed sources that are configured (have a key set).
+    Each entry: (label, fetch_fn, api_key). Adding a new API = add one line here
+    plus its fetch_xxx function and env var — fully driven by Railway variables."""
+    out = []
+    if OPENWEATHER_API_KEY:
+        out.append(("OpenWeather",    fetch_openweather,    OPENWEATHER_API_KEY))
+    if WEATHERAPI_KEY:
+        out.append(("WeatherAPI",     fetch_weatherapi,     WEATHERAPI_KEY))
+    if VISUALCROSSING_KEY:
+        out.append(("VisualCrossing", fetch_visualcrossing, VISUALCROSSING_KEY))
+    if TOMORROW_API_KEY:
+        out.append(("Tomorrow",       fetch_tomorrow,       TOMORROW_API_KEY))
+    return out
 
 # ══════════════════════════════════════════════════════════════════════════════
 # WUNDERGROUND — the ACTUAL settlement source Polymarket uses.
@@ -1416,7 +1579,21 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         wu = fetch_wunderground(icao, tz, use_f, local_date)
         res["metar"] = wu if wu else fetch_metar(icao, tz, local_date)
 
-    threads = [threading.Thread(target=fn) for fn in (_om, _ens, _mm, _mn, _nws, _7t, _met)]
+    fetchers = [_om, _ens, _mm, _mn, _nws, _7t, _met]
+
+    # Optional keyed sources, configured via Railway env vars. Each one that has a
+    # key set adds an independent forecast (auto-converted to the city's unit).
+    keyed = _keyed_sources()
+    def _make_keyed(label, fn, key):
+        def run():
+            try:
+                res[label] = fn(lat, lon, tz, use_f, target_date, key)
+            except Exception:
+                res[label] = None
+        return run
+    fetchers += [_make_keyed(label, fn, key) for label, fn, key in keyed]
+
+    threads = [threading.Thread(target=fn) for fn in fetchers]
     for t_ in threads: t_.start()
     for t_ in threads: t_.join(timeout=15)
 
@@ -1453,6 +1630,12 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     t7_val = _sf(res.get("t7"))
     if t7_val is not None:
         forecasts["7Timer"] = round(t7_val, 1)
+
+    # Optional keyed sources (already converted to the city's unit by each fetcher).
+    for label, _fn, _key in keyed:
+        v = _sf(res.get(label))
+        if v is not None:
+            forecasts[label] = round(v, 1)
 
     # ── DEB blend ────────────────────────────────────────────────────────────
     deb, deb_weights = deb_blend(city_key, forecasts, target_date=target_date)

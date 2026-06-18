@@ -33,6 +33,8 @@ import httpx
 
 # import the prediction engine (same folder)
 import polyweather_predict as pw
+# daily prediction-vs-outcome learning tracker (same folder)
+import learn
 
 import html as _html
 
@@ -510,12 +512,35 @@ def fmt_positions_update(wallet: str, positions) -> str:
 
 def send_position_update():
     if not WALLET:
+        print("  ⚠️ position update skipped — POLYMARKET_WALLET not set")
         return False
     try:
-        positions = pw.fetch_positions(WALLET, weather_only=True)
+        # Fetch EVERYTHING first so we can tell apart the three failure modes:
+        #   • None  → API/address problem (often: wrong wallet TYPE)
+        #   • []    → address valid but holds no positions
+        #   • >0 but 0 weather → positions exist, weather filter hid them
+        all_pos = pw.fetch_positions(WALLET, weather_only=False)
+        masked  = f"{WALLET[:6]}…{WALLET[-4:]}"
+        if all_pos is None:
+            print(f"  ⚠️ positions API returned nothing for {masked} — check the address. "
+                  f"It must be your Polymarket PROFILE/deposit address (polymarket.com/profile), "
+                  f"NOT your MetaMask/signing wallet.")
+            positions = None
+        else:
+            positions = [p for p in all_pos
+                         if ("temperature" in (p.get("title") or "").lower()
+                             or "temp" in (p.get("event_slug") or "").lower()
+                             or "weather" in (p.get("event_slug") or "").lower())]
+            print(f"  💼 positions for {masked}: {len(all_pos)} total, "
+                  f"{len(positions)} weather")
+            if all_pos and not positions:
+                # Show what IS there so the user can see why it was filtered out.
+                sample = ", ".join((p.get("title") or "?")[:40] for p in all_pos[:3])
+                print(f"     ↳ non-weather positions held: {sample}")
+                # Don't hide the user's money — show all positions if none are weather.
+                positions = all_pos
         msg = fmt_positions_update(WALLET, positions)
         send_telegram(msg)
-        print(f"  💼 sent position update ({len(positions or [])} positions)")
         return True
     except Exception as e:
         print(f"  position update error: {e}")
@@ -765,6 +790,7 @@ def run_scan(conn):
     # errors / missing forecast data. Without this, a total upstream outage looks
     # identical to a calm "0 new" market in the logs.
     health = {"total": len(ALERT_CITIES), "errored": 0, "no_data": 0, "evaluated": 0}
+    scan_preds = []   # collected for the learning tracker (one disk write at end)
 
     for city in ALERT_CITIES:
         try:
@@ -782,6 +808,7 @@ def run_scan(conn):
             health["no_data"] += 1
             continue
         health["evaluated"] += 1
+        scan_preds.append(p)   # snapshot this city's current prediction for learning
 
         prob   = p.get("top_prob", 0.0)
         bucket = p.get("top_bucket")
@@ -871,6 +898,13 @@ def run_scan(conn):
             # update stored prob without alerting
             if prev:
                 upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=prev_alerted)
+
+    # Learning: snapshot every prediction from this scan (1 disk write). The last
+    # snapshot taken before each city's local day ends is what gets scored later.
+    try:
+        learn.note_many(scan_preds)
+    except Exception as e:
+        print(f"  [learn] note error: {e}")
 
     print(f"[{ts}] done — {new_alerts} new, {shifts} shifted, {collapses} collapsed")
     # data health: how many cities we could actually evaluate this pass.
@@ -1001,7 +1035,18 @@ def handle_command(text, chat_id):
             "/scan munich — scan one city\n"
             "/pick — choose a market with buttons\n"
             "/positions — show your positions now\n"
+            "/learn — prediction-vs-outcome scoreboard (add 'all' for lifetime)\n"
             "/help — this message")
+        return
+
+    if low.startswith("/learn"):
+        parts = text.split()
+        if len(parts) > 1 and parts[1].lower() == "all":
+            reply_telegram(chat_id, learn.report(all_time=True))
+        else:
+            # optional explicit date as second arg, else most recent settled day
+            date = next((x for x in parts[1:] if x.count("-") == 2), None)
+            reply_telegram(chat_id, learn.report(date))
         return
 
     if low == "/positions":
@@ -1144,6 +1189,9 @@ def main():
     last_sigwatch = 0.0
     last_backfill = time.time()   # already ran once above, just before the loop
     BACKFILL_SEC  = int(os.environ.get("BACKFILL_HOURS", "6")) * 3600
+    # learning digest: settle completed days + send a Telegram scoreboard once/day
+    last_learn_report = time.time()
+    LEARN_REPORT_SEC  = int(os.environ.get("LEARN_REPORT_HOURS", "24")) * 3600
     while True:
         now = time.time()
 
@@ -1155,13 +1203,28 @@ def main():
                 print(f"[loop] scan error: {e}")
             last_scan = time.time()
 
-        # learning: periodically record completed-day actual highs
+        # learning: periodically record completed-day actual highs + settle the
+        # prediction-vs-outcome tracker (scores which side won for each city)
         if now - last_backfill >= BACKFILL_SEC:
             try:
                 backfill_actuals()
             except Exception as e:
                 print(f"[loop] backfill error: {e}")
+            try:
+                learn.settle()
+            except Exception as e:
+                print(f"[loop] learn settle error: {e}")
             last_backfill = time.time()
+
+        # daily learning scoreboard to Telegram: "we predicted X — it WON/LOST"
+        if now - last_learn_report >= LEARN_REPORT_SEC:
+            try:
+                rep = learn.settle_and_report()
+                if rep and "No settled" not in rep and "No learning" not in rep:
+                    send_telegram(rep)
+            except Exception as e:
+                print(f"[loop] learn report error: {e}")
+            last_learn_report = time.time()
 
         # tight position WATCH timer (alerts on model flipping against held bucket)
         if WALLET and (now - last_watch >= POS_WATCH_MIN * 60):

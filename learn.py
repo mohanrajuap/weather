@@ -1,0 +1,415 @@
+"""
+learn.py — Daily prediction-vs-outcome learning tracker for PolyWeather
+========================================================================
+Closes the loop between what OUR BOT predicted and what ACTUALLY won on
+Polymarket, for all 51 cities, every day.
+
+For each city/day it:
+  1. RECORDS the bot's current prediction (top bucket, prob, verdict, the full
+     model blend, the live Polymarket bucket prices, and any trade the bot would
+     make). This snapshot can be taken any time before the market settles — the
+     latest snapshot before the city's local day ends is the one that's scored.
+  2. SETTLES the outcome once that local day is complete: fetches the actual
+     settled daily high (Wunderground — Polymarket's own source), rounds it to
+     the winning bucket, and also reads which Polymarket bucket resolved YES.
+  3. SCORES the bot: did our predicted bucket match the bucket that won? And on
+     the cities where the bot actually made a call (verdict=TRADE), would that
+     call have won?
+
+It also feeds every settled actual back into the existing DEB learner
+(deb_history.json) so the temperature model keeps improving too.
+
+Storage: a single JSON file on the persistent volume (/data/learn_history.json
+on Railway, or ./learn_history.json locally; override with LEARN_HISTORY_FILE).
+
+CLI:
+    python learn.py record              # snapshot all 51 cities now
+    python learn.py record paris milan  # snapshot specific cities
+    python learn.py settle              # score every completed-but-unscored day
+    python learn.py report              # scoreboard for the most recent settled day
+    python learn.py report 2026-06-17   # scoreboard for a specific date
+    python learn.py report --all        # lifetime accuracy across all days
+    python learn.py run                 # record + settle + print report (one shot)
+"""
+
+import os
+import sys
+import json
+import argparse
+import threading
+from datetime import datetime, timezone, timedelta
+from typing import Optional, Dict, List, Any
+
+import polyweather_predict as pw
+
+# A Polymarket bucket whose YES has settled at/above this is the winner.
+_RESOLVED_YES = 0.95
+
+
+# ── persistence ───────────────────────────────────────────────────────────────
+def _resolve_learn_file() -> str:
+    env = os.environ.get("LEARN_HISTORY_FILE")
+    if env:
+        return env
+    if os.path.isdir("/data"):
+        return "/data/learn_history.json"
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "learn_history.json")
+
+
+_LEARN_FILE = _resolve_learn_file()
+_LOCK = threading.Lock()
+
+
+def _load() -> dict:
+    try:
+        if os.path.exists(_LEARN_FILE):
+            with open(_LEARN_FILE, "r") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+
+def _save(data: dict):
+    try:
+        tmp = _LEARN_FILE + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(data, f, indent=2)
+        os.replace(tmp, _LEARN_FILE)
+    except Exception as e:
+        print(f"  [learn] save error: {e}")
+
+
+# ── 1. RECORD ─────────────────────────────────────────────────────────────────
+def _build_snap(p: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Turn a prediction dict into a compact snapshot, or None if unusable."""
+    if not p or "error" in p:
+        return None
+    if not p.get("city") or not p.get("target_date"):
+        return None
+    pm = (p.get("polymarket") or {})
+    pm_buckets = {}
+    for k, v in (pm.get("buckets") or {}).items():
+        y = v.get("yes")
+        if y is not None:
+            pm_buckets[str(k)] = round(float(y), 3)
+    bt = p.get("best_trade")
+    return {
+        "ts":         datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "predicting": p.get("predicting"),
+        "unit":       p.get("temp_unit"),
+        "top_bucket": p.get("top_bucket"),
+        "top_prob":   round(float(p.get("top_prob") or 0.0), 3),
+        "verdict":    p.get("verdict"),
+        "made_call":  p.get("verdict") == "TRADE",
+        "deb":        p.get("deb"),
+        "sigma":      p.get("sigma"),
+        "forecasts":  p.get("forecasts") or {},
+        "timing":     (p.get("timing") or {}).get("quality"),
+        "pm_buckets": pm_buckets,
+        "pm_title":   pm.get("title"),
+        "best_trade": ({"action": bt.get("action"), "temp": bt.get("temp"),
+                        "yes_price": bt.get("yes_price"),
+                        "edge": bt.get("best_edge")} if bt else None),
+    }
+
+
+def _apply(data: dict, p: Dict[str, Any]) -> bool:
+    """Write one prediction's snapshot into `data`. Returns True if changed."""
+    snap = _build_snap(p)
+    if snap is None:
+        return False
+    rec = data.setdefault(p["target_date"], {}).setdefault(p["city"], {})
+    if "outcome" in rec:                 # already settled — never overwrite history
+        return False
+    rec["pred"] = snap
+    return True
+
+
+def note(p: Dict[str, Any]):
+    """Snapshot a single prediction (loads + saves the file). For CLI/standalone.
+    Never raises — learning must never break the trading loop."""
+    try:
+        with _LOCK:
+            data = _load()
+            if _apply(data, p):
+                _save(data)
+    except Exception:
+        pass
+
+
+def note_many(preds: List[Dict[str, Any]]):
+    """Snapshot a whole scan's worth of predictions with ONE load + save.
+    This is what the monitor calls each scan (51 cities → 1 disk write)."""
+    try:
+        with _LOCK:
+            data = _load()
+            changed = False
+            for p in preds:
+                changed = _apply(data, p) or changed
+            if changed:
+                _save(data)
+    except Exception:
+        pass
+
+
+def record_all(cities: Optional[List[str]] = None) -> int:
+    """Standalone snapshot pass — predicts each city and notes it. Returns count."""
+    cities = cities or list(pw.CITIES.keys())
+    n = 0
+    for city in cities:
+        ck = pw.resolve_city(city) or city
+        try:
+            p = pw.predict(ck, fetch_prices=True)
+        except Exception as e:
+            print(f"  [learn] {city}: predict error {e}")
+            continue
+        if "error" in p:
+            continue
+        note(p)
+        n += 1
+        b, pr, v = p.get("top_bucket"), p.get("top_prob", 0), p.get("verdict")
+        print(f"  recorded {ck:<14} {b}{p.get('temp_unit','°')} {pr*100:>3.0f}% {v}")
+    print(f"[learn] recorded {n} cities")
+    return n
+
+
+# ── 2. SETTLE ─────────────────────────────────────────────────────────────────
+def _winning_bucket_from_market(city: str, date: str) -> Optional[int]:
+    """Which Polymarket bucket resolved YES (~1.0), if the market is settled."""
+    try:
+        pm = pw.fetch_polymarket_market(city, date)
+    except Exception:
+        pm = None
+    if not pm or not pm.get("buckets"):
+        return None
+    best_t, best_y = None, -1.0
+    for t, b in pm["buckets"].items():
+        y = b.get("yes")
+        if y is not None and y > best_y:
+            best_t, best_y = t, y
+    if best_y >= _RESOLVED_YES:
+        return best_t
+    return None
+
+
+def _day_complete(city: str, date: str) -> bool:
+    """True once `date` is fully in the past in the city's local time."""
+    meta = pw.CITIES.get(city)
+    if not meta:
+        return False
+    local_now = pw._now_utc() + timedelta(seconds=meta.get("tz", 0))
+    return date < local_now.strftime("%Y-%m-%d")
+
+
+def settle(feed_deb: bool = True) -> int:
+    """Score every recorded day/city that is complete but not yet settled.
+
+    Returns the number of newly-settled city/day pairs.
+    """
+    with _LOCK:
+        data = _load()
+
+    settled = 0
+    for date in sorted(data.keys()):
+        for city, rec in data[date].items():
+            if rec.get("outcome") or "pred" not in rec:
+                continue
+            if not _day_complete(city, date):
+                continue            # market not done yet — leave it for later
+
+            try:
+                actual = pw.fetch_actual_high(city, date)
+            except Exception:
+                actual = None
+            if actual is None:
+                continue            # settlement data not available yet; retry next run
+
+            actual_bucket = pw.settlement_round(city, actual)
+            pm_win        = _winning_bucket_from_market(city, date)
+
+            pred       = rec["pred"]
+            bot_bucket = pred.get("top_bucket")
+            hit        = (bot_bucket is not None and bot_bucket == actual_bucket)
+
+            # Would the bot's actual trade have won?
+            trade_win = None
+            bt = pred.get("best_trade")
+            if bt and bt.get("temp") is not None:
+                if bt.get("action") == "BUY YES":
+                    trade_win = (bt["temp"] == actual_bucket)
+                elif bt.get("action") == "BUY NO":
+                    trade_win = (bt["temp"] != actual_bucket)
+
+            rec["outcome"] = {
+                "actual_high":       actual,
+                "actual_bucket":     actual_bucket,
+                "pm_winning_bucket": pm_win,
+                "settled_at":        datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            }
+            rec["score"] = {
+                "bot_bucket":   bot_bucket,
+                "hit":          hit,
+                "made_call":    bool(pred.get("made_call")),
+                "trade_win":    trade_win,
+            }
+            settled += 1
+
+            if feed_deb:
+                # keep the temperature model learning too
+                try:
+                    pw.record_actual(city, date, actual)
+                except Exception:
+                    pass
+
+    if settled:
+        with _LOCK:
+            _save(data)
+    print(f"[learn] settled {settled} city/day outcome(s)")
+    return settled
+
+
+# ── 3. REPORT ─────────────────────────────────────────────────────────────────
+def _latest_settled_date(data: dict) -> Optional[str]:
+    dates = [d for d in data
+             if any("outcome" in rec for rec in data[d].values())]
+    return max(dates) if dates else None
+
+
+def report(date: Optional[str] = None, all_time: bool = False) -> str:
+    data = _load()
+    if not data:
+        return "📊 No learning data yet — run `learn.py record` first."
+
+    if all_time:
+        return _report_all_time(data)
+
+    date = date or _latest_settled_date(data)
+    if not date or date not in data:
+        return "📊 No settled outcomes yet to report."
+
+    day = data[date]
+    scored = [(c, r) for c, r in day.items() if "score" in r and "outcome" in r]
+    if not scored:
+        return f"📊 {date}: no settled outcomes yet."
+
+    # split into "bot made a call" vs everything
+    calls = [(c, r) for c, r in scored if r["score"].get("made_call")]
+    call_hits = sum(1 for _, r in calls if r["score"]["hit"])
+    all_hits  = sum(1 for _, r in scored if r["score"]["hit"])
+
+    L = [f"📊 <b>LEARNING REPORT — {date}</b>  ({len(scored)} cities settled)"]
+
+    if calls:
+        pct = call_hits / len(calls) * 100
+        L.append("")
+        L.append(f"🎯 <b>Bot made a call on {len(calls)} cities — "
+                 f"{call_hits} ✅ / {len(calls)-call_hits} ❌ ({pct:.0f}% hit)</b>")
+        for c, r in sorted(calls, key=lambda x: x[1]["score"]["hit"], reverse=True):
+            L.append(_line(c, r))
+
+    # cities where the bot did NOT make a firm call but still had a top pick
+    others = [(c, r) for c, r in scored if not r["score"].get("made_call")]
+    if others:
+        L.append("")
+        L.append(f"👀 <b>Watched (no firm call) — {len(others)} cities</b>")
+        for c, r in sorted(others, key=lambda x: x[1]["score"]["hit"], reverse=True)[:12]:
+            L.append(_line(c, r))
+        if len(others) > 12:
+            L.append(f"   …and {len(others)-12} more")
+
+    L.append("")
+    L.append(f"📈 <b>Overall top-bucket accuracy: {all_hits}/{len(scored)} "
+             f"({all_hits/len(scored)*100:.0f}%)</b>")
+    return "\n".join(L)
+
+
+def _line(city: str, rec: dict) -> str:
+    s = rec["score"]; o = rec["outcome"]; p = rec.get("pred", {})
+    unit = p.get("unit", "°")
+    emoji = "✅" if s["hit"] else "❌"
+    word  = "WON" if s["hit"] else "LOST"
+    bot_b = s.get("bot_bucket")
+    prob  = p.get("top_prob", 0) * 100
+    verd  = p.get("verdict", "?")
+    act_b = o.get("actual_bucket")
+    act_h = o.get("actual_high")
+    extra = ""
+    if s.get("trade_win") is not None:
+        extra = "  💰trade WON" if s["trade_win"] else "  💸trade lost"
+    return (f"   {emoji} {city_disp(city):<13} bot {bot_b}{unit} @{prob:.0f}% {verd:<5} "
+            f"→ actual {act_h}{unit} ({act_b}{unit}) {word}{extra}")
+
+
+def city_disp(c: str) -> str:
+    return {"new york": "NYC"}.get(c, c.title())
+
+
+def _report_all_time(data: dict) -> str:
+    total = hits = call_total = call_hits = trade_total = trade_wins = 0
+    for date, day in data.items():
+        for city, rec in day.items():
+            s = rec.get("score")
+            if not s:
+                continue
+            total += 1
+            hits  += 1 if s["hit"] else 0
+            if s.get("made_call"):
+                call_total += 1
+                call_hits  += 1 if s["hit"] else 0
+            if s.get("trade_win") is not None:
+                trade_total += 1
+                trade_wins  += 1 if s["trade_win"] else 0
+    if total == 0:
+        return "📊 No settled outcomes yet."
+    L = ["📊 <b>LIFETIME LEARNING</b>",
+         f"   Days tracked: {len(data)}",
+         f"   Top-bucket accuracy: {hits}/{total} ({hits/total*100:.0f}%)"]
+    if call_total:
+        L.append(f"   🎯 When bot made a call: {call_hits}/{call_total} "
+                 f"({call_hits/call_total*100:.0f}%)")
+    if trade_total:
+        L.append(f"   💰 Trade win rate: {trade_wins}/{trade_total} "
+                 f"({trade_wins/trade_total*100:.0f}%)")
+    return "\n".join(L)
+
+
+def settle_and_report() -> str:
+    """Settle anything newly complete, then return the latest scoreboard.
+    Used by the monitor for the once-a-day Telegram learning digest."""
+    try:
+        settle()
+    except Exception as e:
+        print(f"[learn] settle error: {e}")
+    return report()
+
+
+# ── CLI ───────────────────────────────────────────────────────────────────────
+def main():
+    ap = argparse.ArgumentParser(description="PolyWeather learning tracker")
+    ap.add_argument("cmd", choices=["record", "settle", "report", "run"],
+                    help="record | settle | report | run")
+    ap.add_argument("args", nargs="*", help="cities (for record) or date (for report)")
+    ap.add_argument("--all", action="store_true", help="report: lifetime accuracy")
+    a = ap.parse_args()
+
+    if a.cmd == "record":
+        record_all(a.args or None)
+    elif a.cmd == "settle":
+        settle()
+    elif a.cmd == "report":
+        date = next((x for x in a.args if x.count("-") == 2), None)
+        print(_strip(report(date, all_time=a.all)))
+    elif a.cmd == "run":
+        record_all()
+        settle()
+        print(_strip(report()))
+
+
+def _strip(s: str) -> str:
+    import re
+    return re.sub(r"<[^>]+>", "", s)
+
+
+if __name__ == "__main__":
+    main()

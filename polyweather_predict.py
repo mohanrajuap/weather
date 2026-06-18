@@ -220,6 +220,26 @@ _CB_COOLDOWN = float(os.environ.get("RATE_LIMIT_COOLDOWN", "600"))   # 10 min
 def _cache_key(url: str, params: dict) -> str:
     return url + "?" + json.dumps(params or {}, sort_keys=True, default=str)
 
+def _cb_fail(host: str, now: float, why: str) -> bool:
+    """Record a failure against a host; open the breaker past the threshold.
+    Returns True if THIS failure tripped the breaker (so the caller can log it)."""
+    with _CB_LOCK:
+        _CB_FAILS[host] = _CB_FAILS.get(host, 0) + 1
+        fails   = _CB_FAILS[host]
+        tripped = fails >= _CB_TRIP and now >= _CB_UNTIL.get(host, 0.0)
+        if tripped:
+            _CB_UNTIL[host] = now + _CB_COOLDOWN
+    if tripped:
+        print(f"[http] ⛔ circuit breaker OPEN for {host} after {fails} {why} "
+              f"— pausing calls for {int(_CB_COOLDOWN)}s (running on cache / fallbacks)")
+    return tripped
+
+def _cb_ok(host: str):
+    """A success closes the breaker for this host."""
+    with _CB_LOCK:
+        if _CB_FAILS.pop(host, 0):
+            _CB_UNTIL.pop(host, None)
+
 def _get(url: str, params: dict = None, timeout: float = 10.0) -> Optional[Any]:
     key  = _cache_key(url, params)
     host = httpx.URL(url).host
@@ -235,37 +255,35 @@ def _get(url: str, params: dict = None, timeout: float = 10.0) -> Optional[Any]:
         return hit[1] if hit else None
     try:
         r = _SESSION.get(url, params=params or {}, timeout=timeout)
+        # 429 (rate limit) and 5xx (server error / outage) both count toward the
+        # breaker — a host that's down or throttling shouldn't be hammered 50×/scan.
         if r.status_code == 429:
-            # Count the failure; trip the breaker once we cross the threshold so
-            # we stop hammering a host whose quota is clearly gone.
-            with _CB_LOCK:
-                _CB_FAILS[host] = _CB_FAILS.get(host, 0) + 1
-                fails   = _CB_FAILS[host]
-                tripped = fails >= _CB_TRIP and now >= _CB_UNTIL.get(host, 0.0)
-                if tripped:
-                    _CB_UNTIL[host] = now + _CB_COOLDOWN
-            if tripped:
-                print(f"[http] ⛔ circuit breaker OPEN for {host} after {fails} "
-                      f"rate-limits — pausing calls for {int(_CB_COOLDOWN)}s "
-                      f"(running on cache / fallback sources)")
-            else:
+            if not _cb_fail(host, now, "rate-limits"):
                 print(f"[http] 429 RATE LIMITED by {host} — quota likely exhausted"
+                      f"{' (serving cached)' if hit else ''}")
+            return hit[1] if hit else None
+        if r.status_code >= 500:
+            if not _cb_fail(host, now, "server errors"):
+                print(f"[http] {r.status_code} from {host}"
                       f"{' (serving cached)' if hit else ''}")
             return hit[1] if hit else None
         r.raise_for_status()
         data = r.json()
         with _CACHE_LOCK:
             _CACHE[key] = (now, data)
-        # Success → close the breaker for this host.
-        with _CB_LOCK:
-            if _CB_FAILS.pop(host, 0):
-                _CB_UNTIL.pop(host, None)
+        _cb_ok(host)               # success → close the breaker
         return data
     except httpx.HTTPStatusError as e:
         code = e.response.status_code
         # 404 is benign (e.g. NWS has no grid for non-US cities) — don't log it.
         if code != 404:
             print(f"[http] {code} from {host}")
+        return hit[1] if hit else None
+    except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError):
+        # Timeouts/connection failures count too — this is what made the broken
+        # Polymarket search hang the scan one city at a time.
+        if not _cb_fail(host, now, "timeouts"):
+            print(f"[http] timeout/conn error from {host}")
         return hit[1] if hit else None
     except Exception:
         return hit[1] if hit else None
@@ -878,6 +896,14 @@ def _pm_display_name(city_key: str) -> str:
     }
     return overrides.get(city_key, city_key.title())
 
+def _pm_slug_city(city_key: str) -> str:
+    """City as it appears in Polymarket temperature-market slugs (lowercase, hyphenated)."""
+    overrides = {
+        "new york": "nyc",
+        "aurora":   "denver",     # Polymarket lists this metro as 'denver'
+    }
+    return overrides.get(city_key, city_key).replace(" ", "-")
+
 def fetch_polymarket_market(city_key: str, target_date: str, debug: bool = False) -> Optional[Dict]:
     """
     Find the temperature event for a city+date and return per-bucket YES prices.
@@ -885,66 +911,48 @@ def fetch_polymarket_market(city_key: str, target_date: str, debug: bool = False
     try:
         dt = datetime.strptime(target_date, "%Y-%m-%d")
         date_phrase = f"{_MONTHS[dt.month-1]} {dt.day}"
+        month_l     = _MONTHS[dt.month-1].lower()
     except Exception:
         return None
 
     city_disp = _pm_display_name(city_key)
 
-    # Try several search queries — Polymarket title formats vary
-    queries = [
-        f"highest temperature in {city_disp} on {date_phrase}",
-        f"{city_disp} temperature {date_phrase}",
-        f"highest temperature {city_disp}",
-        f"{city_disp} temperature",
-    ]
-
-    events = []
-    for q in queries:
-        # public-search returns events + markets
-        sr = _get(f"{GAMMA}/public-search", {"q": q, "limit": 10}, timeout=8.0)
-        if isinstance(sr, dict) and sr.get("events"):
-            events = sr["events"]
-            if debug:
-                print(f"  [debug] query '{q}' → {len(events)} events")
-            if events:
-                break
-        # fallback: /events endpoint with search
-        ev2 = _get(f"{GAMMA}/events", {"search": q, "closed": "false", "limit": 10}, timeout=8.0)
-        if isinstance(ev2, list) and ev2:
-            events = ev2
-            if debug:
-                print(f"  [debug] /events '{q}' → {len(events)} events")
-            break
-
-    if debug and events:
-        print(f"  [debug] event titles found:")
-        for ev in events[:6]:
-            print(f"     - {ev.get('title')}")
-
-    if not events:
-        if debug:
-            print(f"  [debug] NO events found for any query")
-        return None
-
-    # Match: title must contain city AND the date phrase
-    city_l = city_disp.lower()
-    date_l = date_phrase.lower()
+    # Polymarket's full-text search (/public-search and /events?search=) is
+    # unreliable — it intermittently 500s and TIMES OUT, which used to hang the
+    # entire scan one city at a time. Look the event up by its DETERMINISTIC slug
+    # instead, e.g. 'highest-temperature-in-chicago-on-june-19-2026' — one fast,
+    # reliable call. Fall back to filtering the active-events list client-side.
     event = None
-    for ev in events:
-        title = (ev.get("title") or "").lower()
-        if city_l in title and date_l in title:
-            event = ev
-            break
-    # looser: city + temperature keyword
+    slug = f"highest-temperature-in-{_pm_slug_city(city_key)}-on-{month_l}-{dt.day}-{dt.year}"
+    ev = _get(f"{GAMMA}/events", {"slug": slug}, timeout=8.0)
+    if isinstance(ev, list) and ev:
+        event = ev[0]
+        if debug:
+            print(f"  [debug] slug hit: {slug}")
+
     if event is None:
-        for ev in events:
-            title = (ev.get("title") or "").lower()
-            if city_l in title and ("temperature" in title or "temp" in title):
-                event = ev
-                break
+        # Fallback: scan currently-active events, match city + date in the title.
+        lst = _get(f"{GAMMA}/events",
+                   {"active": "true", "closed": "false", "limit": 500}, timeout=12.0)
+        if isinstance(lst, list):
+            cd, dl = city_disp.lower(), date_phrase.lower()
+            for e in lst:
+                title = (e.get("title") or "").lower()
+                if cd in title and ("temperature" in title or "temp" in title) and dl in title:
+                    event = e
+                    break
+            if event is None:           # looser: city + temperature keyword only
+                for e in lst:
+                    title = (e.get("title") or "").lower()
+                    if cd in title and ("temperature" in title or "temp" in title):
+                        event = e
+                        break
+        if debug and event is not None:
+            print(f"  [debug] list fallback matched: {event.get('title')}")
+
     if event is None:
         if debug:
-            print(f"  [debug] no event matched city '{city_l}' + date '{date_l}'")
+            print(f"  [debug] no Polymarket market for {city_key} on {target_date}")
         return None
 
     if debug:

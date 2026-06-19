@@ -1062,7 +1062,7 @@ def handle_command(text, chat_id):
             "/scan munich — scan one city\n"
             "/pick — choose a market with buttons\n"
             "/positions — show your positions now\n"
-            "/learn — prediction-vs-outcome scoreboard (add 'all' for lifetime)\n"
+            "/learn — prediction-vs-outcome scoreboard (also: all / calib / sources)\n"
             "/help — this message")
         return
 
@@ -1073,6 +1073,10 @@ def handle_command(text, chat_id):
             reply_telegram(chat_id, learn.report(all_time=True))
         elif arg in ("calib", "calibration"):
             reply_telegram(chat_id, learn.report_calibration())
+        elif arg in ("sources", "source", "apis", "api"):
+            # optional city after it, e.g. "/learn sources london"
+            city = next((pw.resolve_city(x) for x in parts[2:] if pw.resolve_city(x)), None)
+            reply_telegram(chat_id, learn.report_sources(city))
         else:
             # optional explicit date as second arg, else most recent settled day
             date = next((x for x in parts[1:] if x.count("-") == 2), None)

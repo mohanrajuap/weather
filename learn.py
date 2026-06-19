@@ -419,6 +419,54 @@ def report_calibration() -> str:
     return "\n".join(L)
 
 
+def report_sources(city: Optional[str] = None) -> str:
+    """Per-API reliability vs settled actuals — which sources to trust.
+
+    For every settled day we stored each API's raw reading for that city. Here we
+    compare each one to the actual settled high: mean absolute error (normalised
+    to °C so cities in °F and °C can be compared) and how often that source alone
+    rounded to the winning bucket. Lower error / higher bucket% = more reliable.
+    Pass a city to see reliability for just that location (e.g. NWS for US cities).
+    """
+    data = _load()
+    agg: Dict[str, list] = {}   # source -> [sum_abs_err_C, n, bucket_hits]
+    for day in data.values():
+        for ck, rec in day.items():
+            if city and ck != city:
+                continue
+            o = rec.get("outcome"); p = rec.get("pred")
+            if not o or not p or o.get("actual_high") is None:
+                continue
+            actual = o["actual_high"]
+            abk    = o.get("actual_bucket")
+            use_f  = bool((pw.CITIES.get(ck) or {}).get("f", False))
+            for src, val in (p.get("forecasts") or {}).items():
+                if val is None:
+                    continue
+                err = abs(val - actual) / (1.8 if use_f else 1.0)   # → °C
+                a = agg.setdefault(src, [0.0, 0, 0])
+                a[0] += err
+                a[1] += 1
+                try:
+                    if pw.settlement_round(ck, val) == abk:
+                        a[2] += 1
+                except Exception:
+                    pass
+
+    rows = [(se / n, hits / n * 100.0, n, src)
+            for src, (se, n, hits) in agg.items() if n > 0]
+    if not rows:
+        return "📡 No settled data yet — source reliability needs a few settled days."
+    rows.sort()                                   # by MAE ascending = best first
+    scope = f" [{city_disp(city)}]" if city else " [all cities]"
+    L = [f"📡 <b>SOURCE RELIABILITY{scope}</b>  (lower error = better)"]
+    for mae, hr, n, src in rows:
+        L.append(f"   {src:<13} MAE {mae:.1f}°C  ·  bucket {hr:.0f}%  ({n})")
+    L.append("")
+    L.append("<i>MAE = avg miss vs settled high · bucket% = how often it alone hit the winner</i>")
+    return "\n".join(L)
+
+
 def settle_and_report() -> str:
     """Settle anything newly complete, then return the latest scoreboard.
     Used by the monitor for the once-a-day Telegram learning digest."""
@@ -437,6 +485,7 @@ def main():
     ap.add_argument("args", nargs="*", help="cities (for record) or date (for report)")
     ap.add_argument("--all", action="store_true", help="report: lifetime accuracy")
     ap.add_argument("--calib", action="store_true", help="report: calibration table")
+    ap.add_argument("--sources", action="store_true", help="report: per-API reliability")
     a = ap.parse_args()
 
     if a.cmd == "record":
@@ -446,6 +495,9 @@ def main():
     elif a.cmd == "report":
         if a.calib:
             print(_strip(report_calibration()))
+        elif a.sources:
+            city = next((pw.resolve_city(x) for x in a.args if pw.resolve_city(x)), None)
+            print(_strip(report_sources(city)))
         else:
             date = next((x for x in a.args if x.count("-") == 2), None)
             print(_strip(report(date, all_time=a.all)))

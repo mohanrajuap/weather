@@ -1320,6 +1320,57 @@ def github_backup():
         print(f"[backup] error: {e}")
 
 
+def _gh_get_file(repo_path: str):
+    """Fetch a file's raw bytes from the backup branch, or None."""
+    import base64
+    api = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{repo_path}"
+    r = httpx.get(api, headers=_gh_headers(), params={"ref": GITHUB_BACKUP_BRANCH}, timeout=20.0)
+    if r.status_code != 200:
+        return None
+    content = r.json().get("content")
+    if not content:
+        return None
+    try:
+        return base64.b64decode(content)
+    except Exception:
+        return None
+
+def _local_is_empty(local: str) -> bool:
+    """True if a learning file is missing or holds no real data (so it's safe to
+    restore over it without losing anything)."""
+    if not os.path.exists(local):
+        return True
+    try:
+        with open(local) as f:
+            return not json.load(f)        # {} / [] / empty → empty
+    except Exception:
+        return True
+
+def github_restore():
+    """On startup, if a local learning file is missing/empty, restore it from the
+    GitHub backup branch. NEVER overwrites a file that already has data."""
+    if not (GITHUB_TOKEN and GITHUB_REPO):
+        return
+    try:
+        files = [(learn._LEARN_FILE, "data/learn_history.json"),
+                 (pw._HISTORY_FILE,  "data/deb_history.json")]
+        restored = 0
+        for local, repo_path in files:
+            if not _local_is_empty(local):
+                continue                   # local already has data — keep it
+            data = _gh_get_file(repo_path)
+            if data:
+                os.makedirs(os.path.dirname(local) or ".", exist_ok=True)
+                with open(local, "wb") as f:
+                    f.write(data)
+                restored += 1
+                print(f"[restore] recovered {repo_path} ← {GITHUB_BACKUP_BRANCH}")
+        if restored:
+            print(f"[restore] restored {restored} learning file(s) from GitHub backup")
+    except Exception as e:
+        print(f"[restore] error: {e}")
+
+
 # ── Main loop ─────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description="PolyWeather Telegram monitor")
@@ -1358,6 +1409,10 @@ def main():
     print("="*60)
 
     conn = init_db()
+
+    # If the /data volume was wiped (fresh deploy), pull the learning history back
+    # from the GitHub backup before anything reads or overwrites it.
+    github_restore()
 
     # startup ping
     if OBSERVE_ONLY:

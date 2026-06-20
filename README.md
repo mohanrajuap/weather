@@ -152,6 +152,11 @@ If `GITHUB_TOKEN` + `GITHUB_REPO` are set, the learning files
 default 02:00) to a **separate `learning-data` branch** — never `main`, so it can't
 trigger a redeploy. Trigger manually any time with `/backup`.
 
+**Auto-restore:** on startup, if the `/data` learning files are missing or empty
+(e.g. the volume was wiped on a fresh deploy), the bot pulls them back from the
+backup branch automatically. It **never overwrites** a file that already has data,
+so your accumulated history is safe — backup nightly, restore on boot.
+
 ---
 
 ## Files

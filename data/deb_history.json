@@ -283,7 +283,7 @@
         "GEM": 31.7,
         "MET.no": 31.8,
         "7Timer": 30.0,
-        "WeatherAPI": 30.0
+        "WeatherAPI": 30.4
       }
     }
   },
@@ -424,7 +424,7 @@
         "GEM": 37.2,
         "MET.no": 37.0,
         "7Timer": 37.0,
-        "WeatherAPI": 37.2
+        "WeatherAPI": 37.5
       }
     }
   },
@@ -473,7 +473,7 @@
         "GEM": 29.7,
         "MET.no": 30.4,
         "7Timer": 30.0,
-        "WeatherAPI": 28.2
+        "WeatherAPI": 28.8
       }
     }
   },
@@ -615,7 +615,7 @@
         "GEM": 27.7,
         "MET.no": 29.5,
         "7Timer": 30.0,
-        "WeatherAPI": 28.7
+        "WeatherAPI": 28.8
       }
     }
   },
@@ -664,7 +664,7 @@
         "GEM": 27.0,
         "MET.no": 24.0,
         "7Timer": 25.0,
-        "WeatherAPI": 25.0
+        "WeatherAPI": 24.8
       }
     }
   },
@@ -909,7 +909,7 @@
         "GEM": 31.6,
         "MET.no": 33.3,
         "7Timer": 30.0,
-        "WeatherAPI": 33.1
+        "WeatherAPI": 34.0
       }
     }
   },
@@ -1646,7 +1646,7 @@
         "GEM": 23.8,
         "MET.no": 21.4,
         "7Timer": 21.0,
-        "WeatherAPI": 21.7
+        "WeatherAPI": 22.0
       }
     }
   },
@@ -1811,7 +1811,7 @@
         "MET.no": 65.8,
         "NWS": 68.0,
         "7Timer": 69.8,
-        "WeatherAPI": 65.4
+        "WeatherAPI": 64.7
       }
     }
   },
@@ -2031,7 +2031,7 @@
         "MET.no": 77.4,
         "NWS": 80.0,
         "7Timer": 77.0,
-        "WeatherAPI": 77.2
+        "WeatherAPI": 76.7
       }
     }
   },
@@ -2196,7 +2196,7 @@
         "MET.no": 83.8,
         "NWS": 86.0,
         "7Timer": 87.8,
-        "WeatherAPI": 89.7
+        "WeatherAPI": 86.1
       }
     }
   },
@@ -2302,7 +2302,7 @@
         "GEM": 23.9,
         "MET.no": 24.1,
         "7Timer": 24.0,
-        "WeatherAPI": 22.3
+        "WeatherAPI": 21.4
       }
     }
   },

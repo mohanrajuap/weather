@@ -956,10 +956,10 @@ _ICAO_COUNTRY = {
     "MP": "PA", "VI": "IN", "OP": "PK", "K": "US",
 }
 
-_WU_KEYS = [
-    "e1f10a1e78da46f5b10a1e78da96f525",
-    "6532d6454b8aa370768e63d6ba5a832e",
-]
+# Wunderground (api.weather.com) keys — provided via env so no secret lives in
+# the (public) code. Comma-separated in WU_KEYS. If unset, Wunderground settlement
+# is skipped and the bot falls back to METAR / Open-Meteo analysis.
+_WU_KEYS = [k.strip() for k in _os_for_bias.environ.get("WU_KEYS", "").split(",") if k.strip()]
 
 def _icao_country(icao: str) -> str:
     """Best-effort ISO country for a WU station path."""

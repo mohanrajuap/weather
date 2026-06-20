@@ -70,6 +70,11 @@ NTFY_SERVER   = os.environ.get("NTFY_SERVER", "https://ntfy.sh").strip().rstrip(
 # Topic the bot LISTENS on for /commands (publish to it from the ntfy app/web).
 # Defaults to NTFY_TOPIC so commands and alerts share one topic.
 NTFY_CMD_TOPIC = os.environ.get("NTFY_CMD_TOPIC", NTFY_TOPIC).strip()
+# Command authorization. Telegram commands are restricted to TELEGRAM_CHAT_ID
+# (the sender is identified). ntfy has NO sender identity, so if CMD_SECRET is set
+# an ntfy command must be prefixed with it (e.g. "mypass /scan london"); without a
+# secret, ntfy commands are unauthenticated (anyone who knows the topic can send).
+CMD_SECRET    = os.environ.get("CMD_SECRET", "").strip()
 WALLET        = os.environ.get("POLYMARKET_WALLET", "").strip()
 INTERVAL_MIN  = int(os.environ.get("CHECK_INTERVAL_MIN", "20"))
 POS_UPDATE_MIN = int(os.environ.get("POSITION_UPDATE_MIN", "15"))
@@ -1063,6 +1068,24 @@ def scan_for_command(scope="all", reply_to=None):
     print(f"[{ts}] /scan {scope} done — {len(hits)} tradeable")
 
 
+def _tg_authorized(chat_id) -> bool:
+    """Only act on Telegram commands from configured recipients. If no chat IDs
+    are set (Telegram unconfigured), fall through so local testing still works."""
+    if not TG_CHAT_IDS:
+        return True
+    return str(chat_id) in TG_CHAT_IDS
+
+def _ntfy_authorize(text: str):
+    """Return the command text if authorized, else None. When CMD_SECRET is set an
+    ntfy command must start with it (then the secret is stripped)."""
+    text = text.strip()
+    if CMD_SECRET:
+        if not text.startswith(CMD_SECRET):
+            return None
+        text = text[len(CMD_SECRET):].strip()
+    return text if text.startswith("/") else None
+
+
 def handle_command(text, chat_id):
     """Parse a /command and act."""
     text = (text or "").strip()
@@ -1176,13 +1199,16 @@ def command_listener():
                 text = msg.get("text", "")
                 chat_id = (msg.get("chat") or {}).get("id")
                 if text and chat_id and text.startswith("/"):
-                    handle_command(text, chat_id)
+                    if _tg_authorized(chat_id):
+                        handle_command(text, chat_id)
+                    else:
+                        print(f"[listener] ignored command from unauthorized chat {chat_id}")
                 # inline button taps
                 cq = upd.get("callback_query")
                 if cq:
                     data = cq.get("data", "")
                     cq_chat = (cq.get("message") or {}).get("chat", {}).get("id")
-                    if data.startswith("scan:") and cq_chat:
+                    if data.startswith("scan:") and cq_chat and _tg_authorized(cq_chat):
                         scan_for_command(data.split(":", 1)[1], reply_to=cq_chat)
         except Exception as e:
             print(f"[listener] error: {e}")
@@ -1216,11 +1242,15 @@ def ntfy_command_listener():
                         continue
                     if m.get("event") != "message":
                         continue                      # skip open/keepalive events
-                    text = (m.get("message") or "").strip()
-                    if not text.startswith("/"):
-                        continue                      # not a command (ignore alerts)
+                    raw = (m.get("message") or "").strip()
+                    if not raw.startswith(CMD_SECRET if CMD_SECRET else "/"):
+                        continue                      # not a command / missing secret
                     if m.get("time", 0) < start - 5:
                         continue                      # stale, from before we started
+                    text = _ntfy_authorize(raw)       # verify + strip secret
+                    if not text:
+                        print("[ntfy] ignored command (missing/!wrong CMD_SECRET)")
+                        continue
                     print(f"[ntfy] command: {text}")
                     reply_to = TG_CHAT_IDS[0] if TG_CHAT_IDS else None
                     try:

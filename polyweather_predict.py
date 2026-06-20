@@ -42,6 +42,22 @@ import os as _os_for_bias
 # they smooth the afternoon peak. Override with env PEAK_BIAS (e.g. "0.4").
 DEFAULT_PEAK_BIAS = float(_os_for_bias.environ.get("PEAK_BIAS", "0.3"))
 
+# Manual per-city bias overrides (°), e.g. CITY_BIAS="manila:2.0,karachi:0.5".
+# When a city is listed here it REPLACES the learned/default bias for that city —
+# use it after /history shows the bot is consistently off for a city. Backed up to
+# GitHub via the learning data path is the *history*; this override lives in env.
+def _parse_city_bias() -> Dict[str, float]:
+    out: Dict[str, float] = {}
+    for part in _os_for_bias.environ.get("CITY_BIAS", "").split(","):
+        if ":" in part:
+            name, val = part.split(":", 1)
+            try:
+                out[name.strip().lower()] = float(val)
+            except Exception:
+                pass
+    return out
+CITY_BIAS = _parse_city_bias()
+
 # A Polymarket bucket priced at/above this YES means the market has effectively
 # DECIDED the outcome. If our model disagrees with an already-decided market,
 # the model is almost certainly the one that's wrong (it's predicting a peak the
@@ -1527,17 +1543,20 @@ def deb_blend(city: str, forecasts: Dict[str, float],
         if days_used >= lookback:
             break
 
+    manual = CITY_BIAS.get((city or "").strip().lower())   # explicit per-city override
+
     if days_used < 2:
         n       = len(forecasts)
         blended = sum(forecasts.values()) / n
-        # No history yet — apply a small default upward nudge, because numerical
-        # weather models systematically under-predict the daily MAX (they smooth
-        # the afternoon peak). +0.3° is a conservative, literature-backed default.
-        # This is replaced by the learned signed-bias once history accumulates.
-        blended += DEFAULT_PEAK_BIAS
+        # A manual CITY_BIAS overrides everything; otherwise apply the default
+        # upward nudge (models smooth the afternoon peak, so they run low). The
+        # learned signed-bias takes over once history accumulates.
+        bias = manual if manual is not None else DEFAULT_PEAK_BIAS
+        blended += bias
+        tag = f"manual {bias:+.1f}°" if manual is not None else f"+{DEFAULT_PEAK_BIAS}° peak-bias"
         return (round(blended, 1),
-                f"equal-weight({n} models, {days_used}d history, +{DEFAULT_PEAK_BIAS}° peak-bias)",
-                DEFAULT_PEAK_BIAS)
+                f"equal-weight({n} models, {days_used}d history, {tag})",
+                bias)
 
     maes = {}
     for model, errs in errors.items():
@@ -1558,14 +1577,18 @@ def deb_blend(city: str, forecasts: Dict[str, float],
     # MAE measures error magnitude but not DIRECTION. Models systematically
     # under-predict the daily MAX (they smooth the peak hour). Compute the
     # signed mean error (actual - forecast) from history and shift the blend.
-    bias = _signed_bias(city_data, list(forecasts.keys()), skip_date, lookback, decay)
+    # A manual CITY_BIAS override wins over the learned value when set.
+    if manual is not None:
+        bias = manual
+    else:
+        bias = _signed_bias(city_data, list(forecasts.keys()), skip_date, lookback, decay)
     if bias is not None:
         blended += bias
 
     top       = sorted(weights.items(), key=lambda x: x[1], reverse=True)[:3]
     info      = " | ".join(f"{m}({w*100:.0f}%,MAE:{maes[m]:.1f}°)" for m, w in top)
     if bias is not None and abs(bias) >= 0.05:
-        info += f" | bias{bias:+.1f}°"
+        info += f" | {'manual ' if manual is not None else ''}bias{bias:+.1f}°"
     return round(blended, 1), info, (bias or 0.0)
 
 def _signed_bias(city_data: dict, models: list, skip_date: str,

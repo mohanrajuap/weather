@@ -629,6 +629,81 @@ def report_missed() -> str:
     return "\n".join(L)
 
 
+def _raw_blend(p: dict) -> Optional[float]:
+    """The no-bias blend for a snapshot (deb_raw, or deb minus the bias)."""
+    raw = p.get("deb_raw")
+    if raw is not None:
+        return raw
+    deb, pb = p.get("deb"), p.get("peak_bias")
+    if deb is not None and pb is not None:
+        return round(deb - pb, 1)
+    return None
+
+
+def report_city(city: str) -> str:
+    """Full prediction-vs-outcome history for ONE city, plus the bias it implies.
+
+    Shows every day's predicted bucket vs the actual, and computes how far the raw
+    (no-bias) blend sat from the actual on average — which is exactly the bias to
+    set with CITY_BIAS so the blend lands on the real high for that city.
+    """
+    ck   = pw.resolve_city(city) or (city or "").lower()
+    data = _load()
+    rows, residuals = [], []
+    for date in sorted(data.keys()):
+        rec = (data.get(date) or {}).get(ck)
+        if not rec or "pred" not in rec:
+            continue
+        p = rec["pred"]; o = rec.get("outcome")
+        u = p.get("unit", "°")
+        bb, prob = p.get("top_bucket"), p.get("top_prob", 0) * 100
+        if o and o.get("actual_high") is not None:
+            ab, ah = o.get("actual_bucket"), o.get("actual_high")
+            mark = "✅" if bb == ab else "❌"
+            rows.append(f"   {date}  pred {bb}{u}@{prob:.0f}% → actual {ab}{u} ({ah}{u}) {mark}")
+            raw = _raw_blend(p)
+            if raw is not None:
+                residuals.append(ah - raw)
+        else:
+            rows.append(f"   {date}  pred {bb}{u}@{prob:.0f}% → (pending)")
+    if not rows:
+        return f"📜 No history yet for {city_disp(ck)} — fills in as days settle."
+
+    L = [f"📜 <b>{city_disp(ck)} — prediction history</b>"]
+    L += rows[-14:]
+    if residuals:
+        mean_res = sum(residuals) / len(residuals)
+        where = "BELOW" if mean_res > 0 else "ABOVE"
+        L.append("")
+        L.append(f"📐 Raw blend ran {abs(mean_res):.1f}°{where} the actual over "
+                 f"{len(residuals)} settled day(s).")
+        L.append(f"💡 To correct it: <code>CITY_BIAS={ck}:{mean_res:+.1f}</code>")
+    return "\n".join(L)
+
+
+def recent_city_line(city: str, n: int = 3) -> Optional[str]:
+    """Short 'pred→actual' track record for the last n settled days — shown in
+    the alert so you can see how this city has behaved lately."""
+    ck   = pw.resolve_city(city) or (city or "").lower()
+    data = _load()
+    items = []
+    for date in sorted(data.keys(), reverse=True):
+        rec = (data.get(date) or {}).get(ck)
+        if not rec:
+            continue
+        p, o = rec.get("pred"), rec.get("outcome")
+        if not p or not o or o.get("actual_bucket") is None:
+            continue
+        u = p.get("unit", "°")
+        mark = "✅" if p.get("top_bucket") == o.get("actual_bucket") else "❌"
+        items.append(f"{p.get('top_bucket')}→{o.get('actual_bucket')}{u}{mark}")
+        if len(items) >= n:
+            break
+    if not items:
+        return None
+    return "📜 Recent (pred→actual): " + " · ".join(items)
+
+
 def settle_and_report() -> str:
     """Settle anything newly complete, then return the latest scoreboard.
     Used by the monitor for the once-a-day Telegram learning digest."""

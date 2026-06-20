@@ -328,6 +328,14 @@ def fmt_new_signal(p) -> str:
         src = "🎯 Wunderground" if live.get("source") == "wunderground" else "METAR"
         L.append(f"🌡️ Live: {live['current_temp']}{sym} (max {live.get('max_so_far')}{sym}, {esc(live.get('trend'))}) · {src}")
 
+    # this city's recent track record (pred→actual) so you can judge the call
+    try:
+        rl = learn.recent_city_line(p.get("city"))
+        if rl:
+            L.append(esc(rl))
+    except Exception:
+        pass
+
     # probabilities
     dist = p.get("distribution") or []
     if dist:
@@ -1123,6 +1131,7 @@ def handle_command(text, chat_id):
             "/positions — show your positions now\n"
             "/learn — prediction-vs-outcome scoreboard (also: all / calib / sources)\n"
             "/missed — $1 what-if P&L on alerts you didn't take\n"
+            "/history <city> — that city's prediction history + suggested bias\n"
             "/help — this message")
         return
 
@@ -1155,6 +1164,14 @@ def handle_command(text, chat_id):
 
     if low.startswith("/missed"):
         reply_telegram(chat_id, learn.report_missed())
+        return
+
+    if low.startswith("/history"):
+        parts = text.split(maxsplit=1)
+        if len(parts) > 1:
+            reply_telegram(chat_id, learn.report_city(parts[1].strip()))
+        else:
+            reply_telegram(chat_id, "Usage: /history <city>   e.g. /history manila")
         return
 
     if low == "/backup":

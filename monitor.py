@@ -1243,13 +1243,16 @@ def ntfy_command_listener():
                     if m.get("event") != "message":
                         continue                      # skip open/keepalive events
                     raw = (m.get("message") or "").strip()
-                    if not raw.startswith(CMD_SECRET if CMD_SECRET else "/"):
-                        continue                      # not a command / missing secret
+                    # A command attempt starts with "/" or the secret; everything
+                    # else (the bot's own alerts on this topic) is ignored silently.
+                    if not (raw.startswith("/") or (CMD_SECRET and raw.startswith(CMD_SECRET))):
+                        continue
                     if m.get("time", 0) < start - 5:
                         continue                      # stale, from before we started
                     text = _ntfy_authorize(raw)       # verify + strip secret
                     if not text:
-                        print("[ntfy] ignored command (missing/!wrong CMD_SECRET)")
+                        print(f"[ntfy] REJECTED '{raw[:24]}' — CMD_SECRET is set, "
+                              f"prefix commands with it: '<secret> /help'")
                         continue
                     print(f"[ntfy] command: {text}")
                     reply_to = TG_CHAT_IDS[0] if TG_CHAT_IDS else None

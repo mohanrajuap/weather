@@ -413,6 +413,28 @@ def city_disp(c: str) -> str:
     return {"new york": "NYC"}.get(c, c.title())
 
 
+def _user_tz():
+    return int(os.environ.get("USER_TZ_OFFSET_MIN", "330")), os.environ.get("USER_TZ_LABEL", "IST")
+
+def _now_user_str() -> str:
+    mins, lbl = _user_tz()
+    t = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=mins)
+    return f"{t.strftime('%I:%M %p').lstrip('0')} {lbl}"
+
+def _now_city_str(ck: str) -> str:
+    tz = (pw.CITIES.get(ck) or {}).get("tz", 0)
+    return (datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=tz)).strftime("%H:%M")
+
+def _ts_to_user_str(ts: str) -> Optional[str]:
+    try:
+        dt = datetime.fromisoformat(str(ts).replace("Z", "+00:00")).replace(tzinfo=None)
+    except Exception:
+        return None
+    mins, lbl = _user_tz()
+    u = dt + timedelta(minutes=mins)
+    return f"{u.strftime('%Y-%m-%d %I:%M %p').replace(' 0', ' ')} {lbl}"
+
+
 def _report_all_time(data: dict) -> str:
     total = hits = call_total = call_hits = trade_total = trade_wins = 0
     for date, day in data.items():
@@ -650,10 +672,15 @@ def report_city(city: str) -> str:
     ck   = pw.resolve_city(city) or (city or "").lower()
     data = _load()
     rows, residuals = [], []
+    last_alert_ts = None
     for date in sorted(data.keys()):
         rec = (data.get(date) or {}).get(ck)
         if not rec or "pred" not in rec:
+            if rec and rec.get("alert", {}).get("ts"):
+                last_alert_ts = rec["alert"]["ts"]
             continue
+        if rec.get("alert", {}).get("ts"):
+            last_alert_ts = rec["alert"]["ts"]
         p = rec["pred"]; o = rec.get("outcome")
         u = p.get("unit", "°")
         bb, prob = p.get("top_bucket"), p.get("top_prob", 0) * 100
@@ -669,7 +696,12 @@ def report_city(city: str) -> str:
     if not rows:
         return f"📜 No history yet for {city_disp(ck)} — fills in as days settle."
 
-    L = [f"📜 <b>{city_disp(ck)} — prediction history</b>"]
+    L = [f"📜 <b>{city_disp(ck)} — prediction history</b>",
+         f"🕐 {city_disp(ck)} now {_now_city_str(ck)} · {_now_user_str()}"]
+    la = _ts_to_user_str(last_alert_ts) if last_alert_ts else None
+    if la:
+        L.append(f"🔔 Last alert sent: {la}")
+    L.append("")
     L += rows[-14:]
     if residuals:
         mean_res = sum(residuals) / len(residuals)

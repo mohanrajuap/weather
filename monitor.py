@@ -58,6 +58,48 @@ def esc(s) -> str:
     """HTML-escape so names with & < > don't break Telegram's HTML parser."""
     return _html.escape(str(s)) if s is not None else ""
 
+# ── Time helpers (IST for you + the city's local time) ────────────────────────
+# Your reference timezone for every alert. Default IST (UTC+5:30); override with
+# USER_TZ_OFFSET_MIN (minutes) and USER_TZ_LABEL.
+_USER_TZ_MIN   = int(os.environ.get("USER_TZ_OFFSET_MIN", "330"))   # 5:30 = 330
+_USER_TZ_LABEL = os.environ.get("USER_TZ_LABEL", "IST").strip()
+
+def _fmt_clock(dt) -> str:
+    return dt.strftime("%I:%M %p").lstrip("0")     # cross-platform "8:05 AM"
+
+def _now_user() -> str:
+    return _fmt_clock(datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=_USER_TZ_MIN))
+
+def _now_city(city_key) -> str:
+    tz = (pw.CITIES.get(city_key) or {}).get("tz", 0)
+    return (datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=tz)).strftime("%H:%M")
+
+def _time_footer(city_key) -> str:
+    return f"🕐 Now: {city_display(city_key)} {_now_city(city_key)} · {_now_user()} {_USER_TZ_LABEL}"
+
+def _position_advice(pos: dict, p: dict, prev_bucket) -> str:
+    """Guidance when the model moved OFF the bucket you hold. Temperature buckets
+    are mutually exclusive — you can't 'average' a wrong one, so spell out the real
+    options (cut / hedge / hold) with your actual entry and the new price."""
+    sym = p.get("temp_unit", "°")
+    held = pos.get("bucket")
+    entry = pos.get("avg_price"); cur = pos.get("cur_price")
+    shares = pos.get("size") or 0.0; val = pos.get("current_value") or 0.0
+    new_bucket = p.get("top_bucket")
+    bt = p.get("best_trade")
+    np_ = bt.get("yes_price") if bt else None
+    e_s = f"{entry*100:.0f}¢" if entry is not None else "—"
+    c_s = f"{cur*100:.0f}¢"   if cur   is not None else "—"
+    np_s = f" @ {np_*100:.0f}¢" if np_ is not None else ""
+    L = ["", _DIV, f"💼 <b>You hold {held}{sym}</b>: {shares:.1f} shares @ {e_s} (now {c_s}, ${val:.2f})"]
+    if held is not None and new_bucket is not None and held != new_bucket:
+        L.append(f"⚖️ Model moved to <b>{new_bucket}{sym}</b> — your {held}{sym} is now the underdog.")
+        L.append("You can't average across buckets (only one settles). Your options:")
+        L.append(f"   • <b>Cut and switch</b>: sell {held}{sym} (~${val:.2f} back) → buy {new_bucket}{sym}{np_s}")
+        L.append(f"   • <b>Hedge</b>: keep {held}{sym}, also buy {new_bucket}{sym}{np_s} — covers both, but you pay twice and only one wins")
+        L.append(f"   • <b>Hold</b>: only if you think the model is wrong and {held}{sym} still hits")
+    return "\n".join(L)
+
 # ── Config from environment ───────────────────────────────────────────────────
 TG_TOKEN      = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
 TG_CHAT       = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
@@ -373,6 +415,7 @@ def fmt_new_signal(p) -> str:
     if pm and pm.get("url"):
         L.append("")
         L.append(f'🔗 <a href="{esc(pm["url"])}">Open on Polymarket</a>')
+    L.append(_time_footer(p.get("city")))
     return "\n".join(L)
 
 
@@ -407,10 +450,11 @@ def fmt_collapse(p, prev_prob) -> str:
             break
     L.append("")
     L.append(f"👉 If you hold {p['top_bucket']}{sym}, reconsider — edge shrinking.")
+    L.append(_time_footer(p.get("city")))
     return "\n".join(L)
 
 
-def fmt_bucket_shift(p, prev_bucket, prev_prob) -> str:
+def fmt_bucket_shift(p, prev_bucket, prev_prob, position=None) -> str:
     """The model's top bucket CHANGED while still high-confidence.
     e.g. morning said 32°C@70%, now says 28°C@70%. This is a different prediction."""
     sym = p["temp_unit"]
@@ -438,9 +482,13 @@ def fmt_bucket_shift(p, prev_bucket, prev_prob) -> str:
     if bt:
         lines.append("")
         lines.append(f"💰 New best: {esc(bt['action'])} {bt['temp']}{sym} @ {bt['yes_price']*100:.0f}¢ → {bt['best_edge']*100:+.0f}%")
+    # if you hold a position on this city, advise how to manage it
+    if position and position.get("bucket") is not None:
+        lines.append(_position_advice(position, p, prev_bucket))
     pm = p.get("polymarket")
     if pm and pm.get("url"):
         lines.append(f'🔗 {pm["url"]}')
+    lines.append(_time_footer(p.get("city")))
     return "\n".join(lines)
 
 
@@ -848,17 +896,18 @@ def run_scan(conn):
     health = {"total": len(ALERT_CITIES), "errored": 0, "no_data": 0, "evaluated": 0}
     scan_preds = []   # collected for the learning tracker (one disk write at end)
 
-    # Cities you currently hold a position on — so a buy alert on a city you DON'T
-    # hold can be recorded as a (possibly missed) trade for the $1 what-if tracker.
-    held_cities = set()
+    # Your current positions per city — used for the missed-trade tracker AND for
+    # position-management advice when a prediction changes off a bucket you hold.
+    held_positions = {}
     if WALLET:
         try:
             for pos in (pw.fetch_positions(WALLET, weather_only=True) or []):
                 ck = _match_city_from_title(pos.get("title", ""))
                 if ck:
-                    held_cities.add(ck)
+                    held_positions[ck] = {**pos, "bucket": _extract_pos_bucket(pos.get("title", ""))}
         except Exception as e:
             print(f"  [missed] position check failed: {e}")
+    held_cities = set(held_positions.keys())
 
     for city in ALERT_CITIES:
         try:
@@ -960,7 +1009,8 @@ def run_scan(conn):
                     print(f"     ↳ recorded as potential missed trade (no position held)")
             print(f"  🟢 ALERT {city} {bucket}° {prob*100:.0f}%{mode_tag}")
         elif bucket_shifted:
-            alert_signal(fmt_bucket_shift(p, prev_bucket, prev_prob if prev_prob is not None else prob))
+            alert_signal(fmt_bucket_shift(p, prev_bucket, prev_prob if prev_prob is not None else prob,
+                                          position=held_positions.get(p["city"])))
             # keep alerted_high=1 since it's still a high-conf signal, just a new bucket
             upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=1)
             shifts += 1

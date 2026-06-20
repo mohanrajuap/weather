@@ -1500,9 +1500,12 @@ def _save_history(data: dict):
 
 def deb_blend(city: str, forecasts: Dict[str, float],
               target_date: str = None,
-              lookback: int = DEB_LOOKBACK, decay: float = DEB_DECAY) -> Tuple[Optional[float], str]:
+              lookback: int = DEB_LOOKBACK, decay: float = DEB_DECAY
+              ) -> Tuple[Optional[float], str, float]:
+    """Returns (blended_with_bias, info, bias_applied). The RAW (no-bias) blend is
+    blended_with_bias - bias_applied, so callers can show both numbers."""
     if not forecasts:
-        return None, "no forecasts"
+        return None, "no forecasts", 0.0
     history   = _load_history()
     city_data = history.get(city.lower(), {})
     skip_date = target_date or _now_utc().strftime("%Y-%m-%d")
@@ -1532,7 +1535,9 @@ def deb_blend(city: str, forecasts: Dict[str, float],
         # the afternoon peak). +0.3° is a conservative, literature-backed default.
         # This is replaced by the learned signed-bias once history accumulates.
         blended += DEFAULT_PEAK_BIAS
-        return round(blended, 1), f"equal-weight({n} models, {days_used}d history, +{DEFAULT_PEAK_BIAS}° peak-bias)"
+        return (round(blended, 1),
+                f"equal-weight({n} models, {days_used}d history, +{DEFAULT_PEAK_BIAS}° peak-bias)",
+                DEFAULT_PEAK_BIAS)
 
     maes = {}
     for model, errs in errors.items():
@@ -1545,7 +1550,7 @@ def deb_blend(city: str, forecasts: Dict[str, float],
     inv       = {m: 1.0 / (mae + 0.1) for m, mae in maes.items() if m in forecasts}
     total_inv = sum(inv.values())
     if total_inv == 0:
-        return round(sum(forecasts.values()) / len(forecasts), 1), "equal-weight(fallback)"
+        return round(sum(forecasts.values()) / len(forecasts), 1), "equal-weight(fallback)", 0.0
     weights   = {m: v / total_inv for m, v in inv.items()}
     blended   = sum(forecasts[m] * weights[m] for m in weights)
 
@@ -1561,7 +1566,7 @@ def deb_blend(city: str, forecasts: Dict[str, float],
     info      = " | ".join(f"{m}({w*100:.0f}%,MAE:{maes[m]:.1f}°)" for m, w in top)
     if bias is not None and abs(bias) >= 0.05:
         info += f" | bias{bias:+.1f}°"
-    return round(blended, 1), info
+    return round(blended, 1), info, (bias or 0.0)
 
 def _signed_bias(city_data: dict, models: list, skip_date: str,
                  lookback: int = DEB_LOOKBACK, decay: float = DEB_DECAY) -> Optional[float]:
@@ -1793,7 +1798,9 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         print(f"  ⚠️ source check [{city_key}] — {w}")
 
     # ── DEB blend ────────────────────────────────────────────────────────────
-    deb, deb_weights = deb_blend(city_key, forecasts, target_date=target_date)
+    deb, deb_weights, peak_bias = deb_blend(city_key, forecasts, target_date=target_date)
+    # Raw blend BEFORE any bias was applied — so we can show both numbers.
+    deb_raw = round(deb - peak_bias, 1) if deb is not None else None
 
     # ── ensemble spread ───────────────────────────────────────────────────────
     p10     = _sf(ens.get("p10"))
@@ -1826,7 +1833,9 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     if deb is None:
         deb = ens_med if ens_med is not None else _sf(om.get("_target_max"))
         if deb is not None:
+            deb_raw = round(deb, 1)                    # the fallback center, no bias
             deb = round(deb + DEFAULT_PEAK_BIAS, 1)
+            peak_bias = DEFAULT_PEAK_BIAS
             deb_weights = "ensemble-median fallback (multi-model fetch empty)"
 
     # ── live METAR (always today's observations) ──────────────────────────────
@@ -2086,6 +2095,8 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         "forecasts":      forecasts,
         "source_warnings": source_warnings,
         "deb":            deb,
+        "deb_raw":        deb_raw,          # blend WITHOUT peak bias
+        "peak_bias":      round(peak_bias, 2),
         "deb_weights":    deb_weights,
         "ensemble":       {"p10": p10, "median": ens_med, "p90": p90,
                            "members": ens.get("members", 0)},

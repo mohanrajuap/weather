@@ -295,7 +295,14 @@ def fmt_new_signal(p) -> str:
     L.append("")
 
     # model section
-    L.append(f"🧬 <b>Model blend:</b> {p.get('deb')}{sym}  (σ {p.get('sigma')})")
+    # Show BOTH numbers: the raw model blend and the bias-adjusted one the bot
+    # actually trades on, so the peak-bias contribution is always transparent.
+    _bias = p.get("peak_bias") or 0.0
+    if p.get("deb_raw") is not None and abs(_bias) >= 0.05:
+        L.append(f"🧬 <b>Model blend:</b> {p.get('deb')}{sym}  "
+                 f"(raw {p.get('deb_raw')}{sym} {_bias:+.1f}° bias · σ {p.get('sigma')})")
+    else:
+        L.append(f"🧬 <b>Model blend:</b> {p.get('deb')}{sym}  (σ {p.get('sigma')})")
     if p.get("forecasts"):
         fc = " · ".join(f"{esc(m)} {v}" for m, v in p["forecasts"].items())
         L.append(f"📊 {fc}")

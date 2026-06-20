@@ -103,6 +103,8 @@ def _build_snap(p: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         "verdict":    p.get("verdict"),
         "made_call":  p.get("verdict") == "TRADE",
         "deb":        p.get("deb"),
+        "deb_raw":    p.get("deb_raw"),       # blend WITHOUT peak bias
+        "peak_bias":  p.get("peak_bias"),     # bias added to the raw blend
         "sigma":      p.get("sigma"),
         "forecasts":  p.get("forecasts") or {},
         "timing":     (p.get("timing") or {}).get("quality"),
@@ -337,8 +339,13 @@ def _line(city: str, rec: dict) -> str:
     extra = ""
     if s.get("trade_win") is not None:
         extra = "  💰trade WON" if s["trade_win"] else "  💸trade lost"
+    # Show the raw blend + bias so the peak-bias contribution is visible.
+    blend = ""
+    raw, bias = p.get("deb_raw"), p.get("peak_bias")
+    if raw is not None and bias is not None and abs(bias) >= 0.05:
+        blend = f" [raw {raw}{unit}{bias:+.1f}→{p.get('deb')}{unit}]"
     return (f"   {emoji} {city_disp(city):<13} bot {bot_b}{unit} @{prob:.0f}% {verd:<5} "
-            f"→ actual {act_h}{unit} ({act_b}{unit}) {word}{extra}")
+            f"→ actual {act_h}{unit} ({act_b}{unit}) {word}{extra}{blend}")
 
 
 def city_disp(c: str) -> str:

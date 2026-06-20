@@ -840,6 +840,18 @@ def run_scan(conn):
     health = {"total": len(ALERT_CITIES), "errored": 0, "no_data": 0, "evaluated": 0}
     scan_preds = []   # collected for the learning tracker (one disk write at end)
 
+    # Cities you currently hold a position on — so a buy alert on a city you DON'T
+    # hold can be recorded as a (possibly missed) trade for the $1 what-if tracker.
+    held_cities = set()
+    if WALLET:
+        try:
+            for pos in (pw.fetch_positions(WALLET, weather_only=True) or []):
+                ck = _match_city_from_title(pos.get("title", ""))
+                if ck:
+                    held_cities.add(ck)
+        except Exception as e:
+            print(f"  [missed] position check failed: {e}")
+
     for city in ALERT_CITIES:
         try:
             p = pw.predict(city, fetch_prices=USE_PRICES)
@@ -928,6 +940,16 @@ def run_scan(conn):
             alert_signal(fmt_new_signal(p))   # suppressed in OBSERVE mode
             upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=1)
             new_alerts += 1
+            # Record the alert for the missed-trade tracker (LIVE only — in OBSERVE
+            # no alert was actually sent, so "you missed it" wouldn't be true).
+            if not OBSERVE_ONLY and p.get("best_trade"):
+                held = p["city"] in held_cities
+                try:
+                    learn.note_alert(p, held)
+                except Exception:
+                    pass
+                if not held:
+                    print(f"     ↳ recorded as potential missed trade (no position held)")
             print(f"  🟢 ALERT {city} {bucket}° {prob*100:.0f}%{mode_tag}")
         elif bucket_shifted:
             alert_signal(fmt_bucket_shift(p, prev_bucket, prev_prob if prev_prob is not None else prob))
@@ -1100,6 +1122,7 @@ def handle_command(text, chat_id):
             "/pick — choose a market with buttons\n"
             "/positions — show your positions now\n"
             "/learn — prediction-vs-outcome scoreboard (also: all / calib / sources)\n"
+            "/missed — $1 what-if P&L on alerts you didn't take\n"
             "/help — this message")
         return
 
@@ -1128,6 +1151,10 @@ def handle_command(text, chat_id):
             reply_telegram(chat_id, fmt_positions_update(WALLET, positions))
         else:
             reply_telegram(chat_id, "No wallet set (POLYMARKET_WALLET).")
+        return
+
+    if low.startswith("/missed"):
+        reply_telegram(chat_id, learn.report_missed())
         return
 
     if low == "/backup":

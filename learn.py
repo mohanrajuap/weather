@@ -155,6 +155,60 @@ def note_many(preds: List[Dict[str, Any]]):
         pass
 
 
+def note_alert(p: Dict[str, Any], had_position: bool):
+    """Record a BUY alert as a (possibly missed) trade for what-if $1 P&L.
+
+    Called from the monitor only when a live buy alert fires. Stores the exact
+    buy details the bot showed (bucket, side, entry price) plus whether you
+    already held a position on that city — so we can later tell you what you
+    missed (or avoided) by not taking it.
+    """
+    try:
+        bt = p.get("best_trade")
+        city = p.get("city")
+        date = p.get("target_date")
+        if not bt or not city or not date:
+            return
+        snap = {
+            "ts":           datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "action":       bt.get("action"),
+            "bucket":       bt.get("temp"),
+            "yes_price":    bt.get("yes_price"),
+            "edge":         bt.get("best_edge"),
+            "prob":         round(float(p.get("top_prob") or 0.0), 3),
+            "unit":         p.get("temp_unit"),
+            "had_position": bool(had_position),
+        }
+        with _LOCK:
+            data = _load()
+            rec = data.setdefault(date, {}).setdefault(city, {})
+            if "outcome" in rec or "alert" in rec:
+                return            # already settled, or already recorded today
+            rec["alert"] = snap
+            _save(data)
+    except Exception:
+        pass
+
+
+def _alert_pnl(al: dict, actual_bucket) -> Optional[dict]:
+    """$1-stake P&L for a recorded alert, given the settled winning bucket.
+    BUY YES at price p: win pays 1/p per $1 (profit 1/p-1); lose = -$1."""
+    bk   = al.get("bucket")
+    side = al.get("action")
+    yp   = al.get("yes_price")
+    if bk is None or yp is None:
+        return None
+    if side == "BUY NO":
+        entry = round(1.0 - yp, 3)
+        won   = (bk != actual_bucket)
+    else:                                       # BUY YES (default)
+        entry = round(yp, 3)
+        won   = (bk == actual_bucket)
+    entry = max(0.01, min(0.99, entry))
+    pnl   = (1.0 / entry - 1.0) if won else -1.0
+    return {"won": won, "entry": round(entry, 3), "pnl": round(pnl, 2)}
+
+
 def record_all(cities: Optional[List[str]] = None) -> int:
     """Standalone snapshot pass — predicts each city and notes it. Returns count."""
     cities = cities or list(pw.CITIES.keys())
@@ -255,6 +309,13 @@ def settle(feed_deb: bool = True) -> int:
                 "made_call":    bool(pred.get("made_call")),
                 "trade_win":    trade_win,
             }
+
+            # Settle a recorded buy-alert into $1 what-if P&L (missed-trade tracker)
+            al = rec.get("alert")
+            if al and "result" not in al:
+                res = _alert_pnl(al, actual_bucket)
+                if res:
+                    al["result"] = res
             settled += 1
 
             if feed_deb:
@@ -523,6 +584,48 @@ def report_bias_free() -> str:
     else:
         L.append("")
         L.append("<i>Peak bias changed no outcomes on settled calls so far.</i>")
+    return "\n".join(L)
+
+
+def report_missed() -> str:
+    """The missed-trade tracker: for every buy alert where you had NO position,
+    show the $1 what-if result — what you'd have made (or avoided) by taking it.
+    """
+    data = _load()
+    missed, taken = [], []
+    for day in data.values():
+        for ck, rec in day.items():
+            al = rec.get("alert")
+            r  = (al or {}).get("result")
+            if not al or not r:
+                continue
+            (taken if al.get("had_position") else missed).append((r, al, ck))
+    if not missed and not taken:
+        return ("💸 No settled alerts yet. Once the bot alerts a city you don't hold "
+                "and that market settles, this shows what you missed (or avoided).")
+
+    L = ["💸 <b>MISSED-TRADE TRACKER</b>  ($1 per alert you weren't holding)"]
+    if missed:
+        net = sum(r["pnl"] for r, _, _ in missed)
+        won = sum(1 for r, _, _ in missed if r["won"])
+        L.append("")
+        L.append(f"⚠️ I alerted you on {len(missed)} market(s) you had NO position on:")
+        for r, al, ck in sorted(missed, key=lambda x: x[0]["pnl"], reverse=True)[:15]:
+            u    = al.get("unit", "°")
+            cents = (al.get("yes_price") or 0) * 100
+            if r["won"]:
+                L.append(f"   ✅ {city_disp(ck)} {al.get('bucket')}{u} @ {cents:.0f}¢ WON "
+                         f"→ you MISSED +${r['pnl']:.2f}")
+            else:
+                L.append(f"   ❌ {city_disp(ck)} {al.get('bucket')}{u} @ {cents:.0f}¢ lost "
+                         f"→ you AVOIDED -$1.00")
+        L.append("")
+        L.append(f"<b>Net if you'd taken every $1 alert: {net:+.2f} USD</b>  "
+                 f"({won} won / {len(missed)-won} lost)")
+        L.append(f"💡 {'You left ~$%.2f on the table by not acting.' % net if net > 0 else 'Skipping these saved you $%.2f.' % abs(net)}")
+    if taken:
+        L.append("")
+        L.append(f"<i>(You held a position on {len(taken)} other alerted market(s) — not counted as missed.)</i>")
     return "\n".join(L)
 
 

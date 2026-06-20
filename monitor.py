@@ -89,6 +89,13 @@ VERBOSE_LOG    = os.environ.get("VERBOSE_LOG", "0") == "1"
 # to trust it. Position-management alerts (held positions, profit-taking) still fire.
 TRADE_MODE     = os.environ.get("TRADE_MODE", "LIVE").strip().upper()
 OBSERVE_ONLY   = TRADE_MODE in ("OBSERVE", "OBSERVER", "OBSERVE_ONLY", "PAPER")
+# Nightly backup of the learning files to GitHub (off-Railway safety copy). Needs
+# a GitHub token with Contents:write. Pushes to a SEPARATE branch so it never
+# triggers a Railway redeploy of main. Leave GITHUB_TOKEN unset to disable.
+GITHUB_TOKEN         = os.environ.get("GITHUB_TOKEN", "").strip()
+GITHUB_REPO          = os.environ.get("GITHUB_REPO", "").strip()           # "owner/repo"
+GITHUB_BACKUP_BRANCH = os.environ.get("GITHUB_BACKUP_BRANCH", "learning-data").strip()
+BACKUP_HOUR_UTC      = int(os.environ.get("BACKUP_HOUR_UTC", "2"))         # nightly hour (UTC)
 THRESHOLD     = float(os.environ.get("PROB_THRESHOLD", "0.70"))
 USE_PRICES    = os.environ.get("USE_PRICES", "1") == "1"
 STATE_DB      = os.environ.get("STATE_DB", "/data/monitor_state.db")
@@ -1100,6 +1107,15 @@ def handle_command(text, chat_id):
             reply_telegram(chat_id, "No wallet set (POLYMARKET_WALLET).")
         return
 
+    if low == "/backup":
+        if GITHUB_TOKEN and GITHUB_REPO:
+            reply_telegram(chat_id, "💾 Backing up learning data to GitHub…")
+            github_backup()
+            reply_telegram(chat_id, f"💾 Done → {GITHUB_REPO}@{GITHUB_BACKUP_BRANCH}")
+        else:
+            reply_telegram(chat_id, "Backup not configured (set GITHUB_TOKEN + GITHUB_REPO).")
+        return
+
     if low == "/pick":
         kb = [
             [{"text": "🌍 All markets", "callback_data": "scan:all"}],
@@ -1216,6 +1232,64 @@ def ntfy_command_listener():
             time.sleep(5)
 
 
+# ── Nightly GitHub backup of the learning data ────────────────────────────────
+def _gh_headers():
+    return {"Authorization": f"Bearer {GITHUB_TOKEN}",
+            "Accept": "application/vnd.github+json"}
+
+def _gh_ensure_branch() -> bool:
+    """Make sure the backup branch exists; create it from the default branch."""
+    api = f"https://api.github.com/repos/{GITHUB_REPO}"
+    r = httpx.get(f"{api}/branches/{GITHUB_BACKUP_BRANCH}", headers=_gh_headers(), timeout=20.0)
+    if r.status_code == 200:
+        return True
+    repo = httpx.get(api, headers=_gh_headers(), timeout=20.0).json()
+    default = repo.get("default_branch", "main")
+    ref = httpx.get(f"{api}/git/ref/heads/{default}", headers=_gh_headers(), timeout=20.0).json()
+    sha = (ref.get("object") or {}).get("sha")
+    if not sha:
+        return False
+    cr = httpx.post(f"{api}/git/refs", headers=_gh_headers(),
+                    json={"ref": f"refs/heads/{GITHUB_BACKUP_BRANCH}", "sha": sha}, timeout=20.0)
+    return cr.status_code in (200, 201)
+
+def _gh_put_file(repo_path: str, local_path: str, message: str) -> bool:
+    """Create/update one file on the backup branch via the Contents API."""
+    if not os.path.exists(local_path):
+        return False
+    import base64
+    with open(local_path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode()
+    api = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{repo_path}"
+    g = httpx.get(api, headers=_gh_headers(), params={"ref": GITHUB_BACKUP_BRANCH}, timeout=20.0)
+    sha = g.json().get("sha") if g.status_code == 200 else None
+    payload = {"message": message, "content": b64, "branch": GITHUB_BACKUP_BRANCH}
+    if sha:
+        payload["sha"] = sha
+    r = httpx.put(api, headers=_gh_headers(), json=payload, timeout=30.0)
+    if r.status_code not in (200, 201):
+        print(f"[backup] {repo_path}: {r.status_code} {r.text[:120]}")
+        return False
+    return True
+
+def github_backup():
+    """Push the learning files to GitHub (separate branch). Never raises."""
+    if not (GITHUB_TOKEN and GITHUB_REPO):
+        return
+    try:
+        if not _gh_ensure_branch():
+            print("[backup] could not ensure backup branch — check token/repo")
+            return
+        ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        files = [(learn._LEARN_FILE, "data/learn_history.json"),
+                 (pw._HISTORY_FILE,  "data/deb_history.json")]
+        n = sum(1 for local, repo_path in files
+                if _gh_put_file(repo_path, local, f"learning backup {ts}"))
+        print(f"[backup] pushed {n} file(s) to {GITHUB_REPO}@{GITHUB_BACKUP_BRANCH}")
+    except Exception as e:
+        print(f"[backup] error: {e}")
+
+
 # ── Main loop ─────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description="PolyWeather Telegram monitor")
@@ -1306,8 +1380,19 @@ def main():
     # learning digest: settle completed days + send a Telegram scoreboard once/day
     last_learn_report = time.time()
     LEARN_REPORT_SEC  = int(os.environ.get("LEARN_REPORT_HOURS", "24")) * 3600
+    last_backup_day   = None   # nightly GitHub backup runs once per UTC day
     while True:
         now = time.time()
+
+        # nightly off-Railway backup of the learning files to GitHub
+        nowdt = datetime.now(timezone.utc)
+        if (GITHUB_TOKEN and GITHUB_REPO and nowdt.hour == BACKUP_HOUR_UTC
+                and last_backup_day != nowdt.date()):
+            try:
+                github_backup()
+            except Exception as e:
+                print(f"[loop] backup error: {e}")
+            last_backup_day = nowdt.date()
 
         # signal scan timer
         if now - last_scan >= INTERVAL_MIN * 60:

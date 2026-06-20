@@ -4915,7 +4915,7 @@
   "2026-06-20": {
     "wellington": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 17,
@@ -4944,8 +4944,8 @@
           "14": 0.001,
           "15": 0.001,
           "16": 0.001,
-          "17": 0.855,
-          "18": 0.135,
+          "17": 0.885,
+          "18": 0.115,
           "19": 0.008,
           "20": 0.001,
           "21": 0.001
@@ -4956,7 +4956,7 @@
     },
     "seoul": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 24,
@@ -4979,13 +4979,13 @@
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
-          "25": 0.16,
+          "25": 0.145,
           "26": 0.004,
           "27": 0.003,
           "21": 0.001,
           "22": 0.001,
           "23": 0.003,
-          "24": 0.82,
+          "24": 0.835,
           "28": 0.003,
           "29": 0.003,
           "30": 0.003,
@@ -4997,7 +4997,7 @@
     },
     "busan": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 27,
@@ -5022,11 +5022,11 @@
         "pm_buckets": {
           "24": 0.001,
           "25": 0.001,
-          "26": 0.3,
-          "27": 0.44,
-          "28": 0.117,
-          "29": 0.055,
-          "30": 0.011,
+          "26": 0.275,
+          "27": 0.645,
+          "28": 0.129,
+          "29": 0.057,
+          "30": 0.012,
           "20": 0.001,
           "21": 0.001,
           "22": 0.001,
@@ -5038,7 +5038,7 @@
     },
     "hong kong": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 31,
@@ -5066,33 +5066,33 @@
           "27": 0.001,
           "28": 0.001,
           "29": 0.001,
-          "30": 0.025,
-          "31": 0.17,
+          "30": 0.03,
+          "31": 0.16,
           "32": 0.6,
-          "33": 0.235,
-          "34": 0.014,
+          "33": 0.245,
+          "34": 0.013,
           "35": 0.004
         },
         "pm_title": "Highest temperature in Hong Kong on June 20?",
         "best_trade": {
           "action": "BUY YES",
           "temp": 31,
-          "yes_price": 0.17,
-          "edge": 0.385
+          "yes_price": 0.16,
+          "edge": 0.395
         }
       }
     },
     "taipei": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 35,
-        "top_prob": 0.621,
+        "top_prob": 0.673,
         "verdict": "WAIT",
         "made_call": false,
-        "deb": 34.7,
-        "deb_raw": 33.2,
+        "deb": 34.8,
+        "deb_raw": 33.3,
         "peak_bias": 1.5,
         "sigma": 0.47,
         "forecasts": {
@@ -5103,7 +5103,7 @@
           "GEM": 31.6,
           "MET.no": 33.3,
           "7Timer": 30.0,
-          "WeatherAPI": 33.1
+          "WeatherAPI": 34.0
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
@@ -5124,13 +5124,13 @@
           "action": "BUY YES",
           "temp": 35,
           "yes_price": 0.19,
-          "edge": 0.431
+          "edge": 0.483
         }
       }
     },
     "shanghai": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 30,
@@ -5176,7 +5176,7 @@
     },
     "beijing": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 29,
@@ -5199,11 +5199,11 @@
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
-          "28": 0.155,
+          "28": 0.16,
           "29": 0.335,
-          "30": 0.34,
-          "31": 0.088,
-          "32": 0.034,
+          "30": 0.335,
+          "31": 0.091,
+          "32": 0.031,
           "33": 0.006,
           "34": 0.003,
           "35": 0.001,
@@ -5222,7 +5222,7 @@
     },
     "qingdao": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 33,
@@ -5268,7 +5268,7 @@
     },
     "wuhan": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 31,
@@ -5314,7 +5314,7 @@
     },
     "chengdu": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 28,
@@ -5355,7 +5355,7 @@
     },
     "chongqing": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 31,
@@ -5380,12 +5380,12 @@
         "pm_buckets": {
           "28": 0.004,
           "29": 0.006,
-          "30": 0.032,
-          "31": 0.18,
+          "30": 0.038,
+          "31": 0.185,
           "32": 0.275,
-          "33": 0.285,
-          "34": 0.195,
-          "35": 0.034,
+          "33": 0.235,
+          "34": 0.125,
+          "35": 0.03,
           "36": 0.004,
           "37": 0.003,
           "38": 0.001
@@ -5394,14 +5394,14 @@
         "best_trade": {
           "action": "BUY YES",
           "temp": 31,
-          "yes_price": 0.18,
-          "edge": 0.488
+          "yes_price": 0.185,
+          "edge": 0.483
         }
       }
     },
     "shenzhen": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 30,
@@ -5428,11 +5428,11 @@
           "27": 0.001,
           "28": 0.001,
           "29": 0.001,
-          "30": 0.043,
-          "31": 0.2,
+          "30": 0.037,
+          "31": 0.205,
           "32": 0.345,
           "33": 0.325,
-          "34": 0.15,
+          "34": 0.145,
           "35": 0.026,
           "36": 0.004
         },
@@ -5440,14 +5440,14 @@
         "best_trade": {
           "action": "BUY YES",
           "temp": 30,
-          "yes_price": 0.043,
-          "edge": 0.44
+          "yes_price": 0.037,
+          "edge": 0.446
         }
       }
     },
     "guangzhou": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 34,
@@ -5488,7 +5488,7 @@
     },
     "singapore": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 31,
@@ -5529,7 +5529,7 @@
     },
     "tokyo": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 26,
@@ -5558,9 +5558,9 @@
           "21": 0.001,
           "22": 0.001,
           "23": 0.001,
-          "24": 0.56,
-          "25": 0.38,
-          "26": 0.054,
+          "24": 0.525,
+          "25": 0.4,
+          "26": 0.053,
           "27": 0.004,
           "28": 0.003
         },
@@ -5568,14 +5568,14 @@
         "best_trade": {
           "action": "BUY NO",
           "temp": 24,
-          "yes_price": 0.56,
-          "edge": 0.519
+          "yes_price": 0.525,
+          "edge": 0.484
         }
       }
     },
     "kuala lumpur": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 29,
@@ -5604,11 +5604,11 @@
           "26": 0.001,
           "27": 0.001,
           "29": 0.085,
-          "30": 0.255,
+          "30": 0.245,
           "31": 0.45,
-          "32": 0.095,
+          "32": 0.1,
           "33": 0.029,
-          "28": 0.03
+          "28": 0.026
         },
         "pm_title": "Highest temperature in Kuala Lumpur on June 20?",
         "best_trade": {
@@ -5621,7 +5621,7 @@
     },
     "manila": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 35,
@@ -5667,7 +5667,7 @@
     },
     "jakarta": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 34,
@@ -5696,7 +5696,7 @@
     },
     "lucknow": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 40,
@@ -5742,7 +5742,7 @@
     },
     "karachi": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 35,
@@ -5783,7 +5783,7 @@
     },
     "jeddah": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 38,
@@ -5816,7 +5816,7 @@
           "36": 0.315,
           "37": 0.345,
           "38": 0.225,
-          "39": 0.09
+          "39": 0.085
         },
         "pm_title": "Highest temperature in Jeddah on June 20?",
         "best_trade": {
@@ -5829,7 +5829,7 @@
     },
     "ankara": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 23,
@@ -5875,7 +5875,7 @@
     },
     "istanbul": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 25,
@@ -5902,7 +5902,7 @@
           "21": 0.006,
           "22": 0.024,
           "23": 0.085,
-          "24": 0.31,
+          "24": 0.315,
           "25": 0.39,
           "26": 0.19,
           "27": 0.029,
@@ -5921,7 +5921,7 @@
     },
     "moscow": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 22,
@@ -5951,23 +5951,23 @@
           "18": 0.009,
           "19": 0.075,
           "20": 0.24,
-          "21": 0.39,
-          "22": 0.261,
-          "23": 0.076,
+          "21": 0.395,
+          "22": 0.273,
+          "23": 0.075,
           "24": 0.006
         },
         "pm_title": "Highest temperature in Moscow on June 20?",
         "best_trade": {
-          "action": "BUY YES",
-          "temp": 22,
-          "yes_price": 0.261,
-          "edge": 0.214
+          "action": "BUY NO",
+          "temp": 20,
+          "yes_price": 0.24,
+          "edge": 0.204
         }
       }
     },
     "tel aviv": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 30,
@@ -5986,7 +5986,7 @@
           "GEM": 29.7,
           "MET.no": 30.4,
           "7Timer": 30.0,
-          "WeatherAPI": 28.2
+          "WeatherAPI": 28.8
         },
         "timing": "OVERNIGHT",
         "pm_buckets": {
@@ -6013,7 +6013,7 @@
     },
     "lagos": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 29,
@@ -6032,7 +6032,7 @@
           "GEM": 27.7,
           "MET.no": 29.5,
           "7Timer": 30.0,
-          "WeatherAPI": 28.7
+          "WeatherAPI": 28.8
         },
         "timing": "OVERNIGHT",
         "pm_buckets": {},
@@ -6042,15 +6042,15 @@
     },
     "cape town": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 27,
-        "top_prob": 0.574,
+        "top_bucket": 26,
+        "top_prob": 0.49,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 26.6,
-        "deb_raw": 25.6,
+        "deb": 26.5,
+        "deb_raw": 25.5,
         "peak_bias": 1.02,
         "sigma": 0.43,
         "forecasts": {
@@ -6061,7 +6061,7 @@
           "GEM": 27.0,
           "MET.no": 24.0,
           "7Timer": 25.0,
-          "WeatherAPI": 25.0
+          "WeatherAPI": 24.8
         },
         "timing": "OVERNIGHT",
         "pm_buckets": {
@@ -6082,13 +6082,13 @@
           "action": "BUY YES",
           "temp": 27,
           "yes_price": 0.084,
-          "edge": 0.49
+          "edge": 0.406
         }
       }
     },
     "helsinki": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 24,
@@ -6116,11 +6116,11 @@
           "19": 0.002,
           "20": 0.005,
           "21": 0.007,
-          "22": 0.115,
+          "22": 0.11,
           "23": 0.215,
           "24": 0.355,
           "25": 0.2,
-          "26": 0.026,
+          "26": 0.033,
           "27": 0.006
         },
         "pm_title": "Highest temperature in Helsinki on June 20?",
@@ -6134,7 +6134,7 @@
     },
     "london": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 27,
@@ -6175,7 +6175,7 @@
     },
     "paris": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 35,
@@ -6221,7 +6221,7 @@
     },
     "munich": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 33,
@@ -6240,7 +6240,7 @@
           "GEM": 31.7,
           "MET.no": 31.8,
           "7Timer": 30.0,
-          "WeatherAPI": 30.0
+          "WeatherAPI": 30.4
         },
         "timing": "OVERNIGHT",
         "pm_buckets": {
@@ -6267,7 +6267,7 @@
     },
     "milan": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 34,
@@ -6291,7 +6291,7 @@
         "timing": "OVERNIGHT",
         "pm_buckets": {
           "31": 0.002,
-          "32": 0.021,
+          "32": 0.02,
           "33": 0.07,
           "34": 0.405,
           "35": 0.375,
@@ -6313,7 +6313,7 @@
     },
     "warsaw": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 31,
@@ -6346,7 +6346,7 @@
           "31": 0.455,
           "32": 0.305,
           "33": 0.04,
-          "34": 0.013
+          "34": 0.011
         },
         "pm_title": "Highest temperature in Warsaw on June 20?",
         "best_trade": null
@@ -6354,7 +6354,7 @@
     },
     "amsterdam": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 26,
@@ -6395,7 +6395,7 @@
     },
     "madrid": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 38,
@@ -6414,14 +6414,14 @@
           "GEM": 37.2,
           "MET.no": 37.0,
           "7Timer": 37.0,
-          "WeatherAPI": 37.2
+          "WeatherAPI": 37.5
         },
         "timing": "OVERNIGHT",
         "pm_buckets": {
           "33": 0.001,
           "34": 0.001,
           "35": 0.004,
-          "36": 0.052,
+          "36": 0.053,
           "37": 0.535,
           "38": 0.305,
           "39": 0.09,
@@ -6441,7 +6441,7 @@
     },
     "sao paulo": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0C",
         "top_bucket": 24,
@@ -6482,7 +6482,7 @@
     },
     "buenos aires": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0C",
         "top_bucket": 14,
@@ -6513,7 +6513,7 @@
           "14": 0.065,
           "15": 0.49,
           "16": 0.265,
-          "17": 0.135,
+          "17": 0.085,
           "18": 0.004,
           "19": 0.004
         },
@@ -6528,7 +6528,7 @@
     },
     "panama city": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0C",
         "top_bucket": 31,
@@ -6569,7 +6569,7 @@
     },
     "toronto": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0C",
         "top_bucket": 23,
@@ -6588,7 +6588,7 @@
           "GEM": 23.8,
           "MET.no": 21.4,
           "7Timer": 21.0,
-          "WeatherAPI": 21.7
+          "WeatherAPI": 22.0
         },
         "timing": "FORECAST",
         "pm_buckets": {
@@ -6615,7 +6615,7 @@
     },
     "new york": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
         "top_bucket": 81,
@@ -6644,7 +6644,7 @@
           "79": 0.043,
           "81": 0.235,
           "83": 0.47,
-          "85": 0.195,
+          "85": 0.235,
           "87": 0.065,
           "89": 0.006,
           "91": 0.003,
@@ -6662,7 +6662,7 @@
     },
     "miami": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
         "top_bucket": 92,
@@ -6686,7 +6686,7 @@
         },
         "timing": "FORECAST",
         "pm_buckets": {
-          "95": 0.105,
+          "95": 0.09,
           "96": 0.011,
           "77": 0.001,
           "79": 0.001,
@@ -6694,30 +6694,30 @@
           "83": 0.002,
           "85": 0.004,
           "87": 0.007,
-          "89": 0.041,
+          "89": 0.049,
           "91": 0.4,
-          "93": 0.5
+          "93": 0.49
         },
         "pm_title": "Highest temperature in Miami on June 20?",
         "best_trade": {
           "action": "BUY NO",
           "temp": 93,
-          "yes_price": 0.5,
-          "edge": 0.353
+          "yes_price": 0.49,
+          "edge": 0.343
         }
       }
     },
     "atlanta": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
-        "top_bucket": 89,
+        "top_bucket": 88,
         "top_prob": 0.121,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 88.6,
-        "deb_raw": 87.1,
+        "deb": 88.2,
+        "deb_raw": 86.7,
         "peak_bias": 1.5,
         "sigma": 3.32,
         "forecasts": {
@@ -6729,7 +6729,7 @@
           "MET.no": 83.8,
           "NWS": 86.0,
           "7Timer": 87.8,
-          "WeatherAPI": 89.7
+          "WeatherAPI": 86.1
         },
         "timing": "FORECAST",
         "pm_buckets": {
@@ -6750,21 +6750,21 @@
           "action": "BUY NO",
           "temp": 85,
           "yes_price": 0.355,
-          "edge": 0.287
+          "edge": 0.279
         }
       }
     },
     "mexico city": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0C",
-        "top_bucket": 24,
-        "top_prob": 0.353,
+        "top_bucket": 23,
+        "top_prob": 0.33,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 23.7,
-        "deb_raw": 24.1,
+        "deb": 23.5,
+        "deb_raw": 23.9,
         "peak_bias": -0.37,
         "sigma": 1.05,
         "forecasts": {
@@ -6775,7 +6775,7 @@
           "GEM": 23.9,
           "MET.no": 24.1,
           "7Timer": 24.0,
-          "WeatherAPI": 22.3
+          "WeatherAPI": 21.4
         },
         "timing": "FORECAST",
         "pm_buckets": {
@@ -6797,7 +6797,7 @@
     },
     "chicago": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
         "top_bucket": 78,
@@ -6817,7 +6817,7 @@
           "MET.no": 77.4,
           "NWS": 80.0,
           "7Timer": 77.0,
-          "WeatherAPI": 77.2
+          "WeatherAPI": 76.7
         },
         "timing": "FORECAST",
         "pm_buckets": {
@@ -6844,7 +6844,7 @@
     },
     "austin": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
         "top_bucket": 91,
@@ -6891,7 +6891,7 @@
     },
     "houston": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
         "top_bucket": 91,
@@ -6938,7 +6938,7 @@
     },
     "dallas": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
         "top_bucket": 92,
@@ -6985,7 +6985,7 @@
     },
     "los angeles": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
         "top_bucket": 69,
@@ -7032,15 +7032,15 @@
     },
     "san francisco": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
         "top_bucket": 68,
-        "top_prob": 0.313,
+        "top_prob": 0.318,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 68.3,
-        "deb_raw": 66.8,
+        "deb": 68.2,
+        "deb_raw": 66.7,
         "peak_bias": 1.5,
         "sigma": 1.21,
         "forecasts": {
@@ -7052,7 +7052,7 @@
           "MET.no": 65.8,
           "NWS": 68.0,
           "7Timer": 69.8,
-          "WeatherAPI": 65.4
+          "WeatherAPI": 64.7
         },
         "timing": "FORECAST",
         "pm_buckets": {
@@ -7073,13 +7073,13 @@
           "action": "BUY NO",
           "temp": 71,
           "yes_price": 0.245,
-          "edge": 0.214
+          "edge": 0.219
         }
       }
     },
     "aurora": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
         "top_bucket": 92,
@@ -7121,7 +7121,7 @@
     },
     "seattle": {
       "pred": {
-        "ts": "2026-06-20T02:36:29+00:00",
+        "ts": "2026-06-20T02:38:45+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
         "top_bucket": 75,

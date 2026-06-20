@@ -378,13 +378,22 @@ def fmt_new_signal(p) -> str:
     except Exception:
         pass
 
-    # probabilities
+    # probabilities (with bias — what the bot trades on)
     dist = p.get("distribution") or []
     if dist:
         L.append("")
-        L.append("🎲 <b>Probabilities</b>")
+        L.append("🎲 <b>Probabilities</b> (with bias)")
         for b in dist[:4]:
             bar = "▰" * max(1, round(b['probability'] * 10))
+            L.append(f"   {b['value']}{sym}  {bar} {b['probability']*100:.0f}%")
+
+    # probabilities WITHOUT the per-city bias — same bars, raw model centre
+    dist_raw = p.get("distribution_raw") or []
+    if dist_raw and p.get("peak_bias"):
+        L.append("")
+        L.append(f"🎲 <b>Probabilities (no bias · raw {p.get('deb_raw')}{sym})</b>")
+        for b in dist_raw[:4]:
+            bar = "▱" * max(1, round(b['probability'] * 10))
             L.append(f"   {b['value']}{sym}  {bar} {b['probability']*100:.0f}%")
 
     # best trade — only call it a BUY when action_ok; else show as "if it holds"

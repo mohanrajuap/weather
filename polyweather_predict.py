@@ -1924,6 +1924,7 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         elif peak_status == "in_window": sigma *= 0.7
 
     # ── probability distribution ──────────────────────────────────────────────
+    dist_raw = []
     if dead and max_so_far is not None:
         sv   = settlement_round(city_key, max_so_far)
         dist = [{"value": sv, "probability": 1.0, "range": "LOCKED"}]
@@ -1931,6 +1932,12 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         dist = compute_probabilities(mu, sigma,
                                      max_so_far if not is_tomorrow else None,
                                      city_key, use_hko, is_tomorrow)
+        # Same distribution with the bias removed (centre shifted down by it), so
+        # the alert can show what the model says BEFORE the per-city bias nudge.
+        if peak_bias:
+            dist_raw = compute_probabilities(mu - peak_bias, sigma,
+                                             max_so_far if not is_tomorrow else None,
+                                             city_key, use_hko, is_tomorrow)
     else:
         dist = []
 
@@ -2146,6 +2153,7 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         "is_dead_market": dead,
         # result
         "distribution":   dist[:6],
+        "distribution_raw": dist_raw[:6],     # no-bias version of the distribution
         "top_bucket":     top.get("value"),
         "top_prob":       model_prob,
         "confidence":     confidence,

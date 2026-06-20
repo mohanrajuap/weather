@@ -467,6 +467,58 @@ def report_sources(city: Optional[str] = None) -> str:
     return "\n".join(L)
 
 
+def report_bias_free() -> str:
+    """Re-score the bot's settled TRADE calls using the RAW source consensus
+    (median of the stored per-API readings, with NO peak bias) and compare to the
+    bot's actual (bias-included) hit rate. Answers: is the peak bias helping?
+
+    Note: the raw consensus is an APPROXIMATION of the no-bias prediction — it
+    ignores the live-obs / dead-market adjustments predict() also makes — but it's
+    a fair read on whether the +bias nudge changed outcomes.
+    """
+    data = _load()
+    wb_hits = wb_n = nb_hits = nb_n = 0
+    flips: List[str] = []
+    for day in data.values():
+        for ck, rec in day.items():
+            o = rec.get("outcome"); p = rec.get("pred"); s = rec.get("score")
+            if not o or not p or not s or not s.get("made_call"):
+                continue
+            abk = o.get("actual_bucket")
+            wb_n += 1
+            wb_hit = bool(s.get("hit"))
+            wb_hits += 1 if wb_hit else 0
+            vals = [v for v in (p.get("forecasts") or {}).values() if v is not None]
+            if not vals:
+                continue
+            med = sorted(vals)[len(vals) // 2]
+            try:
+                nb_bucket = pw.settlement_round(ck, med)
+            except Exception:
+                continue
+            nb_n += 1
+            nb_hit = (nb_bucket == abk)
+            nb_hits += 1 if nb_hit else 0
+            if nb_hit != wb_hit:
+                arrow = "bias WON, raw lost" if wb_hit else "raw WON, bias lost"
+                flips.append(f"   {city_disp(ck)}: bot {p.get('top_bucket')}° vs raw "
+                             f"{nb_bucket}° → actual {abk}°  ({arrow})")
+    if wb_n == 0:
+        return "📊 No settled calls yet to compare."
+    L = ["🧪 <b>PEAK-BIAS CHECK</b>  (bot's calls: with vs without the bias)",
+         f"   With bias (live):     {wb_hits}/{wb_n} ({wb_hits/wb_n*100:.0f}%)"]
+    if nb_n:
+        L.append(f"   Without bias (raw):   {nb_hits}/{nb_n} ({nb_hits/nb_n*100:.0f}%)")
+    if flips:
+        L.append("")
+        L.append("Where they differ:")
+        L.extend(flips[:12])
+    else:
+        L.append("")
+        L.append("<i>Peak bias changed no outcomes on settled calls so far.</i>")
+    return "\n".join(L)
+
+
 def settle_and_report() -> str:
     """Settle anything newly complete, then return the latest scoreboard.
     Used by the monitor for the once-a-day Telegram learning digest."""
@@ -486,6 +538,7 @@ def main():
     ap.add_argument("--all", action="store_true", help="report: lifetime accuracy")
     ap.add_argument("--calib", action="store_true", help="report: calibration table")
     ap.add_argument("--sources", action="store_true", help="report: per-API reliability")
+    ap.add_argument("--nobias", action="store_true", help="report: with vs without peak bias")
     a = ap.parse_args()
 
     if a.cmd == "record":
@@ -498,6 +551,8 @@ def main():
         elif a.sources:
             city = next((pw.resolve_city(x) for x in a.args if pw.resolve_city(x)), None)
             print(_strip(report_sources(city)))
+        elif a.nobias:
+            print(_strip(report_bias_free()))
         else:
             date = next((x for x in a.args if x.count("-") == 2), None)
             print(_strip(report(date, all_time=a.all)))

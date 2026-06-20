@@ -1077,6 +1077,8 @@ def handle_command(text, chat_id):
             # optional city after it, e.g. "/learn sources london"
             city = next((pw.resolve_city(x) for x in parts[2:] if pw.resolve_city(x)), None)
             reply_telegram(chat_id, learn.report_sources(city))
+        elif arg in ("nobias", "no-bias", "biascheck"):
+            reply_telegram(chat_id, learn.report_bias_free())
         else:
             # optional explicit date as second arg, else most recent settled day
             date = next((x for x in parts[1:] if x.count("-") == 2), None)

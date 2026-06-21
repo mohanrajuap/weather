@@ -636,17 +636,29 @@ def _extract_pos_bucket(title: str):
         return int(m.group(1))
     return None
 
+def _market_key(title: str):
+    """Group positions that belong to the SAME market (same city + same date) so
+    multiple buckets you hold can be netted — only one of them can ever settle."""
+    import re
+    t = title or ""
+    mcity = _match_city_from_title(t) or t[:20].lower()
+    md = re.search(r"([A-Za-z]{3,9}\s+\d{1,2})", t)     # e.g. "June 21"
+    return f"{mcity}|{md.group(1).lower() if md else ''}"
+
+
 def fmt_positions_update(wallet: str, positions) -> str:
     if positions is None:
         return "⚠️ Could not fetch your positions (check wallet / network)."
     if not positions:
         return "💼 <b>Positions update</b>\nNo open weather positions right now."
 
+    import re
     lines = ["💼 <b>YOUR POSITIONS</b> (with live model read)\n"]
     total_now  = 0.0
     total_paid = 0.0
     total_pnl  = 0.0
     claimable  = []
+    groups     = {}   # market_key -> [bucket legs] for netting multi-bucket holdings
 
     for pos in positions:
         title = (pos.get("title") or "")
@@ -684,12 +696,14 @@ def fmt_positions_update(wallet: str, positions) -> str:
         city   = _match_city_from_title(title)
         bucket = _extract_pos_bucket(title)
         cur_price = pos.get("cur_price")   # market's current price for your side
+        g_model_prob = None                # this leg's model prob (for the net view)
         if city and bucket is not None:
             try:
                 pred = pw.predict(city, fetch_prices=False)
                 sym  = pred.get("temp_unit", "°")
                 dist = {b["value"]: b["probability"] for b in pred.get("distribution", [])}
                 your_prob = dist.get(bucket, 0.0)
+                g_model_prob = your_prob
                 top_b   = pred.get("top_bucket")
                 top_p   = pred.get("top_prob", 0)
                 tim     = pred.get("timing") or {}
@@ -733,7 +747,50 @@ def fmt_positions_update(wallet: str, positions) -> str:
                         lines.append(f"   🚨 live/model conflict — uncertain")
             except Exception:
                 pass
+
+        # record this leg for the per-market net summary (only one bucket can win)
+        if bucket is not None and shares > 0:
+            gsym = "°F" if (pw.CITIES.get(city or "") or {}).get("f") else "°C"
+            md   = re.search(r"([A-Za-z]{3,9}\s+\d{1,2})", title)
+            groups.setdefault(_market_key(title), []).append({
+                "bucket": bucket, "cost": cost, "payout": shares * 1.0,
+                "prob": g_model_prob, "cur": now, "sym": gsym,
+                "cityd": city_display(city) if city else short,
+                "date": md.group(1) if md else "",
+            })
         lines.append("")
+
+    # ── Combined net view for markets where you hold MULTIPLE buckets ──
+    # Only one bucket settles, so you pay for every leg but collect on one. This
+    # nets the cost of the losing legs against each winning scenario's payout.
+    for legs in groups.values():
+        if len(legs) < 2:
+            continue
+        legs.sort(key=lambda g: (g["prob"] if g["prob"] is not None
+                                 else (g["cur"] or 0)), reverse=True)
+        tcost = sum(g["cost"] for g in legs)
+        sym   = legs[0]["sym"]
+        hdr   = f"{legs[0]['cityd']} {legs[0]['date']}".strip()
+        lines.append("━━━━━━━━━━━━━━━━━━━")
+        lines.append(f"📊 <b>Combined: {esc(hdr)}</b> — {len(legs)} buckets, only ONE can win")
+        lines.append(f"   Total invested across all legs: <b>${tcost:.2f}</b>")
+        for g in legs:
+            net = g["payout"] - tcost           # collect this leg, lose all others
+            ne  = "🟢" if net >= 0 else "🔴"
+            if g["prob"] is not None:
+                pr = f"model {g['prob']*100:.0f}%"
+            elif g["cur"] is not None:
+                pr = f"mkt {g['cur']*100:.0f}¢"
+            else:
+                pr = "—"
+            lines.append(f"   {ne} If {g['bucket']}{sym} wins ({pr}): "
+                         f"collect ${g['payout']:.2f} → net <b>{net:+.2f}</b>")
+        best  = legs[0]
+        bnet  = best["payout"] - tcost
+        word  = "PROFIT" if bnet >= 0 else "LOSS"
+        emoji = "🟢" if bnet >= 0 else "🔴"
+        lines.append(f"   👉 Most likely ({best['bucket']}{sym}): {emoji} <b>{word} "
+                     f"${abs(bnet):.2f}</b> on ${tcost:.2f} invested")
 
     tot_e = "🟢" if total_pnl >= 0 else "🔴"
     roi = (total_pnl / total_paid * 100) if total_paid > 0 else 0

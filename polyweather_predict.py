@@ -1105,16 +1105,21 @@ def fetch_metar(icao: str, tz_offset: int = 0,
     Always fetches TODAY's observations (for live temp / max_so_far).
     If predicting tomorrow, live data still shows today's current conditions.
     """
+    # Cover the WHOLE local day so the daily MAX isn't missed when scanning late
+    # in the day (8h back would drop the morning). Rows outside today are filtered
+    # below, so a wider window is always safe. Capped to keep the response small.
+    local_now = _now_utc() + timedelta(seconds=tz_offset)
+    hours_back = min(26, max(8, local_now.hour + 2))
     data = _get(
         METAR_URL,
-        {"ids": icao, "format": "json", "hours": 8},
+        {"ids": icao, "format": "json", "hours": hours_back},
         timeout=6.0,
     )
     if not data or not isinstance(data, list):
         return None
 
     # Always use today's LOCAL date for METAR (it's live observation)
-    today_local = (_now_utc() + timedelta(seconds=tz_offset)).strftime("%Y-%m-%d")
+    today_local = local_now.strftime("%Y-%m-%d")
 
     results = []
     for row in data:
@@ -1743,9 +1748,14 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     def _nws(): res["nws"]   = fetch_nws(lat, lon, use_f, target_date)
     def _7t():  res["t7"]    = fetch_7timer(lat, lon, tz, use_f, target_date)
     def _met():
-        # Try Wunderground (Polymarket's settlement source) first; fall back to METAR
+        # Try Wunderground (Polymarket's settlement source) first; fall back to METAR.
+        # ALSO keep the raw airport METAR (aviationweather.gov — same feed
+        # metar-taf.com shows) so the alert can display the exact station reading
+        # the market settles on, and flag when the two sources disagree.
         wu = fetch_wunderground(icao, tz, use_f, local_date)
-        res["metar"] = wu if wu else fetch_metar(icao, tz, local_date)
+        mt = fetch_metar(icao, tz, local_date)
+        res["metar"]         = wu if wu else mt
+        res["airport_metar"] = mt
 
     # Free no-key sources, each toggleable via ENABLE_<SOURCE>. _met (live obs) is
     # always on — it provides max_so_far, not a forecast.
@@ -1773,10 +1783,11 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     for t_ in threads: t_.start()
     for t_ in threads: t_.join(timeout=15)
 
-    om    = res.get("om") or {}
-    ens   = res.get("ens") or {}
-    multi = res.get("mm") or {}
-    metar = res.get("metar") or {}
+    om      = res.get("om") or {}
+    ens     = res.get("ens") or {}
+    multi   = res.get("mm") or {}
+    metar   = res.get("metar") or {}
+    airport = res.get("airport_metar") or {}   # raw aviationweather.gov station read
 
     # ── build forecasts dict using target day ────────────────────────────────
     forecasts: Dict[str, float] = {}
@@ -1866,6 +1877,16 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     max_so_far = _sf(metar.get("max_so_far"))
     trend      = metar.get("trend", "unknown")
     recent     = metar.get("recent_temps", [])
+
+    # raw airport METAR reading (the station Polymarket settles on). Surfaced
+    # alongside the primary source so divergence is visible.
+    air_temp = _sf(airport.get("current_temp"))
+    air_max  = _sf(airport.get("max_so_far"))
+    live_source_disagree = (
+        metar.get("source") == "wunderground"
+        and max_so_far is not None and air_max is not None
+        and abs(max_so_far - air_max) >= 1.0
+    )
 
     # ── peak window ───────────────────────────────────────────────────────────
     fp, lp      = estimate_peak_window(lat)
@@ -2154,7 +2175,13 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
             "trend":        trend,
             "recent":       recent[:3],
             "source":       metar.get("source", "metar"),
+            # raw airport station read (aviationweather.gov METAR = metar-taf.com)
+            "airport_icao":     icao,
+            "airport_temp":     air_temp,
+            "airport_max":      air_max,
+            "airport_obs_time": airport.get("obs_time"),
         },
+        "live_source_disagree": live_source_disagree,
         # analysis
         "mu":             round(mu, 2) if mu is not None else None,
         "sigma":          round(sigma, 2),

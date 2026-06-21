@@ -477,8 +477,19 @@ def fmt_new_signal(p) -> str:
         ae = {"strong":"✅","moderate":"⚠️","weak":"❌"}.get(agr,"•")
         L.append(f"{ae} Agreement: {esc(agr)}")
     if live.get("current_temp") is not None:
-        src = "🎯 Wunderground" if live.get("source") == "wunderground" else "METAR"
+        if live.get("source") == "wunderground":
+            src = "🎯 Wunderground"
+        else:
+            src = f"🛩️ airport {esc(live.get('airport_icao','METAR'))} METAR"
         L.append(f"🌡️ Live: {live['current_temp']}{sym} (max {live.get('max_so_far')}{sym}, {esc(live.get('trend'))}) · {src}")
+    # raw airport METAR — the exact station the market settles on (= metar-taf.com)
+    if live.get("airport_max") is not None and live.get("source") == "wunderground":
+        icao = live.get("airport_icao", "?")
+        L.append(f"🛩️ Airport {esc(icao)} METAR: now {live.get('airport_temp')}{sym} · "
+                 f"max today {live.get('airport_max')}{sym}")
+        if p.get("live_source_disagree"):
+            L.append(f"   ⚠️ Wunderground says {live.get('max_so_far')}{sym} but the airport "
+                     f"reports {live.get('airport_max')}{sym} — settlement follows the airport.")
 
     # peak countdown + source-disagreement context (data-quality at a glance)
     cd = _peak_countdown(p)

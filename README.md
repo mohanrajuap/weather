@@ -169,9 +169,14 @@ numbers hold up.
 ## Nightly backup
 
 If `GITHUB_TOKEN` + `GITHUB_REPO` are set, the learning files
-(`learn_history.json`, `deb_history.json`) are pushed nightly (`BACKUP_HOUR_UTC`,
-default 02:00) to a **separate `learning-data` branch** — never `main`, so it can't
-trigger a redeploy. Trigger manually any time with `/backup`.
+(`learn_history.json`, `deb_history.json`, `alerts_log.json`) are pushed nightly
+(`BACKUP_HOUR_UTC`, default 02:00) to a **separate `learning-data` branch** — never
+`main`, so it can't trigger a redeploy. Trigger manually any time with `/backup`.
+
+The backup fires **at or after** the configured hour on any day it hasn't yet run,
+and the last-success date is persisted to the `/data` volume — so a redeploy or
+downtime that misses the exact hour still **catches up** the same day instead of
+skipping it. Failures retry every 30 minutes.
 
 **Auto-restore:** on startup, if the `/data` learning files are missing or empty
 (e.g. the volume was wiped on a fresh deploy), the bot pulls them back from the

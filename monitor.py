@@ -188,6 +188,29 @@ def save_muted(muted: set):
 
 MUTED = load_muted()
 
+# ── Last successful nightly-backup date (persisted) ───────────────────────────
+# Stored on the /data volume so a Railway redeploy doesn't forget it. Without this
+# the in-memory timer resets on every deploy: if the redeploy lands AFTER the
+# backup hour, that day's backup is silently skipped.
+def _resolve_backup_stamp() -> str:
+    return "/data/last_backup.txt" if os.path.isdir("/data") else "last_backup.txt"
+
+BACKUP_STAMP = _resolve_backup_stamp()
+
+def load_backup_day():
+    try:
+        with open(BACKUP_STAMP) as f:
+            return datetime.strptime(f.read().strip(), "%Y-%m-%d").date()
+    except Exception:
+        return None
+
+def save_backup_day(d):
+    try:
+        with open(BACKUP_STAMP, "w") as f:
+            f.write(d.isoformat())
+    except Exception as e:
+        print(f"[backup] stamp save error: {e}")
+
 
 # ── Telegram ──────────────────────────────────────────────────────────────────
 def _strip_html(text: str) -> str:
@@ -1524,8 +1547,13 @@ def handle_command(text, chat_id):
     if low == "/backup":
         if GITHUB_TOKEN and GITHUB_REPO:
             reply_telegram(chat_id, "💾 Backing up learning data to GitHub…")
-            github_backup()
-            reply_telegram(chat_id, f"💾 Done → {GITHUB_REPO}@{GITHUB_BACKUP_BRANCH}")
+            n = github_backup()
+            if n > 0:
+                save_backup_day(datetime.now(timezone.utc).date())
+                reply_telegram(chat_id, f"💾 Done — pushed {n} file(s) → {GITHUB_REPO}@{GITHUB_BACKUP_BRANCH}")
+            else:
+                reply_telegram(chat_id, "⚠️ Backup pushed 0 files — check the logs "
+                                        "(token scope / repo / branch).")
         else:
             reply_telegram(chat_id, "Backup not configured (set GITHUB_TOKEN + GITHUB_REPO).")
         return
@@ -1696,14 +1724,15 @@ def _gh_put_file(repo_path: str, local_path: str, message: str) -> bool:
         return False
     return True
 
-def github_backup():
-    """Push the learning files to GitHub (separate branch). Never raises."""
+def github_backup() -> int:
+    """Push the learning files to GitHub (separate branch). Never raises.
+    Returns the number of files successfully pushed (0 = nothing/failed)."""
     if not (GITHUB_TOKEN and GITHUB_REPO):
-        return
+        return 0
     try:
         if not _gh_ensure_branch():
             print("[backup] could not ensure backup branch — check token/repo")
-            return
+            return 0
         ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
         files = [(learn._LEARN_FILE, "data/learn_history.json"),
                  (pw._HISTORY_FILE,  "data/deb_history.json"),
@@ -1711,8 +1740,10 @@ def github_backup():
         n = sum(1 for local, repo_path in files
                 if _gh_put_file(repo_path, local, f"learning backup {ts}"))
         print(f"[backup] pushed {n} file(s) to {GITHUB_REPO}@{GITHUB_BACKUP_BRANCH}")
+        return n
     except Exception as e:
         print(f"[backup] error: {e}")
+        return 0
 
 
 def _gh_get_file(repo_path: str):
@@ -1866,20 +1897,30 @@ def main():
     # learning digest: settle completed days + send a Telegram scoreboard once/day
     last_learn_report = time.time()
     LEARN_REPORT_SEC  = int(os.environ.get("LEARN_REPORT_HOURS", "24")) * 3600
-    last_backup_day   = None   # nightly GitHub backup runs once per UTC day
+    last_backup_day   = load_backup_day()   # persisted across redeploys
+    last_backup_try   = 0.0                  # throttle retries on failure
     last_digest_day   = None   # morning digest runs once per UTC day
+    if GITHUB_TOKEN and GITHUB_REPO:
+        print(f"  Backup last ran: {last_backup_day or 'never'} "
+              f"(nightly at/after {BACKUP_HOUR_UTC:02d}:00 UTC)")
     while True:
         now = time.time()
 
-        # nightly off-Railway backup of the learning files to GitHub
+        # nightly off-Railway backup of the learning files to GitHub.
+        # Fires any time AT/AFTER the backup hour on a day not yet backed up — so a
+        # restart that misses the exact hour still catches up. Retries every 30 min
+        # on failure; stamps to disk only on success so it survives redeploys.
         nowdt = datetime.now(timezone.utc)
-        if (GITHUB_TOKEN and GITHUB_REPO and nowdt.hour == BACKUP_HOUR_UTC
-                and last_backup_day != nowdt.date()):
+        if (GITHUB_TOKEN and GITHUB_REPO and nowdt.hour >= BACKUP_HOUR_UTC
+                and last_backup_day != nowdt.date()
+                and now - last_backup_try >= 1800):
+            last_backup_try = now
             try:
-                github_backup()
+                if github_backup() > 0:
+                    last_backup_day = nowdt.date()
+                    save_backup_day(last_backup_day)
             except Exception as e:
                 print(f"[loop] backup error: {e}")
-            last_backup_day = nowdt.date()
 
         # once-a-day morning digest of the best edges across all cities
         if (ENABLE_DIGEST and not OBSERVE_ONLY and nowdt.hour == DIGEST_HOUR_UTC

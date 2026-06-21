@@ -1571,6 +1571,15 @@ def handle_command(text, chat_id):
     if low.startswith("/scan"):
         parts = text.split(maxsplit=1)
         scope = parts[1].strip().lower() if len(parts) > 1 else "all"
+        # "/scan positions" / "/scan pnl" etc. — the user meant that command, not a
+        # market named "positions". Route it to the real handler instead of erroring.
+        _CMD_WORDS = {"positions", "pnl", "ledger", "learn", "missed", "history",
+                      "alerts", "today", "backup", "pick", "help", "start",
+                      "mute", "muted", "unmute"}
+        first = scope.split()[0] if scope else ""
+        if first in _CMD_WORDS:
+            handle_command("/" + scope, chat_id)
+            return
         scan_for_command(scope, reply_to=chat_id)
         return
 

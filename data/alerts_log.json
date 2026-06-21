@@ -1,0 +1,19 @@
+{
+  "2026-06-21": [
+    {
+      "t": "9:33 AM",
+      "city": "hong kong",
+      "line": "\ud83d\udfe2 Hong Kong 32\u00b0C@86% \u00b7 BUY YES 32\u00b0C@54\u00a2 +32%"
+    },
+    {
+      "t": "9:33 AM",
+      "city": "wellington",
+      "line": "\ud83d\udfe2 Wellington 13\u00b0C@82% \u00b7 BUY YES 13\u00b0C@44\u00a2 +38%"
+    },
+    {
+      "t": "10:44 AM",
+      "city": "shenzhen",
+      "line": "\ud83d\udfe2 Shenzhen 31\u00b0C@72% \u00b7 BUY YES 31\u00b0C@28\u00a2 +44%"
+    }
+  ]
+}

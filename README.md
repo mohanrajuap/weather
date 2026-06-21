@@ -112,6 +112,7 @@ Send these on Telegram, or publish them to your ntfy topic (prefixed with
 | `/learn nobias` | hit rate **with vs without** the peak bias |
 | `/missed` | $1 what-if P&L on alerts you were sent but didn't hold a position on |
 | `/history <city>` | that city's full prediction-vs-outcome history + the exact `CITY_BIAS` to set |
+| `/alerts [date]` | all alerts for a day grouped as one thread (defaults to today) |
 | `/backup` | push learning data to GitHub now |
 | `/help` | command list |
 

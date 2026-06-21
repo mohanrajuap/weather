@@ -1934,7 +1934,11 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
                                      city_key, use_hko, is_tomorrow)
         # Same distribution with the bias removed (centre shifted down by it), so
         # the alert can show what the model says BEFORE the per-city bias nudge.
-        if peak_bias:
+        # Skip it when LIVE obs already drive the prediction (max_so_far >= blend):
+        # there the bias is irrelevant and a "no-bias" graph would be misleading.
+        bias_relevant = (is_tomorrow or max_so_far is None
+                         or (deb is not None and max_so_far < deb))
+        if peak_bias and bias_relevant:
             dist_raw = compute_probabilities(mu - peak_bias, sigma,
                                              max_so_far if not is_tomorrow else None,
                                              city_key, use_hko, is_tomorrow)

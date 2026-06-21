@@ -80,6 +80,66 @@ def _save(data: dict):
         print(f"  [learn] save error: {e}")
 
 
+# ── Per-day alert log ('threads' grouped by day; pull up with /alerts) ─────────
+def _resolve_alerts_file() -> str:
+    env = os.environ.get("ALERTS_LOG_FILE")
+    if env:
+        return env
+    if os.path.isdir("/data"):
+        return "/data/alerts_log.json"
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "alerts_log.json")
+
+ALERTS_FILE = _resolve_alerts_file()
+_ALERTS_LOCK = threading.Lock()
+
+def _load_alerts() -> dict:
+    try:
+        if os.path.exists(ALERTS_FILE):
+            with open(ALERTS_FILE) as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+def log_alert_line(line: str):
+    """Append a one-line alert summary to TODAY's thread (grouped by your local
+    date, so /alerts gives you a clean folder-per-day view). Never raises."""
+    try:
+        mins, _ = _user_tz()
+        now = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=mins)
+        day = now.strftime("%Y-%m-%d")
+        with _ALERTS_LOCK:
+            d = _load_alerts()
+            d.setdefault(day, []).append({"t": now.strftime("%I:%M %p").lstrip("0"), "line": line})
+            d[day] = d[day][-300:]                 # cap per day
+            # prune to the last 60 days
+            for old in sorted(d.keys())[:-60]:
+                d.pop(old, None)
+            tmp = ALERTS_FILE + ".tmp"
+            with open(tmp, "w") as f:
+                json.dump(d, f, indent=2)
+            os.replace(tmp, ALERTS_FILE)
+    except Exception:
+        pass
+
+def report_alerts(date: Optional[str] = None) -> str:
+    """All alerts for a day, as one grouped thread. Defaults to today (your tz)."""
+    d = _load_alerts()
+    if not d:
+        return "🧵 No alerts logged yet — they thread here by day as they fire."
+    mins, lbl = _user_tz()
+    today = (datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=mins)).strftime("%Y-%m-%d")
+    day = date or today
+    items = d.get(day) or []
+    if not items:
+        have = ", ".join(sorted(d.keys())[-7:])
+        return f"🧵 No alerts on {day}. Days with alerts: {have}"
+    L = [f"🧵 <b>ALERTS — {day} ({lbl})</b>  ·  {len(items)} alert(s)"]
+    for it in items:
+        L.append(f"   {it.get('t','')}  {it.get('line','')}")
+    return "\n".join(L)
+
+
 # ── 1. RECORD ─────────────────────────────────────────────────────────────────
 def _build_snap(p: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """Turn a prediction dict into a compact snapshot, or None if unusable."""

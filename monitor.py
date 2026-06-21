@@ -1002,10 +1002,20 @@ def run_scan(conn):
             print(f"    {city:<14} {bucket}° {prob*100:>3.0f}% {tq:<11} {why}{edge}")
 
         mode_tag = " [observe]" if OBSERVE_ONLY else ""
+        psym = p.get("temp_unit", "°")
+        cdisp = city_display(p["city"])
+        def _log(line):
+            if not OBSERVE_ONLY:           # only log alerts actually sent
+                try: learn.log_alert_line(line)
+                except Exception: pass
         if crossed_up:
             alert_signal(fmt_new_signal(p))   # suppressed in OBSERVE mode
             upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=1)
             new_alerts += 1
+            bt = p.get("best_trade")
+            buy = (f" · {bt['action']} {bt['temp']}{psym}@{bt['yes_price']*100:.0f}¢ "
+                   f"{bt['best_edge']*100:+.0f}%") if bt else ""
+            _log(f"🟢 {cdisp} {bucket}{psym}@{prob*100:.0f}%{buy}")
             # Record the alert for the missed-trade tracker (LIVE only — in OBSERVE
             # no alert was actually sent, so "you missed it" wouldn't be true).
             if not OBSERVE_ONLY and p.get("best_trade"):
@@ -1023,11 +1033,13 @@ def run_scan(conn):
             # keep alerted_high=1 since it's still a high-conf signal, just a new bucket
             upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=1)
             shifts += 1
+            _log(f"🔄 {cdisp} {prev_bucket}{psym}→{bucket}{psym} @{prob*100:.0f}%")
             print(f"  🔄 SHIFT {city} {prev_bucket}°→{bucket}° {prob*100:.0f}%{mode_tag}")
         elif collapsed:
             alert_signal(fmt_collapse(p, prev_prob if prev_prob is not None else prob))
             upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=0)
             collapses += 1
+            _log(f"🔴 {cdisp} {bucket}{psym} weakened to {prob*100:.0f}%")
             print(f"  🔴 COLLAPSE {city} {prob*100:.0f}%{mode_tag}")
         else:
             # update stored prob without alerting
@@ -1191,6 +1203,7 @@ def handle_command(text, chat_id):
             "/learn — prediction-vs-outcome scoreboard (also: all / calib / sources)\n"
             "/missed — $1 what-if P&L on alerts you didn't take\n"
             "/history <city> — that city's prediction history + suggested bias\n"
+            "/alerts [date] — all alerts for a day, grouped as one thread\n"
             "/help — this message")
         return
 
@@ -1231,6 +1244,12 @@ def handle_command(text, chat_id):
             reply_telegram(chat_id, learn.report_city(parts[1].strip()))
         else:
             reply_telegram(chat_id, "Usage: /history <city>   e.g. /history manila")
+        return
+
+    if low.startswith("/alerts") or low.startswith("/today"):
+        parts = text.split()
+        date = next((x for x in parts[1:] if x.count("-") == 2), None)
+        reply_telegram(chat_id, learn.report_alerts(date))
         return
 
     if low == "/backup":
@@ -1418,7 +1437,8 @@ def github_backup():
             return
         ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
         files = [(learn._LEARN_FILE, "data/learn_history.json"),
-                 (pw._HISTORY_FILE,  "data/deb_history.json")]
+                 (pw._HISTORY_FILE,  "data/deb_history.json"),
+                 (learn.ALERTS_FILE, "data/alerts_log.json")]
         n = sum(1 for local, repo_path in files
                 if _gh_put_file(repo_path, local, f"learning backup {ts}"))
         print(f"[backup] pushed {n} file(s) to {GITHUB_REPO}@{GITHUB_BACKUP_BRANCH}")
@@ -1459,7 +1479,8 @@ def github_restore():
         return
     try:
         files = [(learn._LEARN_FILE, "data/learn_history.json"),
-                 (pw._HISTORY_FILE,  "data/deb_history.json")]
+                 (pw._HISTORY_FILE,  "data/deb_history.json"),
+                 (learn.ALERTS_FILE, "data/alerts_log.json")]
         restored = 0
         for local, repo_path in files:
             if not _local_is_empty(local):

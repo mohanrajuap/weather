@@ -1505,18 +1505,100 @@ def _ntfy_authorize(text: str):
     return text if text.startswith("/") else None
 
 
+# ── Telegram button menu ──────────────────────────────────────────────────────
+def _main_menu_keyboard():
+    """Inline keyboard mirroring every command. Each button sends callback_data
+    'cmd:<command>' which is routed straight back through handle_command, so the
+    buttons and typed commands share one code path."""
+    return [
+        [{"text": "🔍 Scan all",      "callback_data": "cmd:/scan"},
+         {"text": "🌍 Pick region",   "callback_data": "menu:regions"}],
+        [{"text": "💼 Positions",     "callback_data": "cmd:/positions"},
+         {"text": "💰 P&L ledger",    "callback_data": "cmd:/pnl"}],
+        [{"text": "📊 Learn",         "callback_data": "cmd:/learn"},
+         {"text": "🎯 Calibration",   "callback_data": "cmd:/learn calib"}],
+        [{"text": "🏙️ Best cities",   "callback_data": "cmd:/learn cities"},
+         {"text": "📡 Sources",       "callback_data": "cmd:/learn sources"}],
+        [{"text": "🧪 No-bias check", "callback_data": "cmd:/learn nobias"},
+         {"text": "💸 Missed",        "callback_data": "cmd:/missed"}],
+        [{"text": "🧵 Today's alerts","callback_data": "cmd:/alerts"},
+         {"text": "🔕 Muted",         "callback_data": "cmd:/muted"}],
+        [{"text": "💾 Backup",        "callback_data": "cmd:/backup"},
+         {"text": "❓ Help",          "callback_data": "cmd:/help"}],
+    ]
+
+
+def _regions_keyboard():
+    return [
+        [{"text": "🌏 Asia",     "callback_data": "cmd:/scan asia"},
+         {"text": "🌍 Europe",   "callback_data": "cmd:/scan europe"}],
+        [{"text": "🌎 Americas", "callback_data": "cmd:/scan americas"}],
+        [{"text": "⬅️ Back to menu", "callback_data": "menu:main"}],
+    ]
+
+
+def set_bot_commands():
+    """Register the command list so Telegram shows the blue 'Menu' button next to
+    the input box and '/' autocomplete. Typed commands keep working regardless."""
+    if not TG_TOKEN:
+        return
+    cmds = [
+        {"command": "menu",      "description": "📋 Button menu of all actions"},
+        {"command": "scan",      "description": "🔍 Scan all markets (or /scan <city>)"},
+        {"command": "positions", "description": "💼 Your positions + P&L"},
+        {"command": "pnl",       "description": "💰 Realized P&L ledger"},
+        {"command": "learn",     "description": "📊 Scoreboard (calib/sources/cities/nobias)"},
+        {"command": "missed",    "description": "💸 What-if P&L on alerts you skipped"},
+        {"command": "history",   "description": "📜 A city's history (/history <city>)"},
+        {"command": "alerts",    "description": "🧵 Alert thread (today or /alerts <city>)"},
+        {"command": "mute",      "description": "🔕 Silence a city (/mute <city>)"},
+        {"command": "unmute",    "description": "🔔 Unmute a city (/unmute <city>)"},
+        {"command": "muted",     "description": "📋 List muted cities"},
+        {"command": "backup",    "description": "💾 Back up learning data"},
+        {"command": "help",      "description": "❓ Command list"},
+    ]
+    try:
+        httpx.post(f"https://api.telegram.org/bot{TG_TOKEN}/setMyCommands",
+                   json={"commands": cmds}, timeout=15.0)
+        httpx.post(f"https://api.telegram.org/bot{TG_TOKEN}/setChatMenuButton",
+                   json={"menu_button": {"type": "commands"}}, timeout=15.0)
+        print("[listener] registered Telegram command menu (setMyCommands)")
+    except Exception as e:
+        print(f"[listener] setMyCommands failed: {e}")
+
+
+def _answer_callback(cq_id):
+    """Acknowledge a button tap so Telegram stops the little loading spinner."""
+    if not (TG_TOKEN and cq_id):
+        return
+    try:
+        httpx.post(f"https://api.telegram.org/bot{TG_TOKEN}/answerCallbackQuery",
+                   json={"callback_query_id": cq_id}, timeout=10.0)
+    except Exception:
+        pass
+
+
 def handle_command(text, chat_id):
     """Parse a /command and act."""
     text = (text or "").strip()
     low = text.lower()
 
-    if low in ("/start", "/help"):
+    if low in ("/menu", "/start"):
+        reply_telegram(chat_id,
+            "📋 <b>PolyWeather menu</b>\n"
+            "Tap a button below, or type any command.\n"
+            "For one city, type: <code>/scan tokyo</code> · <code>/history tokyo</code> · "
+            "<code>/mute tokyo</code>",
+            keyboard=_main_menu_keyboard())
+        return
+
+    if low == "/help":
         reply_telegram(chat_id,
             "🤖 <b>PolyWeather commands</b>\n\n"
+            "/menu — button menu of everything\n"
             "/scan — scan ALL markets now\n"
             "/scan europe — scan a region (asia/europe/americas)\n"
             "/scan munich — scan one city\n"
-            "/pick — choose a market with buttons\n"
             "/positions — show your positions now\n"
             "/pnl — realized P&L ledger from settled alerts\n"
             "/learn — prediction-vs-outcome scoreboard (also: all / calib / sources / cities / nobias)\n"
@@ -1524,6 +1606,7 @@ def handle_command(text, chat_id):
             "/history <city> — that city's prediction history + suggested bias\n"
             "/alerts [city|date] — alert thread: a city's alerts, or a day's\n"
             "/mute <city> · /unmute <city> · /muted — silence a city (keeps learning)\n"
+            "/backup — back up learning data to GitHub\n"
             "/help — this message")
         return
 
@@ -1627,7 +1710,7 @@ def handle_command(text, chat_id):
         # "/scan positions" / "/scan pnl" etc. — the user meant that command, not a
         # market named "positions". Route it to the real handler instead of erroring.
         _CMD_WORDS = {"positions", "pnl", "ledger", "learn", "missed", "history",
-                      "alerts", "today", "backup", "pick", "help", "start",
+                      "alerts", "today", "backup", "pick", "help", "start", "menu",
                       "mute", "muted", "unmute"}
         first = scope.split()[0] if scope else ""
         if first in _CMD_WORDS:
@@ -1654,8 +1737,9 @@ def command_listener():
             print(f"[listener] cleared a webhook ({url}) that was blocking commands")
     except Exception as e:
         print(f"[listener] webhook check failed: {e}")
+    set_bot_commands()          # populate the blue Menu button + / autocomplete
     offset = None
-    print("[listener] Telegram command listener started (/scan, /positions, /learn, /pick, /help)")
+    print("[listener] Telegram command listener started — /menu for buttons, or type commands")
     while True:
         try:
             params = {"timeout": 30}
@@ -1687,10 +1771,20 @@ def command_listener():
                 # inline button taps
                 cq = upd.get("callback_query")
                 if cq:
-                    data = cq.get("data", "")
+                    data    = cq.get("data", "")
                     cq_chat = (cq.get("message") or {}).get("chat", {}).get("id")
-                    if data.startswith("scan:") and cq_chat and _tg_authorized(cq_chat):
-                        scan_for_command(data.split(":", 1)[1], reply_to=cq_chat)
+                    _answer_callback(cq.get("id"))     # stop the button spinner
+                    if cq_chat and _tg_authorized(cq_chat):
+                        if data.startswith("cmd:"):
+                            handle_command(data[4:], cq_chat)        # any menu button
+                        elif data == "menu:main":
+                            reply_telegram(cq_chat, "📋 <b>Menu</b> — tap or type a command:",
+                                           keyboard=_main_menu_keyboard())
+                        elif data == "menu:regions":
+                            reply_telegram(cq_chat, "🌍 Pick a region to scan:",
+                                           keyboard=_regions_keyboard())
+                        elif data.startswith("scan:"):                # legacy /pick
+                            scan_for_command(data.split(":", 1)[1], reply_to=cq_chat)
         except Exception as e:
             print(f"[listener] error: {e}")
             time.sleep(5)

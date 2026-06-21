@@ -575,6 +575,15 @@ def fmt_positions_update(wallet: str, positions) -> str:
         short = title[:34]
         lines.append(f"{emoji} <b>{short}</b>")
         lines.append(f"   {side} | {e_s}→{n_s} | ${val:.2f} (P&L {pnl:+.2f})")
+        # ── winning amount: each share pays $1 if it settles in your favour ──
+        shares = pos.get("size") or 0.0
+        cost   = pos.get("initial_value") or 0.0
+        if shares > 0:
+            payout  = shares * 1.0
+            wprofit = payout - cost
+            roi     = (wprofit / cost * 100) if cost > 0 else 0
+            lines.append(f"   🏆 If it WINS: <b>${payout:.2f}</b> back  "
+                         f"(paid ${cost:.2f} → profit {wprofit:+.2f}, {roi:+.0f}%)")
         if pos.get("redeemable"):
             lines.append(f"   ✅ SETTLED — claimable")
 

@@ -542,7 +542,10 @@ def fmt_new_signal(p) -> str:
         fav_p = mkt[fav]
         model_b = p.get("top_bucket")
         L.append("")
-        if fav != model_b:
+        if model_b is None:
+            # model has no firm pick — just report the market's favourite
+            L.append(f"🏛️ Market favours {fav}{sym} @ {fav_p*100:.0f}¢ ({fav_p*100:.0f}% implied)")
+        elif fav != model_b:
             in_model = any(b.get("value") == fav for b in (dist or []))
             L.append(f"🏛️ <b>Market favours {fav}{sym} @ {fav_p*100:.0f}¢</b> "
                      f"({fav_p*100:.0f}% implied) — model picks {model_b}{sym}.")

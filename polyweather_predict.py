@@ -1748,18 +1748,21 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     def _nws(): res["nws"]   = fetch_nws(lat, lon, use_f, target_date)
     def _7t():  res["t7"]    = fetch_7timer(lat, lon, tz, use_f, target_date)
     def _met():
-        # Try Wunderground (Polymarket's settlement source) first; fall back to METAR.
-        # ALSO keep the raw airport METAR (aviationweather.gov — same feed
-        # metar-taf.com shows) so the alert can display the exact station reading
-        # the market settles on, and flag when the two sources disagree.
+        # Primary live source: Wunderground (Polymarket's settlement source),
+        # falling back to METAR if WU returns nothing.
         wu = fetch_wunderground(icao, tz, use_f, local_date)
-        mt = fetch_metar(icao, tz, local_date)
-        res["metar"]         = wu if wu else mt
-        res["airport_metar"] = mt
+        res["metar"] = wu if wu else fetch_metar(icao, tz, local_date)
 
-    # Free no-key sources, each toggleable via ENABLE_<SOURCE>. _met (live obs) is
-    # always on — it provides max_so_far, not a forecast.
-    fetchers = [_met]
+    def _air():
+        # Raw airport METAR (aviationweather.gov — the same feed metar-taf.com
+        # shows). Fetched in its OWN thread so it runs in parallel with _met
+        # instead of serialising two HTTP calls. Cached, so if _met also needed
+        # METAR this is a cache hit. Lets the alert show the exact station reading.
+        res["airport_metar"] = fetch_metar(icao, tz, local_date)
+
+    # Free no-key sources, each toggleable via ENABLE_<SOURCE>. _met (live obs) and
+    # _air (raw airport METAR) are always on — they provide max_so_far, not forecasts.
+    fetchers = [_met, _air]
     if ENABLE_OPEN_METEO: fetchers.append(_om)
     if ENABLE_ENSEMBLE:   fetchers.append(_ens)
     if ENABLE_MULTIMODEL: fetchers.append(_mm)

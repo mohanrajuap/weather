@@ -1162,6 +1162,13 @@ def run_scan(conn):
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     print(f"\n[{ts}] scanning {len(ALERT_CITIES)} cities (threshold {THRESHOLD*100:.0f}%)...")
 
+    # Pull every city's airport METAR in ONE batched call (not 51) so we don't
+    # rate-limit aviationweather.gov.
+    try:
+        pw.prefetch_metars([(pw.CITIES.get(c) or {}).get("icao") for c in ALERT_CITIES])
+    except Exception as e:
+        print(f"  [metar] prefetch failed: {e}")
+
     new_alerts = 0
     collapses  = 0
     shifts     = 0
@@ -1362,6 +1369,10 @@ def send_morning_digest():
     if OBSERVE_ONLY:
         return
     print("[digest] building morning digest…")
+    try:
+        pw.prefetch_metars([(pw.CITIES.get(c) or {}).get("icao") for c in ALERT_CITIES])
+    except Exception as e:
+        print(f"[digest] metar prefetch failed: {e}")
     hits = []
     for city in ALERT_CITIES:
         if city in MUTED or (pw.resolve_city(city) or city) in MUTED:
@@ -1429,6 +1440,12 @@ def scan_for_command(scope="all", reply_to=None):
         return
 
     reply_telegram(reply_to, f"{header}\n⏳ Scanning…")
+
+    # batch-prefetch airport METARs for these cities (one call, not one-per-city)
+    try:
+        pw.prefetch_metars([(pw.CITIES.get(c) or {}).get("icao") for c in cities])
+    except Exception as e:
+        print(f"  [metar] prefetch failed: {e}")
 
     hits = []
     single_pred = None

@@ -1098,31 +1098,57 @@ def fetch_actual_high(city_key: str, date: str) -> Optional[float]:
     # 2) Open-Meteo analysed max as fallback
     return _om_past_max(meta["lat"], meta["lon"], date, use_f)
 
-def fetch_metar(icao: str, tz_offset: int = 0,
-                local_date: str = None) -> Optional[Dict]:
-    """
-    Fetch METAR for the LOCAL date given.
-    Always fetches TODAY's observations (for live temp / max_so_far).
-    If predicting tomorrow, live data still shows today's current conditions.
-    """
-    # Cover the WHOLE local day so the daily MAX isn't missed when scanning late
-    # in the day (8h back would drop the morning). Rows outside today are filtered
-    # below, so a wider window is always safe. Capped to keep the response small.
-    local_now = _now_utc() + timedelta(seconds=tz_offset)
-    hours_back = min(26, max(8, local_now.hour + 2))
-    data = _get(
-        METAR_URL,
-        {"ids": icao, "format": "json", "hours": hours_back},
-        timeout=6.0,
-    )
-    if not data or not isinstance(data, list):
-        return None
+# ── Batched METAR cache ───────────────────────────────────────────────────────
+# aviationweather.gov accepts MANY station ids in one call (ids=RJTT,KJFK,...).
+# Fetching all 51 stations in a SINGLE request per scan — instead of one request
+# per city — keeps the free API from rate-limiting/timing out (which previously
+# tripped the circuit breaker for the whole host). prefetch_metars() fills this
+# cache once per scan; fetch_metar() serves from it and only hits the network for
+# stations the batch didn't cover.
+_METAR_BATCH: Dict[str, list] = {}
+_METAR_BATCH_LOCK = threading.Lock()
+_METAR_BATCH_TS = 0.0
+_METAR_BATCH_TTL = float(os.environ.get("METAR_BATCH_TTL", "900"))   # 15 min
 
-    # Always use today's LOCAL date for METAR (it's live observation)
-    today_local = local_now.strftime("%Y-%m-%d")
-
-    results = []
+def prefetch_metars(icaos) -> int:
+    """One batched aviationweather.gov call for ALL given stations. Returns the
+    number of stations that came back with data. Never raises."""
+    global _METAR_BATCH_TS
+    ids = sorted({(i or "").upper() for i in icaos if i})
+    if not ids:
+        return 0
+    data = _get(METAR_URL, {"ids": ",".join(ids), "format": "json", "hours": 26},
+                timeout=20.0)
+    if not isinstance(data, list):
+        return 0
+    grouped: Dict[str, list] = {}
     for row in data:
+        k = (row.get("icaoId") or "").upper()
+        if k:
+            grouped.setdefault(k, []).append(row)
+    with _METAR_BATCH_LOCK:
+        _METAR_BATCH.clear()
+        _METAR_BATCH.update(grouped)
+        for i in ids:                      # mark every requested id as fetched,
+            _METAR_BATCH.setdefault(i, [])  # even empty, so we don't re-call per city
+        _METAR_BATCH_TS = _time.time()
+    print(f"[metar] prefetched {len(grouped)}/{len(ids)} stations in 1 call")
+    return len(grouped)
+
+def _batched_rows(icao: str):
+    """Raw rows for `icao` from a FRESH batch, or None if the batch is stale or
+    never covered this station (caller should then fetch it itself)."""
+    with _METAR_BATCH_LOCK:
+        if _time.time() - _METAR_BATCH_TS > _METAR_BATCH_TTL:
+            return None
+        return _METAR_BATCH.get((icao or "").upper())   # [] = fetched, no obs
+
+
+def _parse_metar_rows(rows: list, tz_offset: int) -> Optional[Dict]:
+    """Turn raw aviationweather rows into the live-obs dict (today's max etc.)."""
+    today_local = (_now_utc() + timedelta(seconds=tz_offset)).strftime("%Y-%m-%d")
+    results = []
+    for row in rows:
         temp = _sf(row.get("temp"))
         if temp is None:
             continue
@@ -1167,6 +1193,25 @@ def fetch_metar(icao: str, tz_offset: int = 0,
         "humidity":      curr.get("humidity"),
         "wind_speed_kt": curr.get("wind_speed_kt"),
     }
+
+
+def fetch_metar(icao: str, tz_offset: int = 0,
+                local_date: str = None) -> Optional[Dict]:
+    """
+    Live METAR for TODAY's observations (current temp / max_so_far). Serves from
+    the once-per-scan batched cache when available, else makes a single per-station
+    call covering the whole local day.
+    """
+    rows = _batched_rows(icao)              # [] = fetched-but-empty, None = not cached
+    if rows is None:
+        local_now  = _now_utc() + timedelta(seconds=tz_offset)
+        hours_back = min(26, max(8, local_now.hour + 2))
+        data = _get(METAR_URL, {"ids": icao, "format": "json", "hours": hours_back},
+                    timeout=10.0)
+        rows = data if isinstance(data, list) else None
+    if not rows:
+        return None
+    return _parse_metar_rows(rows, tz_offset)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # POLYMARKET LIVE PRICES  (Gamma API for discovery + CLOB API for prices)

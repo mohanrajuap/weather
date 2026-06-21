@@ -820,6 +820,81 @@ def recent_city_line(city: str, n: int = 3) -> Optional[str]:
     return "📜 Recent (pred→actual): " + " · ".join(items)
 
 
+def report_cities(min_days: int = 1) -> str:
+    """Rank cities by how well the bot predicts them (settled top-bucket hit-rate),
+    so you can focus where it's proven and be cautious where it isn't."""
+    data = _load()
+    agg: Dict[str, list] = {}        # city -> [hits, n, sum_abs_miss_C]
+    for day in data.values():
+        for ck, rec in day.items():
+            s = rec.get("score"); o = rec.get("outcome")
+            if not s or not o:
+                continue
+            a = agg.setdefault(ck, [0, 0, 0.0])
+            a[0] += 1 if s.get("hit") else 0
+            a[1] += 1
+            bb, ab = s.get("bot_bucket"), o.get("actual_bucket")
+            if bb is not None and ab is not None:
+                use_f = bool((pw.CITIES.get(ck) or {}).get("f", False))
+                a[2] += abs(bb - ab) / (1.8 if use_f else 1.0)
+    rows = [(h / n, n, miss / n, ck) for ck, (h, n, miss) in agg.items() if n >= min_days]
+    if not rows:
+        return "🏙️ No settled city data yet — rankings fill in as days settle."
+    rows.sort(key=lambda r: (-r[0], r[2]))      # best hit-rate, then smallest miss
+    L = ["🏙️ <b>CITY RELIABILITY</b>  (bot's settled top-bucket hit-rate)", "",
+         "✅ <b>Most reliable</b>"]
+    for hr, n, miss, ck in rows[:8]:
+        L.append(f"   {city_disp(ck):<13} {hr*100:>3.0f}%  ({int(round(hr*n))}/{n})  ±{miss:.1f}°C")
+    worst = [r for r in rows if r[0] < 0.5]
+    if worst:
+        L.append("")
+        L.append("⚠️ <b>Least reliable — trade with caution</b>")
+        for hr, n, miss, ck in sorted(worst, key=lambda r: (r[0], -r[2]))[:6]:
+            L.append(f"   {city_disp(ck):<13} {hr*100:>3.0f}%  ({int(round(hr*n))}/{n})  ±{miss:.1f}°C")
+    L.append("")
+    L.append("<i>Needs a few settled days per city to be meaningful.</i>")
+    return "\n".join(L)
+
+
+def report_pnl() -> str:
+    """Realized P&L ledger from every SETTLED buy-alert ($1 stake each), split by
+    held vs missed, with a 7-day view. (Open positions: see /positions.)"""
+    data = _load()
+    mins, _ = _user_tz()
+    today = (datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=mins)).date()
+    tot = {"n": 0, "won": 0, "pnl": 0.0}
+    wk  = {"n": 0, "won": 0, "pnl": 0.0}
+    held_pnl = miss_pnl = 0.0
+    for date, day in data.items():
+        try:
+            ddate = datetime.strptime(date, "%Y-%m-%d").date()
+        except Exception:
+            ddate = None
+        for ck, rec in day.items():
+            al = rec.get("alert"); r = (al or {}).get("result")
+            if not al or not r:
+                continue
+            tot["n"] += 1; tot["won"] += 1 if r["won"] else 0; tot["pnl"] += r["pnl"]
+            if al.get("had_position"):
+                held_pnl += r["pnl"]
+            else:
+                miss_pnl += r["pnl"]
+            if ddate and 0 <= (today - ddate).days <= 7:
+                wk["n"] += 1; wk["won"] += 1 if r["won"] else 0; wk["pnl"] += r["pnl"]
+    if tot["n"] == 0:
+        return ("💰 No settled alerts yet — the ledger fills in as alerted markets "
+                "settle. (For open positions, use /positions.)")
+    def _wr(d):
+        return f"{d['won']}/{d['n']} ({d['won']/d['n']*100:.0f}%)" if d["n"] else "—"
+    L = ["💰 <b>P&L LEDGER</b>  ($1 per alerted signal, realized)", "",
+         f"📅 <b>Last 7 days:</b> {wk['pnl']:+.2f} USD · win {_wr(wk)}",
+         f"🗓️ <b>All time:</b>   {tot['pnl']:+.2f} USD · win {_wr(tot)}", "",
+         f"   • on signals you HELD:   {held_pnl:+.2f}",
+         f"   • on signals you MISSED: {miss_pnl:+.2f}", "",
+         "<i>Realized from settled alerts. Live open positions are in /positions.</i>"]
+    return "\n".join(L)
+
+
 def settle_and_report() -> str:
     """Settle anything newly complete, then return the latest scoreboard.
     Used by the monitor for the once-a-day Telegram learning digest."""

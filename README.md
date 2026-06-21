@@ -63,6 +63,21 @@ or the market has already decided. A trade only fires if it survives all of them
 For each bucket, `edge = model_prob − market_price`. The bar scales with
 confidence (a shaky read must clear a bigger edge). Each edge also reports
 **EV** (expected return per $1) and a **Kelly** stake suggestion (use a fraction).
+Set `BANKROLL` and every tradeable alert prints a **concrete stake** ("bet $X →
+~N shares; wins $Y") sized at quarter-Kelly of your bankroll.
+
+### 4a. Position management
+Beyond entry alerts, the bot actively manages what you hold:
+- **Stop-loss exits** — alerts to CUT when the model's probability for your bucket
+  drops below your break-even (your entry price), i.e. holding turns EV-negative.
+- **Live-vs-forecast tracker** — `/positions` shows today's observed max so far vs
+  the predicted high, so you can see if a held bet is on track or falling behind.
+- **Peak countdown** — every alert says whether the day's high is still forming
+  ("peak in ~3h, may move") or locked in ("peak passed — most reliable").
+- **Source-outlier flag** — if one API disagrees sharply with the rest, the alert
+  names it so a bad/stale source is visible at a glance.
+- **Morning digest** — once a day (`DIGEST_HOUR_UTC`) a single message lists the
+  best edges across all cities. Mute noisy cities with `/mute <city>`.
 
 ### 5. Learning
 Every scan records the prediction; once a market settles, the bot fetches the
@@ -104,15 +119,18 @@ Send these on Telegram, or publish them to your ntfy topic (prefixed with
 |---|---|
 | `/scan` | scan all markets now |
 | `/scan london` / `/scan europe` | scan one city / region |
-| `/positions` | your live Polymarket positions + P&L |
+| `/positions` | your live Polymarket positions + P&L, **observed-max-vs-forecast** tracker, and payout if each wins |
+| `/pnl` | realized P&L ledger from settled alerts ($1 stake each), held vs missed, 7-day + lifetime |
 | `/learn` | yesterday's prediction-vs-outcome scoreboard |
 | `/learn all` | lifetime hit rate |
 | `/learn calib` | is a predicted "70%" really 70%? (calibration) |
 | `/learn sources` | which APIs are most reliable (MAE + bucket hit-rate) |
+| `/learn cities` | rank cities by the bot's settled hit-rate (where it's proven vs not) |
 | `/learn nobias` | hit rate **with vs without** the peak bias |
 | `/missed` | $1 what-if P&L on alerts you were sent but didn't hold a position on |
 | `/history <city>` | that city's full prediction-vs-outcome history + the exact `CITY_BIAS` to set |
 | `/alerts [date]` | all alerts for a day grouped as one thread (defaults to today) |
+| `/mute <city>` · `/unmute <city>` · `/muted` | silence a city's alerts (it keeps learning) |
 | `/backup` | push learning data to GitHub now |
 | `/help` | command list |
 

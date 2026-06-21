@@ -153,6 +153,41 @@ ALERT_CITIES  = [c.strip() for c in _alert_cities.split(",") if c.strip()] or li
 if not os.path.isdir(os.path.dirname(STATE_DB) or "."):
     STATE_DB = "monitor_state.db"
 
+# Your bankroll in USD — used to turn a Kelly fraction into a concrete suggested
+# stake in the alert ("bet $X"). Quarter-Kelly is applied for safety.
+BANKROLL       = float(os.environ.get("BANKROLL", "100"))
+# Hour (UTC) to send the once-a-day morning digest of the day's best edges.
+DIGEST_HOUR_UTC = int(os.environ.get("DIGEST_HOUR_UTC", "6"))
+# Send the morning digest at all? (needs LIVE mode to be useful)
+ENABLE_DIGEST   = os.environ.get("ENABLE_DIGEST", "1") == "1"
+
+# ── Muted cities (runtime /mute, persisted so it survives restarts) ───────────
+def _resolve_mute_file() -> str:
+    env = os.environ.get("MUTE_FILE")
+    if env:
+        return env
+    return "/data/muted.json" if os.path.isdir("/data") else "muted.json"
+
+MUTE_FILE = _resolve_mute_file()
+
+def load_muted() -> set:
+    try:
+        if os.path.exists(MUTE_FILE):
+            with open(MUTE_FILE) as f:
+                return set(json.load(f))
+    except Exception:
+        pass
+    return set()
+
+def save_muted(muted: set):
+    try:
+        with open(MUTE_FILE, "w") as f:
+            json.dump(sorted(muted), f)
+    except Exception as e:
+        print(f"[mute] save error: {e}")
+
+MUTED = load_muted()
+
 
 # ── Telegram ──────────────────────────────────────────────────────────────────
 def _strip_html(text: str) -> str:
@@ -298,6 +333,43 @@ def upsert_state(conn, key, city, target_date, bucket, prob, alerted_high):
 # ── Alert formatting ──────────────────────────────────────────────────────────
 _DIV = "━━━━━━━━━━━━━━━━━━━━"
 
+def _peak_countdown(p) -> str:
+    """One-line, plain-English read on how settled today's high is — the single
+    biggest driver of whether a forecast can still move."""
+    tim = p.get("timing") or {}
+    q   = tim.get("quality")
+    hrs = tim.get("hours_until_golden")
+    pw_ = tim.get("peak_window", "?")
+    if q == "RELIABLE":
+        return "⏱️ <b>Peak passed</b> — today's high is essentially locked (most reliable)."
+    if q == "FIRMING":
+        return "⏱️ <b>Peak forming now</b> — high firming up; watch live obs."
+    if q == "FORECAST":
+        return "⏱️ Tomorrow's market — peak ~a day out, expect big shifts."
+    if q in ("SPECULATIVE", "OVERNIGHT") and hrs is not None:
+        return f"⏱️ Peak in ~{hrs:.0f}h (window {esc(pw_)}) — forecast may still move; size down."
+    return ""
+
+def _outlier_line(p) -> str:
+    """Flag the single source that disagrees most with the others, so a bad/stale
+    API is visible. Over time /learn sources tells you which to disable."""
+    fc   = p.get("forecasts") or {}
+    vals = [(m, float(v)) for m, v in fc.items() if isinstance(v, (int, float))]
+    if len(vals) < 3:
+        return ""
+    nums = sorted(v for _, v in vals)
+    med  = nums[len(nums) // 2]
+    m, v = max(vals, key=lambda kv: abs(kv[1] - med))
+    dev  = abs(v - med)
+    sym  = p.get("temp_unit", "°")
+    is_f = "F" in (p.get("temp_unit") or "")
+    thresh = 5.0 if is_f else 3.0
+    if dev >= thresh:
+        return (f"⚠️ Source outlier: <b>{esc(m)}</b> {v:.0f}{sym} is {dev:.0f}° "
+                f"off the rest (median {med:.0f}{sym}) — discounted in the blend.")
+    return ""
+
+
 def fmt_new_signal(p) -> str:
     """Polished signal card with an HONEST header reflecting verdict + timing."""
     sym  = p["temp_unit"]
@@ -370,6 +442,14 @@ def fmt_new_signal(p) -> str:
         src = "🎯 Wunderground" if live.get("source") == "wunderground" else "METAR"
         L.append(f"🌡️ Live: {live['current_temp']}{sym} (max {live.get('max_so_far')}{sym}, {esc(live.get('trend'))}) · {src}")
 
+    # peak countdown + source-disagreement context (data-quality at a glance)
+    cd = _peak_countdown(p)
+    if cd:
+        L.append(cd)
+    ol = _outlier_line(p)
+    if ol:
+        L.append(ol)
+
     # this city's recent track record (pred→actual) so you can judge the call
     try:
         rl = learn.recent_city_line(p.get("city"))
@@ -406,6 +486,19 @@ def fmt_new_signal(p) -> str:
         if action_ok:
             L.append(f"🏆 <b>{esc(bt['action'])} {bt['temp']}{sym} @ {bt['yes_price']*100:.0f}¢</b>")
             L.append(f"    edge <b>{bt['best_edge']*100:+.0f}%</b> · model {bt['model_prob']*100:.0f}%")
+            # concrete stake: quarter-Kelly of your bankroll → shares + payout
+            kq = bt.get("kelly_quarter") or 0.0
+            yp = bt.get("yes_price") or 0.0
+            stake = BANKROLL * kq
+            if stake >= 1 and yp > 0:
+                shares = stake / yp
+                payout = shares * 1.0
+                L.append(f"    💵 Suggested stake <b>${stake:.0f}</b> (¼-Kelly of ${BANKROLL:.0f}) "
+                         f"→ ~{shares:.0f} shares; wins ${payout:.0f} (+${payout-stake:.0f})")
+            elif kq <= 0:
+                L.append("    💵 Kelly says ~$0 here — edge too thin to size up.")
+            if bt.get("ev"):
+                L.append(f"    📊 EV {bt['ev']*100:+.0f}% per $1 staked")
             if bt.get("thin"):
                 L.append(f"    ⚠️ thin volume (${bt.get('vol',0):,.0f}) — size small")
         else:
@@ -602,6 +695,22 @@ def fmt_positions_update(wallet: str, positions) -> str:
                 tim     = pred.get("timing") or {}
                 peak_passed = tim.get("quality") == "RELIABLE"  # post-peak, high locked
 
+                # ── live-vs-forecast tracker: is today actually heading to your bucket? ──
+                live = pred.get("live") or {}
+                msf  = live.get("max_so_far")
+                pdeb = pred.get("deb")
+                if msf is not None:
+                    if msf >= bucket:
+                        track = "✅ already at/above your bucket — looking good"
+                    elif pdeb is not None and msf >= pdeb - 0.5:
+                        track = "🟢 on track to forecast"
+                    elif pdeb is not None and msf >= pdeb - 2.0:
+                        track = "🟡 running a bit behind forecast"
+                    else:
+                        track = "🔴 behind forecast — watch it"
+                    pstr = f" vs predicted {pdeb:.0f}{sym}" if pdeb is not None else ""
+                    lines.append(f"   🌡️ Today's max so far {msf:.0f}{sym}{pstr} — {track}")
+
                 # ── The MARKET is the source of truth once the peak is in. ──
                 # If your position is priced high (market thinks you'll win) OR the
                 # peak has passed, the model's "forecast" of a higher bucket is stale
@@ -759,6 +868,12 @@ def watch_positions(conn):
         flipped_away = (top_b is not None and top_b != bucket and your_prob < 0.40)
         big_drop     = (prev_prob - your_prob) >= 0.15   # dropped 15+ pts since last watch
         conflict     = pred.get("live_model_conflict")
+        # ── STOP-LOSS: holding is EV-negative once the model's probability for your
+        # bucket falls below what you paid for it (break-even = your entry price). ──
+        entry        = pos.get("avg_price")
+        breakeven    = entry if entry is not None else cur_price
+        below_breakeven = (breakeven is not None and your_prob < (breakeven - 0.05)
+                           and not peak_passed and not market_winning)
 
         # Suppress the alert entirely if the market says you're winning, or the
         # peak already passed (the model can't "un-happen" a locked-in high).
@@ -769,12 +884,17 @@ def watch_positions(conn):
         # only alert once per worsening state — track with alerted_high flag
         already = prev["alerted_high"] if prev else 0
 
-        if (flipped_away or big_drop) and not already:
+        if (flipped_away or big_drop or below_breakeven) and not already:
+            head_icon = "🛑" if below_breakeven else "⚡"
             lines = [
-                f"⚡ <b>POSITION WATCH — {esc(city_display(city))}</b>",
+                f"{head_icon} <b>POSITION WATCH — {esc(city_display(city))}</b>",
                 f"📅 {pred.get('target_date')}  |  you hold <b>{bucket}{sym}</b>",
                 "",
             ]
+            if below_breakeven:
+                lines.append(f"🛑 <b>STOP-LOSS</b>: model now <b>{your_prob*100:.0f}%</b> for {bucket}{sym}, "
+                             f"below your break-even <b>{breakeven*100:.0f}¢</b>.")
+                lines.append(f"   Holding is EV-negative — cutting now caps the loss.")
             if flipped_away:
                 lines.append(f"🔴 Model FLIPPED away from your bucket:")
                 lines.append(f"   your {bucket}{sym} now only <b>{your_prob*100:.0f}%</b>")
@@ -914,7 +1034,8 @@ def run_scan(conn):
     # data-health tally: how many cities we could actually evaluate vs lost to
     # errors / missing forecast data. Without this, a total upstream outage looks
     # identical to a calm "0 new" market in the logs.
-    health = {"total": len(ALERT_CITIES), "errored": 0, "no_data": 0, "evaluated": 0}
+    health = {"total": len(ALERT_CITIES), "errored": 0, "no_data": 0,
+              "evaluated": 0, "no_market": 0, "muted": 0}
     scan_preds = []   # collected for the learning tracker (one disk write at end)
 
     # Your current positions per city — used for the missed-trade tracker AND for
@@ -947,6 +1068,20 @@ def run_scan(conn):
             continue
         health["evaluated"] += 1
         scan_preds.append(p)   # snapshot this city's current prediction for learning
+
+        # Muted city (/mute): keep learning + tracking, just don't alert on it.
+        if city in MUTED or (pw.resolve_city(city) or city) in MUTED:
+            health["muted"] += 1
+            continue
+
+        # No live Polymarket market today (weekend/holiday/not listed) — nothing to
+        # trade. We still recorded the forecast for learning above; skip alert logic.
+        # Only when prices are ON: with USE_PRICES off we never fetch buckets, so an
+        # empty market is expected and the bot alerts on probability alone.
+        _pm = p.get("polymarket") or {}
+        if USE_PRICES and not _pm.get("buckets"):
+            health["no_market"] += 1
+            continue
 
         prob   = p.get("top_prob", 0.0)
         bucket = p.get("top_bucket")
@@ -1068,6 +1203,7 @@ def run_scan(conn):
     print(f"[{ts}] done — {new_alerts} new, {shifts} shifted, {collapses} collapsed")
     # data health: how many cities we could actually evaluate this pass.
     print(f"           data: {health['evaluated']}/{health['total']} evaluated, "
+          f"{health['no_market']} no-market, {health['muted']} muted, "
           f"{health['no_data']} no-data, {health['errored']} errored")
     # if most cities had no usable data, the run is unreliable — flag it loudly so
     # a "0 new" line isn't mistaken for a calm market when it's really an outage.
@@ -1081,6 +1217,43 @@ def run_scan(conn):
               f"{nm['below_thresh']} below-{THRESHOLD*100:.0f}%, {nm['not_trade']} not-clean, "
               f"{nm['high_ok']} ready)")
     return new_alerts, collapses
+
+
+def send_morning_digest():
+    """Once-a-day 'here's what's worth a look today' — the best edges across all
+    cities in one message, so you don't have to wait for live alerts to trickle in.
+    Suppressed in OBSERVE mode (it's a trade prompt)."""
+    if OBSERVE_ONLY:
+        return
+    print("[digest] building morning digest…")
+    hits = []
+    for city in ALERT_CITIES:
+        if city in MUTED or (pw.resolve_city(city) or city) in MUTED:
+            continue
+        try:
+            p = pw.predict(city, fetch_prices=USE_PRICES)
+        except Exception:
+            continue
+        if "error" in p:
+            continue
+        if p.get("best_trade") and p.get("verdict") == "TRADE":
+            hits.append(p)
+    if not hits:
+        print("[digest] nothing tradeable — skipping")
+        return
+    hits.sort(key=lambda x: (x.get("best_trade") or {}).get("best_edge", 0), reverse=True)
+    L = [f"🌅 <b>MORNING DIGEST — {datetime.now(timezone.utc).strftime('%b %d')}</b>",
+         f"Top edges across {len(ALERT_CITIES)} cities right now:", ""]
+    for p in hits[:6]:
+        bt = p.get("best_trade"); sym = p.get("temp_unit", "°")
+        tq = (p.get("timing") or {}).get("quality", "?")
+        L.append(f"• <b>{esc(city_display(p['city']))}</b> {esc(bt['action'])} {bt['temp']}{sym} "
+                 f"@ {bt['yes_price']*100:.0f}¢ → edge {bt['best_edge']*100:+.0f}% "
+                 f"(model {bt['model_prob']*100:.0f}%, {esc(tq)})")
+    L.append("")
+    L.append("👉 /scan &lt;city&gt; for the full card with stake sizing.")
+    send_telegram("\n".join(L))
+    print(f"[digest] sent — {len(hits)} tradeable")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1212,10 +1385,12 @@ def handle_command(text, chat_id):
             "/scan munich — scan one city\n"
             "/pick — choose a market with buttons\n"
             "/positions — show your positions now\n"
-            "/learn — prediction-vs-outcome scoreboard (also: all / calib / sources)\n"
+            "/pnl — realized P&L ledger from settled alerts\n"
+            "/learn — prediction-vs-outcome scoreboard (also: all / calib / sources / cities / nobias)\n"
             "/missed — $1 what-if P&L on alerts you didn't take\n"
             "/history <city> — that city's prediction history + suggested bias\n"
             "/alerts [city|date] — alert thread: a city's alerts, or a day's\n"
+            "/mute <city> · /unmute <city> · /muted — silence a city (keeps learning)\n"
             "/help — this message")
         return
 
@@ -1232,6 +1407,8 @@ def handle_command(text, chat_id):
             reply_telegram(chat_id, learn.report_sources(city))
         elif arg in ("nobias", "no-bias", "biascheck"):
             reply_telegram(chat_id, learn.report_bias_free())
+        elif arg in ("cities", "city", "best"):
+            reply_telegram(chat_id, learn.report_cities())
         else:
             # optional explicit date as second arg, else most recent settled day
             date = next((x for x in parts[1:] if x.count("-") == 2), None)
@@ -1248,6 +1425,28 @@ def handle_command(text, chat_id):
 
     if low.startswith("/missed"):
         reply_telegram(chat_id, learn.report_missed())
+        return
+
+    if low.startswith("/pnl") or low.startswith("/ledger"):
+        reply_telegram(chat_id, learn.report_pnl())
+        return
+
+    if low == "/muted" or low.startswith("/mute") or low.startswith("/unmute"):
+        parts = text.split(maxsplit=1)
+        if low == "/muted":
+            reply_telegram(chat_id, "🔕 Muted cities: "
+                           + (", ".join(city_display(c) for c in sorted(MUTED)) if MUTED else "none"))
+            return
+        if len(parts) < 2:
+            reply_telegram(chat_id, "Usage: /mute &lt;city&gt;  ·  /unmute &lt;city&gt;  ·  /muted")
+            return
+        ck = pw.resolve_city(parts[1].strip()) or parts[1].strip().lower()
+        if low.startswith("/unmute"):
+            MUTED.discard(ck); save_muted(MUTED)
+            reply_telegram(chat_id, f"🔔 Unmuted {city_display(ck)} — alerts back on.")
+        else:
+            MUTED.add(ck); save_muted(MUTED)
+            reply_telegram(chat_id, f"🔕 Muted {city_display(ck)} — still learning, but no alerts.")
         return
 
     if low.startswith("/history"):
@@ -1539,8 +1738,13 @@ def main():
     print(f"  Scan interval:     {INTERVAL_MIN} min")
     print(f"  Position updates:  every {POS_UPDATE_MIN} min" if WALLET else "  Position updates:  OFF (no wallet)")
     if WALLET:
-        print(f"  Position WATCH:    every {POS_WATCH_MIN} min (alerts on flips)")
+        print(f"  Position WATCH:    every {POS_WATCH_MIN} min (flips + stop-loss)")
         print(f"  Profit alert:      at +{PROFIT_TAKE_PCT:.0f}% per position")
+    print(f"  Bankroll (sizing): ${BANKROLL:.0f}  (¼-Kelly stakes in alerts)")
+    if ENABLE_DIGEST and not OBSERVE_ONLY:
+        print(f"  Morning digest:    daily at {DIGEST_HOUR_UTC:02d}:00 UTC")
+    if MUTED:
+        print(f"  Muted cities:      {', '.join(sorted(MUTED))}")
     print(f"  Cities:            {len(ALERT_CITIES)}")
     print(f"  Prices:            {'on' if USE_PRICES else 'off'}")
     print(f"  State DB:          {STATE_DB}")
@@ -1570,7 +1774,7 @@ def main():
         )
     if WALLET:
         startup += f"\n💼 Position updates every {POS_UPDATE_MIN} min."
-    startup += "\n\n💬 Commands: /scan  /positions  /learn  /learn calib  /help"
+    startup += "\n\n💬 Commands: /scan  /positions  /pnl  /learn  /learn cities  /mute  /help"
     send_telegram(startup)
 
     # record any outstanding actual highs so the model can learn its bias
@@ -1606,6 +1810,7 @@ def main():
     last_learn_report = time.time()
     LEARN_REPORT_SEC  = int(os.environ.get("LEARN_REPORT_HOURS", "24")) * 3600
     last_backup_day   = None   # nightly GitHub backup runs once per UTC day
+    last_digest_day   = None   # morning digest runs once per UTC day
     while True:
         now = time.time()
 
@@ -1618,6 +1823,15 @@ def main():
             except Exception as e:
                 print(f"[loop] backup error: {e}")
             last_backup_day = nowdt.date()
+
+        # once-a-day morning digest of the best edges across all cities
+        if (ENABLE_DIGEST and not OBSERVE_ONLY and nowdt.hour == DIGEST_HOUR_UTC
+                and last_digest_day != nowdt.date()):
+            try:
+                send_morning_digest()
+            except Exception as e:
+                print(f"[loop] digest error: {e}")
+            last_digest_day = nowdt.date()
 
         # signal scan timer
         if now - last_scan >= INTERVAL_MIN * 60:

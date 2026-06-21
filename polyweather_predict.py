@@ -1925,6 +1925,7 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
 
     # ── probability distribution ──────────────────────────────────────────────
     dist_raw = []
+    nobias_note = None
     if dead and max_so_far is not None:
         sv   = settlement_round(city_key, max_so_far)
         dist = [{"value": sv, "probability": 1.0, "range": "LOCKED"}]
@@ -1942,6 +1943,11 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
             dist_raw = compute_probabilities(mu - peak_bias, sigma,
                                              max_so_far if not is_tomorrow else None,
                                              city_key, use_hko, is_tomorrow)
+        elif peak_bias and max_so_far is not None:
+            # Bias exists but live obs already drive the call — say so instead of
+            # silently dropping the no-bias graph.
+            nobias_note = (f"live {settlement_round(city_key, max_so_far)}{sym} already "
+                           f"≥ blend — this call is driven by live obs, not the bias")
     else:
         dist = []
 
@@ -2158,6 +2164,7 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         # result
         "distribution":   dist[:6],
         "distribution_raw": dist_raw[:6],     # no-bias version of the distribution
+        "nobias_note":    nobias_note,        # why no-bias graph is omitted (if so)
         "top_bucket":     top.get("value"),
         "top_prob":       model_prob,
         "confidence":     confidence,

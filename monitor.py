@@ -395,6 +395,9 @@ def fmt_new_signal(p) -> str:
         for b in dist_raw[:4]:
             bar = "▱" * max(1, round(b['probability'] * 10))
             L.append(f"   {b['value']}{sym}  {bar} {b['probability']*100:.0f}%")
+    elif p.get("nobias_note"):
+        L.append("")
+        L.append(f"🎲 <i>No-bias view n/a — {esc(p['nobias_note'])}</i>")
 
     # best trade — only call it a BUY when action_ok; else show as "if it holds"
     if bt:

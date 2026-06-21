@@ -66,18 +66,36 @@ confidence (a shaky read must clear a bigger edge). Each edge also reports
 Set `BANKROLL` and every tradeable alert prints a **concrete stake** ("bet $X →
 ~N shares; wins $Y") sized at quarter-Kelly of your bankroll.
 
+Every alert also shows the **live Polymarket price next to each probability bar**
+and names the **market's favourite bucket**. When the market favours a *different*
+bucket than the model (and prices it ≥50¢), the alert warns loudly — a big gap is
+either a real edge or a sign the model is wrong, so you can judge before betting.
+
 ### 4a. Position management
 Beyond entry alerts, the bot actively manages what you hold:
 - **Stop-loss exits** — alerts to CUT when the model's probability for your bucket
   drops below your break-even (your entry price), i.e. holding turns EV-negative.
 - **Live-vs-forecast tracker** — `/positions` shows today's observed max so far vs
   the predicted high, so you can see if a held bet is on track or falling behind.
+- **Combined net P&L** — when you hold several buckets in the *same* market (only
+  one can win), `/positions` adds a netted view: total invested vs each outcome's
+  real payout, and the most-likely net profit/loss.
 - **Peak countdown** — every alert says whether the day's high is still forming
   ("peak in ~3h, may move") or locked in ("peak passed — most reliable").
 - **Source-outlier flag** — if one API disagrees sharply with the rest, the alert
   names it so a bad/stale source is visible at a glance.
 - **Morning digest** — once a day (`DIGEST_HOUR_UTC`) a single message lists the
   best edges across all cities. Mute noisy cities with `/mute <city>`.
+
+### 4b. Live & settlement source (airport METAR)
+Polymarket settles each temperature market on a specific **airport weather
+station**. The bot reads that station's live observations every scan — both via
+Wunderground (the settlement feed) and the **raw airport METAR** from
+`aviationweather.gov` (the same data sites like *metar-taf.com* display), using
+each city's configured ICAO (Tokyo `RJTT`, NYC `KJFK`, London `EGLC`, …). Alerts
+name the station and show its current/max reading; if Wunderground and the raw
+airport METAR disagree by ≥1°, the alert flags it — **settlement follows the
+airport**. This works for every city automatically, no extra config.
 
 ### 5. Learning
 Every scan records the prediction; once a market settles, the bot fetches the
@@ -105,6 +123,7 @@ This is what tells you whether the bot is trustworthy — see **Commands** below
 | `NTFY_TOPIC` | ntfy.sh topic for push notifications |
 | `TRADE_MODE` | `LIVE` (alerts) or `OBSERVE` (learn only, no buy alerts) |
 | `CMD_SECRET` | secret prefix required for ntfy commands (see Security) |
+| `BANKROLL` | your total USD pot — turns the Kelly fraction into a concrete suggested stake per alert |
 
 A full list is in [`.env.example`](.env.example).
 
@@ -115,8 +134,13 @@ A full list is in [`.env.example`](.env.example).
 Send these on Telegram, or publish them to your ntfy topic (prefixed with
 `CMD_SECRET` if set, e.g. `mysecret /scan london`):
 
+On Telegram there's also a **button menu**: tap the blue **Menu** button (or send
+`/menu`) for one-tap access to every command, and `/` autocompletes the full list.
+Typing commands manually always works too.
+
 | Command | Does |
 |---|---|
+| `/menu` | Telegram button menu of every action |
 | `/scan` | scan all markets now |
 | `/scan london` / `/scan europe` | scan one city / region |
 | `/positions` | your live Polymarket positions + P&L, **observed-max-vs-forecast** tracker, and payout if each wins |

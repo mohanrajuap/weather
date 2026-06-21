@@ -393,6 +393,21 @@ def _outlier_line(p) -> str:
     return ""
 
 
+def _market_prices(p) -> dict:
+    """{bucket_value:int -> yes_price:float} from the live Polymarket book."""
+    pm  = p.get("polymarket") or {}
+    out = {}
+    for k, v in (pm.get("buckets") or {}).items():
+        try:
+            key = int(k)
+        except (TypeError, ValueError):
+            continue
+        y = (v or {}).get("yes")
+        if y is not None:
+            out[key] = float(y)
+    return out
+
+
 def fmt_new_signal(p) -> str:
     """Polished signal card with an HONEST header reflecting verdict + timing."""
     sym  = p["temp_unit"]
@@ -483,12 +498,18 @@ def fmt_new_signal(p) -> str:
 
     # probabilities (with bias — what the bot trades on)
     dist = p.get("distribution") or []
+    # market prices per bucket — so model probabilities sit next to what the
+    # market actually charges (model 73% vs market 12¢ tells the whole story).
+    mkt = _market_prices(p)
+    def _mp(v):
+        return f"  · mkt {mkt[v]*100:.0f}¢" if v in mkt else ""
+
     if dist:
         L.append("")
-        L.append("🎲 <b>Probabilities</b> (with bias)")
+        L.append("🎲 <b>Probabilities</b> (with bias · vs market price)")
         for b in dist[:4]:
             bar = "▰" * max(1, round(b['probability'] * 10))
-            L.append(f"   {b['value']}{sym}  {bar} {b['probability']*100:.0f}%")
+            L.append(f"   {b['value']}{sym}  {bar} {b['probability']*100:.0f}%{_mp(b['value'])}")
 
     # probabilities WITHOUT the per-city bias — same bars, raw model centre
     dist_raw = p.get("distribution_raw") or []
@@ -497,10 +518,31 @@ def fmt_new_signal(p) -> str:
         L.append(f"🎲 <b>Probabilities (no bias · raw {p.get('deb_raw')}{sym})</b>")
         for b in dist_raw[:4]:
             bar = "▱" * max(1, round(b['probability'] * 10))
-            L.append(f"   {b['value']}{sym}  {bar} {b['probability']*100:.0f}%")
+            L.append(f"   {b['value']}{sym}  {bar} {b['probability']*100:.0f}%{_mp(b['value'])}")
     elif p.get("nobias_note"):
         L.append("")
         L.append(f"🎲 <i>No-bias view n/a — {esc(p['nobias_note'])}</i>")
+
+    # ── The MARKET's own favourite (Polymarket prices). If it disagrees with the
+    # model's pick, say so loudly — a big gap is EITHER a real edge OR the model is
+    # simply wrong, and the user needs to see the market's number to judge. ──
+    if mkt:
+        fav   = max(mkt, key=mkt.get)
+        fav_p = mkt[fav]
+        model_b = p.get("top_bucket")
+        L.append("")
+        if fav != model_b:
+            in_model = any(b.get("value") == fav for b in (dist or []))
+            L.append(f"🏛️ <b>Market favours {fav}{sym} @ {fav_p*100:.0f}¢</b> "
+                     f"({fav_p*100:.0f}% implied) — model picks {model_b}{sym}.")
+            if fav_p >= 0.50:
+                L.append(f"   ⚠️ Market strongly disagrees with the model. The edge is "
+                         f"only real if the model is right and the market is wrong — "
+                         f"if unsure, trust the market's {fav}{sym}.")
+            if not in_model:
+                L.append(f"   ℹ️ The model gives {fav}{sym} ~0% — that's the gap to weigh.")
+        else:
+            L.append(f"🏛️ Market agrees with model: {fav}{sym} @ {fav_p*100:.0f}¢")
 
     # best trade — only call it a BUY when action_ok; else show as "if it holds"
     if bt:

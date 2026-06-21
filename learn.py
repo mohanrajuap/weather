@@ -101,19 +101,19 @@ def _load_alerts() -> dict:
         pass
     return {}
 
-def log_alert_line(line: str):
+def log_alert_line(line: str, city: Optional[str] = None):
     """Append a one-line alert summary to TODAY's thread (grouped by your local
-    date, so /alerts gives you a clean folder-per-day view). Never raises."""
+    date). `city` is stored so /alerts <city> can filter. Never raises."""
     try:
         mins, _ = _user_tz()
         now = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=mins)
         day = now.strftime("%Y-%m-%d")
         with _ALERTS_LOCK:
             d = _load_alerts()
-            d.setdefault(day, []).append({"t": now.strftime("%I:%M %p").lstrip("0"), "line": line})
+            d.setdefault(day, []).append({"t": now.strftime("%I:%M %p").lstrip("0"),
+                                          "city": city, "line": line})
             d[day] = d[day][-300:]                 # cap per day
-            # prune to the last 60 days
-            for old in sorted(d.keys())[:-60]:
+            for old in sorted(d.keys())[:-60]:     # prune to last 60 days
                 d.pop(old, None)
             tmp = ALERTS_FILE + ".tmp"
             with open(tmp, "w") as f:
@@ -122,14 +122,38 @@ def log_alert_line(line: str):
     except Exception:
         pass
 
-def report_alerts(date: Optional[str] = None) -> str:
-    """All alerts for a day, as one grouped thread. Defaults to today (your tz)."""
+def report_alerts(date: Optional[str] = None, city: Optional[str] = None) -> str:
+    """Grouped alert thread. With a city → ALL that city's alerts across days.
+    With a date → that whole day. With neither → today (your tz)."""
     d = _load_alerts()
     if not d:
-        return "🧵 No alerts logged yet — they thread here by day as they fire."
+        return "🧵 No alerts logged yet — they thread here as they fire."
     mins, lbl = _user_tz()
+    ck = (pw.resolve_city(city) or (city or "").lower()) if city else None
+
+    # City view: every alert for that city, newest day first.
+    if ck:
+        L = [f"🧵 <b>{city_disp(ck)} — all alerts</b>"]
+        total = 0
+        for day in sorted(d.keys(), reverse=True):
+            hits = [it for it in d[day]
+                    if (it.get("city") or "").lower() == ck
+                    or city_disp(ck).lower() in (it.get("line") or "").lower()]
+            if not hits:
+                continue
+            L.append(f"📅 <b>{day}</b>")
+            for it in hits:
+                L.append(f"   {it.get('t','')}  {it.get('line','')}")
+            total += len(hits)
+            if total >= 40:
+                break
+        if total == 0:
+            return f"🧵 No alerts logged for {city_disp(ck)} yet."
+        return "\n".join(L)
+
+    # Day view (default today).
     today = (datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=mins)).strftime("%Y-%m-%d")
-    day = date or today
+    day   = date or today
     items = d.get(day) or []
     if not items:
         have = ", ".join(sorted(d.keys())[-7:])

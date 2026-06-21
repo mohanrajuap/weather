@@ -1006,7 +1006,7 @@ def run_scan(conn):
         cdisp = city_display(p["city"])
         def _log(line):
             if not OBSERVE_ONLY:           # only log alerts actually sent
-                try: learn.log_alert_line(line)
+                try: learn.log_alert_line(line, p["city"])
                 except Exception: pass
         if crossed_up:
             alert_signal(fmt_new_signal(p))   # suppressed in OBSERVE mode
@@ -1203,7 +1203,7 @@ def handle_command(text, chat_id):
             "/learn — prediction-vs-outcome scoreboard (also: all / calib / sources)\n"
             "/missed — $1 what-if P&L on alerts you didn't take\n"
             "/history <city> — that city's prediction history + suggested bias\n"
-            "/alerts [date] — all alerts for a day, grouped as one thread\n"
+            "/alerts [city|date] — alert thread: a city's alerts, or a day's\n"
             "/help — this message")
         return
 
@@ -1249,7 +1249,8 @@ def handle_command(text, chat_id):
     if low.startswith("/alerts") or low.startswith("/today"):
         parts = text.split()
         date = next((x for x in parts[1:] if x.count("-") == 2), None)
-        reply_telegram(chat_id, learn.report_alerts(date))
+        city = next((x for x in parts[1:] if x.count("-") != 2 and pw.resolve_city(x)), None)
+        reply_telegram(chat_id, learn.report_alerts(date, city))
         return
 
     if low == "/backup":

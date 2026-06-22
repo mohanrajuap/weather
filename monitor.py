@@ -933,18 +933,15 @@ def send_position_update():
                   f"NOT your MetaMask/signing wallet.")
             positions = None
         else:
-            positions = [p for p in all_pos
-                         if ("temperature" in (p.get("title") or "").lower()
-                             or "temp" in (p.get("event_slug") or "").lower()
-                             or "weather" in (p.get("event_slug") or "").lower())]
+            weather = [p for p in all_pos
+                       if ("temperature" in (p.get("title") or "").lower()
+                           or "temp" in (p.get("event_slug") or "").lower()
+                           or "weather" in (p.get("event_slug") or "").lower())]
             print(f"  💼 positions for {masked}: {len(all_pos)} total, "
-                  f"{len(positions)} weather")
-            if all_pos and not positions:
-                # Show what IS there so the user can see why it was filtered out.
-                sample = ", ".join((p.get("title") or "?")[:40] for p in all_pos[:3])
-                print(f"     ↳ non-weather positions held: {sample}")
-                # Don't hide the user's money — show all positions if none are weather.
-                positions = all_pos
+                  f"{len(weather)} weather")
+            # Show EVERYTHING the wallet holds — don't hide non-weather bets. The
+            # live model read still applies only to the weather ones.
+            positions = all_pos
         msg = fmt_positions_update(WALLET, positions)
         send_telegram(msg)
         return True
@@ -1821,7 +1818,8 @@ def handle_command(text, chat_id):
 
     if low == "/positions":
         if WALLET:
-            positions = pw.fetch_positions(WALLET, weather_only=True)
+            # show ALL positions (weather + everything else you hold)
+            positions = pw.fetch_positions(WALLET, weather_only=False)
             reply_telegram(chat_id, fmt_positions_update(WALLET, positions))
         else:
             reply_telegram(chat_id, "No wallet set (POLYMARKET_WALLET).")

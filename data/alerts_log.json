@@ -14,6 +14,88 @@
       "t": "10:44 AM",
       "city": "shenzhen",
       "line": "\ud83d\udfe2 Shenzhen 31\u00b0C@72% \u00b7 BUY YES 31\u00b0C@28\u00a2 +44%"
+    },
+    {
+      "t": "12:58 PM",
+      "city": "guangzhou",
+      "line": "\ud83d\udfe2 Guangzhou 36\u00b0C@76% \u00b7 BUY YES 36\u00b0C@40\u00a2 +35%"
+    },
+    {
+      "t": "1:18 PM",
+      "city": "guangzhou",
+      "line": "\ud83d\udd34 Guangzhou 36\u00b0C weakened to 74%"
+    },
+    {
+      "t": "1:59 PM",
+      "city": "guangzhou",
+      "line": "\ud83d\udfe2 Guangzhou 36\u00b0C@76% \u00b7 BUY YES 36\u00b0C@40\u00a2 +35%"
+    },
+    {
+      "t": "4:36 PM",
+      "city": "ankara",
+      "line": "\ud83d\udfe2 Ankara 26\u00b0C@87% \u00b7 BUY YES 26\u00b0C@48\u00a2 +40%"
+    },
+    {
+      "t": "4:57 PM",
+      "city": "ankara",
+      "line": "\ud83d\udfe2 Ankara 26\u00b0C@87% \u00b7 BUY YES 26\u00b0C@52\u00a2 +35%"
+    },
+    {
+      "t": "4:57 PM",
+      "city": "moscow",
+      "line": "\ud83d\udfe2 Moscow 25\u00b0C@78% \u00b7 BUY NO 24\u00b0C@48\u00a2 +42%"
+    },
+    {
+      "t": "5:18 PM",
+      "city": "ankara",
+      "line": "\ud83d\udfe2 Ankara 26\u00b0C@87% \u00b7 BUY YES 26\u00b0C@50\u00a2 +37%"
+    },
+    {
+      "t": "6:40 PM",
+      "city": "milan",
+      "line": "\ud83d\udfe2 Milan 35\u00b0C@78% \u00b7 BUY NO 34\u00b0C@55\u00a2 +48%"
+    },
+    {
+      "t": "6:40 PM",
+      "city": "helsinki",
+      "line": "\ud83d\udfe2 Helsinki 27\u00b0C@86% \u00b7 BUY NO 26\u00b0C@70\u00a2 +59%"
+    },
+    {
+      "t": "7:48 PM",
+      "city": "milan",
+      "line": "\ud83d\udfe2 Milan 35\u00b0C@86% \u00b7 BUY YES 35\u00b0C@18\u00a2 +68%"
+    },
+    {
+      "t": "7:48 PM",
+      "city": "amsterdam",
+      "line": "\ud83d\udfe2 Amsterdam 28\u00b0C@87% \u00b7 BUY YES 28\u00b0C@18\u00a2 +69%"
+    },
+    {
+      "t": "9:10 PM",
+      "city": "helsinki",
+      "line": "\ud83d\udfe2 Helsinki 23\u00b0C@80% \u00b7 BUY YES 23\u00b0C@38\u00a2 +42%"
+    },
+    {
+      "t": "9:31 PM",
+      "city": "guangzhou",
+      "line": "\ud83d\udd34 Guangzhou 35\u00b0C weakened to 67%"
+    },
+    {
+      "t": "10:32 PM",
+      "city": "helsinki",
+      "line": "\ud83d\udd34 Helsinki 23\u00b0C weakened to 74%"
+    }
+  ],
+  "2026-06-22": [
+    {
+      "t": "3:00 AM",
+      "city": "helsinki",
+      "line": "\ud83d\udfe2 Helsinki 23\u00b0C@78% \u00b7 BUY YES 23\u00b0C@40\u00a2 +38%"
+    },
+    {
+      "t": "7:21 AM",
+      "city": "wellington",
+      "line": "\ud83d\udfe2 Wellington 14\u00b0C@83% \u00b7 BUY YES 14\u00b0C@26\u00a2 +57%"
     }
   ]
 }

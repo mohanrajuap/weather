@@ -330,13 +330,15 @@ def _cb_ok(host: str):
         if _CB_FAILS.pop(host, 0):
             _CB_UNTIL.pop(host, None)
 
-def _get(url: str, params: dict = None, timeout: float = 10.0) -> Optional[Any]:
+def _get(url: str, params: dict = None, timeout: float = 10.0,
+         cache_ttl: float = None) -> Optional[Any]:
     key  = _cache_key(url, params)
     host = httpx.URL(url).host
     now  = _time.time()
+    ttl  = _CACHE_TTL if cache_ttl is None else cache_ttl   # caller may want fresher
     with _CACHE_LOCK:
         hit = _CACHE.get(key)
-    if hit and (now - hit[0]) < _CACHE_TTL:
+    if hit and (now - hit[0]) < ttl:
         return hit[1]
     # Circuit open for this host? Skip the doomed call entirely, serve cache.
     with _CB_LOCK:
@@ -1244,9 +1246,11 @@ def _pm_slug_city(city_key: str) -> str:
     }
     return overrides.get(city_key, city_key).replace(" ", "-")
 
-def fetch_polymarket_market(city_key: str, target_date: str, debug: bool = False) -> Optional[Dict]:
+def fetch_polymarket_market(city_key: str, target_date: str, debug: bool = False,
+                            cache_ttl: float = None) -> Optional[Dict]:
     """
     Find the temperature event for a city+date and return per-bucket YES prices.
+    Pass a small cache_ttl (e.g. 60) for fresher prices (price watches).
     """
     try:
         dt = datetime.strptime(target_date, "%Y-%m-%d")
@@ -1264,7 +1268,7 @@ def fetch_polymarket_market(city_key: str, target_date: str, debug: bool = False
     # reliable call. Fall back to filtering the active-events list client-side.
     event = None
     slug = f"highest-temperature-in-{_pm_slug_city(city_key)}-on-{month_l}-{dt.day}-{dt.year}"
-    ev = _get(f"{GAMMA}/events", {"slug": slug}, timeout=8.0)
+    ev = _get(f"{GAMMA}/events", {"slug": slug}, timeout=8.0, cache_ttl=cache_ttl)
     if isinstance(ev, list) and ev:
         event = ev[0]
         if debug:
@@ -1361,11 +1365,14 @@ def _extract_temp_from_title(text: str) -> Optional[int]:
         return int(m.group(1))
     return None
 
-def fetch_clob_price(token_id: str, side: str = "buy") -> Optional[float]:
-    """Live price from CLOB order book for a token (more current than Gamma)."""
+def fetch_clob_price(token_id: str, side: str = "buy",
+                     cache_ttl: float = None) -> Optional[float]:
+    """Live price from CLOB order book for a token (more current than Gamma).
+    Pass a small cache_ttl (e.g. 60) for near-real-time reads like price watches."""
     if not token_id:
         return None
-    d = _get(f"{CLOB}/price", {"token_id": token_id, "side": side}, timeout=5.0)
+    d = _get(f"{CLOB}/price", {"token_id": token_id, "side": side}, timeout=5.0,
+             cache_ttl=cache_ttl)
     if isinstance(d, dict):
         return _sf(d.get("price"))
     return None

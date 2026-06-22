@@ -154,6 +154,7 @@ Typing commands manually always works too.
 | `/missed` | $1 what-if P&L on alerts you were sent but didn't hold a position on |
 | `/history <city>` | that city's full prediction-vs-outcome history + the exact `CITY_BIAS` to set |
 | `/alerts [date]` | all alerts for a day grouped as one thread (defaults to today) |
+| `/watch <city> <bucket> below\|above <price>` | **custom price alert** — e.g. `/watch london 14 below 50` pings you when London 14°C YES drops to ≤50¢ (checks live CLOB prices every `PRICE_WATCH_MIN`). `/watches` lists them, `/unwatch <n>` removes one |
 | `/mute <city>` · `/unmute <city>` · `/muted` | silence a city's alerts (it keeps learning) |
 | `/backup` | push learning data to GitHub now |
 | `/help` | command list |

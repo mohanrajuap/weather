@@ -211,6 +211,37 @@ def save_backup_day(d):
     except Exception as e:
         print(f"[backup] stamp save error: {e}")
 
+# ── Custom price watches (/watch) ─────────────────────────────────────────────
+# "Alert me when London 14°C YES drops below 50¢." Persisted so they survive a
+# restart; checked every PRICE_WATCH_MIN minutes against live CLOB prices.
+PRICE_WATCH_MIN = int(os.environ.get("PRICE_WATCH_MIN", "3"))
+
+def _resolve_watch_file() -> str:
+    env = os.environ.get("WATCH_FILE")
+    if env:
+        return env
+    return "/data/price_watches.json" if os.path.isdir("/data") else "price_watches.json"
+
+WATCH_FILE = _resolve_watch_file()
+
+def load_watches() -> list:
+    try:
+        if os.path.exists(WATCH_FILE):
+            with open(WATCH_FILE) as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return []
+
+def save_watches(watches: list):
+    try:
+        with open(WATCH_FILE, "w") as f:
+            json.dump(watches, f, indent=2)
+    except Exception as e:
+        print(f"[watch] save error: {e}")
+
+PRICE_WATCHES = load_watches()
+
 
 # ── Telegram ──────────────────────────────────────────────────────────────────
 def _strip_html(text: str) -> str:
@@ -1547,9 +1578,10 @@ def _main_menu_keyboard():
         [{"text": "🧪 No-bias check", "callback_data": "cmd:/learn nobias"},
          {"text": "💸 Missed",        "callback_data": "cmd:/missed"}],
         [{"text": "🧵 Today's alerts","callback_data": "cmd:/alerts"},
-         {"text": "🔕 Muted",         "callback_data": "cmd:/muted"}],
-        [{"text": "💾 Backup",        "callback_data": "cmd:/backup"},
-         {"text": "❓ Help",          "callback_data": "cmd:/help"}],
+         {"text": "🔭 Price watches", "callback_data": "cmd:/watches"}],
+        [{"text": "🔕 Muted",         "callback_data": "cmd:/muted"},
+         {"text": "💾 Backup",        "callback_data": "cmd:/backup"}],
+        [{"text": "❓ Help",          "callback_data": "cmd:/help"}],
     ]
 
 
@@ -1576,6 +1608,9 @@ def set_bot_commands():
         {"command": "missed",    "description": "💸 What-if P&L on alerts you skipped"},
         {"command": "history",   "description": "📜 A city's history (/history <city>)"},
         {"command": "alerts",    "description": "🧵 Alert thread (today or /alerts <city>)"},
+        {"command": "watch",     "description": "🔔 Price alert (/watch london 14 below 50)"},
+        {"command": "watches",   "description": "🔭 List your price watches"},
+        {"command": "unwatch",   "description": "🗑️ Remove a price watch (/unwatch N)"},
         {"command": "mute",      "description": "🔕 Silence a city (/mute <city>)"},
         {"command": "unmute",    "description": "🔔 Unmute a city (/unmute <city>)"},
         {"command": "muted",     "description": "📋 List muted cities"},
@@ -1590,6 +1625,132 @@ def set_bot_commands():
         print("[listener] registered Telegram command menu (setMyCommands)")
     except Exception as e:
         print(f"[listener] setMyCommands failed: {e}")
+
+
+# ── Price-watch helpers ───────────────────────────────────────────────────────
+def _city_sym(ck) -> str:
+    return "°F" if (pw.CITIES.get(ck or "") or {}).get("f") else "°C"
+
+def _parse_price01(s):
+    """'50' / '50¢' / '0.5' → 0.50 (a 0–1 probability/price). None if invalid."""
+    try:
+        v = float(str(s).lower().replace("¢", "").replace("c", "").strip())
+    except Exception:
+        return None
+    if v > 1:
+        v = v / 100.0
+    return round(v, 3) if 0 < v < 1 else None
+
+def _parse_watch(text):
+    """Parse '/watch <city> <bucket> [yes|no] <below|above> <price>'.
+    Returns ((city, bucket, side, dir, price01), None) or (None, error_msg)."""
+    toks = text.split()[1:]
+    usage = ("Usage: <code>/watch &lt;city&gt; &lt;bucket&gt; [yes|no] "
+             "&lt;below|above&gt; &lt;price&gt;</code>\ne.g. <code>/watch london 14 below 50</code>")
+    if not toks:
+        return None, usage
+    # greedily match the city (handles 'new york', 'hong kong')
+    city, rest = None, toks
+    for n in (3, 2, 1):
+        if len(toks) >= n:
+            ck = pw.resolve_city(" ".join(toks[:n]))
+            if ck:
+                city, rest = ck, toks[n:]
+                break
+    if not city:
+        return None, "Unknown city. Try e.g. london, tokyo, new york."
+    # bucket = first integer token
+    bucket = None
+    for i, t in enumerate(rest):
+        if t.lstrip("-").isdigit():
+            bucket = int(t); rest = rest[:i] + rest[i+1:]; break
+    if bucket is None:
+        return None, "Give a bucket temperature (a number), e.g. 14.\n" + usage
+    side, direction, price = "yes", None, None
+    for t in rest:
+        tl = t.lower()
+        if tl in ("yes", "no"):
+            side = tl
+        elif tl in ("below", "under", "<", "<=", "≤"):
+            direction = "below"
+        elif tl in ("above", "over", ">", ">=", "≥"):
+            direction = "above"
+        else:
+            v = _parse_price01(t)
+            if v is not None:
+                price = v
+    if direction is None:
+        return None, "Say <b>below</b> or <b>above</b>, e.g. /watch london 14 below 50"
+    if price is None:
+        return None, "Give a target price in cents, e.g. <b>50</b> (= 50¢)."
+    return (city, bucket, side, direction, price), None
+
+def _watch_price(w):
+    """Freshest available price (0–1) for a watch's side."""
+    side, tok = w.get("side", "yes"), w.get("token_yes")
+    if side == "yes" and tok:
+        p = pw.fetch_clob_price(tok, "buy", cache_ttl=60)   # live order book
+        if p is not None:
+            return p
+    pm = pw.fetch_polymarket_market(w["city"], w.get("target_date"), cache_ttl=60)
+    b  = ((pm or {}).get("buckets") or {}).get(w["bucket"]) or {}
+    if side == "no":
+        if b.get("no") is not None:
+            return b["no"]
+        return round(1.0 - b["yes"], 3) if b.get("yes") is not None else None
+    return b.get("yes")
+
+def _market_day_past(city_key, date_str) -> bool:
+    try:
+        tz = (pw.CITIES.get(city_key) or {}).get("tz", 0)
+        local_now = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=tz)
+        return bool(date_str) and date_str < local_now.strftime("%Y-%m-%d")
+    except Exception:
+        return False
+
+def check_price_watches():
+    """Fire any price watch whose target is met; expire ones whose market settled.
+    One-shot: a fired/expired watch is removed."""
+    if not PRICE_WATCHES:
+        return
+    keep, changed = [], False
+    for w in PRICE_WATCHES:
+        ck, sym = w.get("city"), _city_sym(w.get("city"))
+        price = None
+        try:
+            price = _watch_price(w)
+        except Exception as e:
+            print(f"  [watch] price fetch error {ck} {w.get('bucket')}: {e}")
+        if price is None:
+            if _market_day_past(ck, w.get("target_date")):
+                try:
+                    reply_telegram(w.get("chat_id"),
+                        f"⌛ Price watch on {city_display(ck)} {w['bucket']}{sym} expired — "
+                        f"that market has settled.")
+                except Exception:
+                    pass
+                changed = True
+            else:
+                keep.append(w)
+            continue
+        hit = (price <= w["price"]) if w["dir"] == "below" else (price >= w["price"])
+        if hit:
+            arrow = "≤" if w["dir"] == "below" else "≥"
+            try:
+                reply_telegram(w.get("chat_id"),
+                    f"🔔 <b>PRICE ALERT</b>\n"
+                    f"{city_display(ck)} <b>{w['bucket']}{sym} {w['side'].upper()}</b> is now "
+                    f"<b>{price*100:.0f}¢</b> ({arrow} your {w['price']*100:.0f}¢ target).\n"
+                    f"👉 Buy now if you still want it — this watch is now cleared.")
+            except Exception:
+                pass
+            print(f"  🔔 PRICE WATCH hit {ck} {w['bucket']}{sym} {w['side']} {price*100:.0f}¢")
+            changed = True
+        else:
+            keep.append(w)
+    if changed:
+        PRICE_WATCHES[:] = keep
+        save_watches(PRICE_WATCHES)
 
 
 def _answer_callback(cq_id):
@@ -1630,6 +1791,8 @@ def handle_command(text, chat_id):
             "/missed — $1 what-if P&L on alerts you didn't take\n"
             "/history <city> — that city's prediction history + suggested bias\n"
             "/alerts [city|date] — alert thread: a city's alerts, or a day's\n"
+            "/watch <city> <bucket> below|above <price> — price alert "
+            "(e.g. /watch london 14 below 50); /watches, /unwatch &lt;n&gt;\n"
             "/mute <city> · /unmute <city> · /muted — silence a city (keeps learning)\n"
             "/backup — back up learning data to GitHub\n"
             "/help — this message")
@@ -1690,6 +1853,72 @@ def handle_command(text, chat_id):
             reply_telegram(chat_id, f"🔕 Muted {city_display(ck)} — still learning, but no alerts.")
         return
 
+    # ── custom price watches ── (/watches and /unwatch BEFORE /watch: prefix order)
+    if low.startswith("/watches") or low == "/watchlist":
+        if not PRICE_WATCHES:
+            reply_telegram(chat_id, "🔭 No price watches set.\nAdd one: "
+                           "<code>/watch london 14 below 50</code>")
+            return
+        L = ["🔭 <b>Price watches</b>"]
+        for i, w in enumerate(PRICE_WATCHES, 1):
+            arrow = "≤" if w["dir"] == "below" else "≥"
+            L.append(f"{i}. {city_display(w['city'])} {w['bucket']}{_city_sym(w['city'])} "
+                     f"{w['side'].upper()} {arrow} {w['price']*100:.0f}¢  ({w.get('target_date','')})")
+        L.append("\nRemove with /unwatch &lt;number&gt;")
+        reply_telegram(chat_id, "\n".join(L))
+        return
+
+    if low.startswith("/unwatch"):
+        parts = text.split()
+        if len(parts) < 2 or not parts[1].isdigit():
+            reply_telegram(chat_id, "Usage: /unwatch &lt;number&gt;  (see /watches)")
+            return
+        idx = int(parts[1]) - 1
+        if 0 <= idx < len(PRICE_WATCHES):
+            w = PRICE_WATCHES.pop(idx); save_watches(PRICE_WATCHES)
+            reply_telegram(chat_id, f"🗑️ Removed watch on {city_display(w['city'])} "
+                           f"{w['bucket']}{_city_sym(w['city'])} {w['side'].upper()}.")
+        else:
+            reply_telegram(chat_id, "No watch with that number. See /watches.")
+        return
+
+    if low.startswith("/watch"):
+        parsed, err = _parse_watch(text)
+        if err:
+            reply_telegram(chat_id, "❓ " + err)
+            return
+        city, bucket, side, direction, price = parsed
+        # resolve the live market once: confirm the bucket, capture date + YES token
+        try:
+            p = pw.predict(city, fetch_prices=True)
+        except Exception:
+            p = {}
+        buckets = ((p.get("polymarket") or {}).get("buckets")) or {}
+        sym = p.get("temp_unit", _city_sym(city))
+        b = buckets.get(bucket)
+        if not b:
+            avail = ", ".join(str(k) for k in sorted(buckets)) or "none"
+            reply_telegram(chat_id, f"❓ No {bucket}{sym} bucket in {city_display(city)}'s "
+                           f"market right now. Available: {avail}")
+            return
+        if side == "yes":
+            cur = b.get("yes")
+        else:
+            cur = b.get("no") if b.get("no") is not None else (
+                round(1 - b["yes"], 3) if b.get("yes") is not None else None)
+        w = {"city": city, "bucket": bucket, "side": side, "dir": direction,
+             "price": price, "target_date": p.get("target_date"),
+             "token_yes": b.get("token_yes"), "chat_id": chat_id,
+             "created": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+        PRICE_WATCHES.append(w); save_watches(PRICE_WATCHES)
+        arrow = "≤" if direction == "below" else "≥"
+        curs = f"{cur*100:.0f}¢" if cur is not None else "—"
+        reply_telegram(chat_id,
+            f"✅ Watching <b>{city_display(city)} {bucket}{sym} {side.upper()}</b>\n"
+            f"Alert when {arrow} <b>{price*100:.0f}¢</b> (now {curs}). "
+            f"Checking every {PRICE_WATCH_MIN} min · /watches to view.")
+        return
+
     if low.startswith("/history"):
         parts = text.split(maxsplit=1)
         if len(parts) > 1:
@@ -1736,7 +1965,7 @@ def handle_command(text, chat_id):
         # market named "positions". Route it to the real handler instead of erroring.
         _CMD_WORDS = {"positions", "pnl", "ledger", "learn", "missed", "history",
                       "alerts", "today", "backup", "pick", "help", "start", "menu",
-                      "mute", "muted", "unmute"}
+                      "mute", "muted", "unmute", "watch", "watches", "unwatch", "watchlist"}
         first = scope.split()[0] if scope else ""
         if first in _CMD_WORDS:
             handle_command("/" + scope, chat_id)
@@ -2089,6 +2318,7 @@ def main():
 
     last_watch = 0.0
     last_sigwatch = 0.0
+    last_pricewatch = 0.0
     last_backfill = time.time()   # already ran once above, just before the loop
     BACKFILL_SEC  = int(os.environ.get("BACKFILL_HOURS", "6")) * 3600
     # learning digest: settle completed days + send a Telegram scoreboard once/day
@@ -2177,6 +2407,14 @@ def main():
             except Exception as e:
                 print(f"[loop] signal watch error: {e}")
             last_sigwatch = time.time()
+
+        # custom price watches — fire when a bucket hits the user's target price
+        if PRICE_WATCHES and (now - last_pricewatch >= PRICE_WATCH_MIN * 60):
+            try:
+                check_price_watches()
+            except Exception as e:
+                print(f"[loop] price watch error: {e}")
+            last_pricewatch = time.time()
 
         # periodic full position P&L update
         if WALLET and (now - last_pos >= POS_UPDATE_MIN * 60):

@@ -833,7 +833,7 @@ def fmt_positions_update(wallet: str, positions) -> str:
             md   = re.search(r"([A-Za-z]{3,9}\s+\d{1,2})", title)
             groups.setdefault(_market_key(title), []).append({
                 "bucket": bucket, "cost": cost, "payout": shares * 1.0,
-                "prob": g_model_prob, "cur": now, "sym": gsym,
+                "prob": g_model_prob, "cur": now, "sym": gsym, "side": side,
                 "cityd": city_display(city) if city else short,
                 "date": md.group(1) if md else "",
             })
@@ -844,6 +844,11 @@ def fmt_positions_update(wallet: str, positions) -> str:
     # nets the cost of the losing legs against each winning scenario's payout.
     for legs in groups.values():
         if len(legs) < 2:
+            continue
+        # "Only ONE can win" holds only for YES legs across distinct buckets. A NO
+        # leg can settle in your favour alongside a YES leg, so the netting would be
+        # wrong — skip the combined view for mixed/NO groups.
+        if not all((g.get("side") or "").lower() == "yes" for g in legs):
             continue
         legs.sort(key=lambda g: (g["prob"] if g["prob"] is not None
                                  else (g["cur"] or 0)), reverse=True)
@@ -2114,14 +2119,17 @@ def main():
             except Exception as e:
                 print(f"[loop] backup error: {e}")
 
-        # once-a-day morning digest of the best edges across all cities
-        if (ENABLE_DIGEST and not OBSERVE_ONLY and nowdt.hour == DIGEST_HOUR_UTC
+        # once-a-day morning digest of the best edges across all cities. Fires in a
+        # 3-hour window from DIGEST_HOUR_UTC (not an exact-hour match) so a restart
+        # that misses the precise hour still sends it that morning.
+        if (ENABLE_DIGEST and not OBSERVE_ONLY
+                and DIGEST_HOUR_UTC <= nowdt.hour < DIGEST_HOUR_UTC + 3
                 and last_digest_day != nowdt.date()):
+            last_digest_day = nowdt.date()
             try:
                 send_morning_digest()
             except Exception as e:
                 print(f"[loop] digest error: {e}")
-            last_digest_day = nowdt.date()
 
         # signal scan timer
         if now - last_scan >= INTERVAL_MIN * 60:

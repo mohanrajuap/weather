@@ -1759,6 +1759,7 @@ def command_listener():
         print(f"[listener] webhook check failed: {e}")
     set_bot_commands()          # populate the blue Menu button + / autocomplete
     offset = None
+    consec_errors = 0
     print("[listener] Telegram command listener started — /menu for buttons, or type commands")
     while True:
         try:
@@ -1771,12 +1772,23 @@ def command_listener():
                 # 409 = a webhook is set or ANOTHER instance is polling. Surface it
                 # so the cause is visible instead of commands silently failing.
                 body = r.text[:160].replace("\n", " ")
-                print(f"[listener] getUpdates {r.status_code}: {body}")
+                if r.status_code == 429:
+                    # Honor Telegram's own retry_after — retrying sooner just earns
+                    # another 429 (and a tight retry loop can cause them).
+                    try:
+                        wait = max(5, int((r.json().get("parameters") or {}).get("retry_after", 5)))
+                    except Exception:
+                        wait = 5
+                else:
+                    consec_errors += 1
+                    wait = min(5 + consec_errors * 3, 30)   # back off on 5xx/Bad Gateway
+                print(f"[listener] getUpdates {r.status_code} (retry in {wait}s): {body}")
                 if r.status_code == 409:
                     print("[listener] ⚠️ CONFLICT — another bot instance is running "
                           "(old Railway deploy or a local run). Stop the duplicate so "
                           "/scan, /learn, /positions work.")
-                time.sleep(5); continue
+                time.sleep(wait); continue
+            consec_errors = 0          # healthy poll — reset the backoff
             for upd in r.json().get("result", []):
                 offset = upd["update_id"] + 1
                 # text message commands
@@ -1806,8 +1818,12 @@ def command_listener():
                         elif data.startswith("scan:"):                # legacy /pick
                             scan_for_command(data.split(":", 1)[1], reply_to=cq_chat)
         except Exception as e:
-            print(f"[listener] error: {e}")
-            time.sleep(5)
+            # network read timeouts / connection blips — back off so a Telegram
+            # outage doesn't turn into a tight retry loop (which itself draws 429s).
+            consec_errors += 1
+            wait = min(5 + consec_errors * 3, 30)
+            print(f"[listener] error: {e} (retry in {wait}s)")
+            time.sleep(wait)
 
 
 def ntfy_command_listener():

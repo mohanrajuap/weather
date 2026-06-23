@@ -106,18 +106,6 @@ TG_TOKEN      = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
 TG_CHAT       = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
 # Support multiple recipients: comma-separated in TELEGRAM_CHAT_ID
 TG_CHAT_IDS   = [c.strip() for c in TG_CHAT.split(",") if c.strip()]
-# ntfy.sh push notifications — extra layer alongside Telegram (works in India).
-# Set NTFY_TOPIC to a secret topic name; subscribe to it in the ntfy phone app.
-NTFY_TOPIC    = os.environ.get("NTFY_TOPIC", "").strip()
-NTFY_SERVER   = os.environ.get("NTFY_SERVER", "https://ntfy.sh").strip().rstrip("/")
-# Topic the bot LISTENS on for /commands (publish to it from the ntfy app/web).
-# Defaults to NTFY_TOPIC so commands and alerts share one topic.
-NTFY_CMD_TOPIC = os.environ.get("NTFY_CMD_TOPIC", NTFY_TOPIC).strip()
-# Command authorization. Telegram commands are restricted to TELEGRAM_CHAT_ID
-# (the sender is identified). ntfy has NO sender identity, so if CMD_SECRET is set
-# an ntfy command must be prefixed with it (e.g. "mypass /scan london"); without a
-# secret, ntfy commands are unauthenticated (anyone who knows the topic can send).
-CMD_SECRET    = os.environ.get("CMD_SECRET", "").strip()
 WALLET        = os.environ.get("POLYMARKET_WALLET", "").strip()
 INTERVAL_MIN  = int(os.environ.get("CHECK_INTERVAL_MIN", "20"))
 POS_UPDATE_MIN = int(os.environ.get("POSITION_UPDATE_MIN", "15"))
@@ -253,56 +241,10 @@ PRICE_WATCHES = load_watches()
 
 
 # ── Telegram ──────────────────────────────────────────────────────────────────
-def _strip_html(text: str) -> str:
-    """ntfy is plain-text — remove HTML tags Telegram uses."""
-    import re
-    t = re.sub(r"<a href=\"([^\"]*)\">([^<]*)</a>", r"\2: \1", text)  # keep links readable
-    t = re.sub(r"<[^>]+>", "", t)
-    return t
-
-
-def send_ntfy(text: str) -> bool:
-    """Push to ntfy.sh (extra layer alongside Telegram; works in India)."""
-    if not NTFY_TOPIC:
-        return False
-    body = _strip_html(text)
-    # title = first line, rest = body
-    lines = body.splitlines()
-    title = lines[0][:100] if lines else "PolyWeather"
-    rest  = "\n".join(lines[1:]).strip() or title
-    # ntfy sends the title as an HTTP header. Stripping emoji with ascii-ignore
-    # can leave leading/trailing spaces (e.g. "🌡️ PolyWeather" → " PolyWeather"),
-    # and header values may not start with whitespace — that raises "Illegal
-    # header value". Sanitize: drop non-ascii, collapse whitespace, fall back.
-    safe_title = " ".join(title.encode("ascii", "ignore").decode().split()) or "PolyWeather"
-    try:
-        r = httpx.post(
-            f"{NTFY_SERVER}/{NTFY_TOPIC}",
-            data=rest.encode("utf-8"),
-            headers={
-                "Title": safe_title,
-                "Tags": "chart_with_upwards_trend",
-                "Priority": "default",
-            },
-            timeout=15.0,
-        )
-        if r.status_code not in (200, 201):
-            print(f"[ntfy] error: {r.status_code} {r.text[:120]}")
-            return False
-        return True
-    except Exception as e:
-        print(f"[ntfy] exception: {e}")
-        return False
-
-
 def send_telegram(text: str) -> bool:
-    # extra layer: always also push to ntfy (no-op if NTFY_TOPIC unset)
-    send_ntfy(text)
-
     if not TG_TOKEN or not TG_CHAT_IDS:
-        if not NTFY_TOPIC:
-            print(f"[telegram] not configured — would send:\n{text}\n")
-        return bool(NTFY_TOPIC)
+        print(f"[telegram] not configured — would send:\n{text}\n")
+        return False
     ok_any = False
     for chat_id in TG_CHAT_IDS:
         try:
@@ -434,11 +376,8 @@ def fire_webhook(p, event="new_signal"):
 
 def reply_telegram(chat_id, text: str, keyboard=None) -> bool:
     """Reply to a single chat (used by the command listener)."""
-    # extra layer: also push command results to ntfy (skip the button menus)
-    if not keyboard:
-        send_ntfy(text)
     if not TG_TOKEN:
-        return bool(NTFY_TOPIC) and not keyboard
+        return False
     payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML",
                "disable_web_page_preview": True}
     if keyboard:
@@ -1665,16 +1604,6 @@ def _tg_authorized(chat_id) -> bool:
         return True
     return str(chat_id) in TG_CHAT_IDS
 
-def _ntfy_authorize(text: str):
-    """Return the command text if authorized, else None. When CMD_SECRET is set an
-    ntfy command must start with it (then the secret is stripped)."""
-    text = text.strip()
-    if CMD_SECRET:
-        if not text.startswith(CMD_SECRET):
-            return None
-        text = text[len(CMD_SECRET):].strip()
-    return text if text.startswith("/") else None
-
 
 # ── Telegram button menu ──────────────────────────────────────────────────────
 def _main_menu_keyboard():
@@ -2239,56 +2168,6 @@ def command_listener():
             time.sleep(wait)
 
 
-def ntfy_command_listener():
-    """Background thread: receive /commands published to the ntfy topic.
-
-    ntfy is normally push-only, but you can PUBLISH a message to a topic (from the
-    ntfy app's 'send' box, the web UI at <server>/<topic>, or curl). We stream the
-    topic's JSON feed and treat any message starting with '/' as a command — the
-    bot's own outgoing notifications don't start with '/', so there's no loop.
-    Replies go back out through reply_telegram (which also pushes to ntfy).
-    """
-    if not NTFY_CMD_TOPIC:
-        return
-    url   = f"{NTFY_SERVER}/{NTFY_CMD_TOPIC}/json"
-    start = time.time()
-    print(f"[ntfy] command listener on {url} (publish /scan, /learn, /positions there)")
-    while True:
-        try:
-            with httpx.stream("GET", url, params={"since": int(start)},
-                              timeout=httpx.Timeout(120.0, connect=10.0)) as r:
-                for line in r.iter_lines():
-                    if not line:
-                        continue
-                    try:
-                        m = json.loads(line)
-                    except Exception:
-                        continue
-                    if m.get("event") != "message":
-                        continue                      # skip open/keepalive events
-                    raw = (m.get("message") or "").strip()
-                    # A command attempt starts with "/" or the secret; everything
-                    # else (the bot's own alerts on this topic) is ignored silently.
-                    if not (raw.startswith("/") or (CMD_SECRET and raw.startswith(CMD_SECRET))):
-                        continue
-                    if m.get("time", 0) < start - 5:
-                        continue                      # stale, from before we started
-                    text = _ntfy_authorize(raw)       # verify + strip secret
-                    if not text:
-                        print(f"[ntfy] REJECTED '{raw[:24]}' — CMD_SECRET is set, "
-                              f"prefix commands with it: '<secret> /help'")
-                        continue
-                    print(f"[ntfy] command: {text}")
-                    reply_to = TG_CHAT_IDS[0] if TG_CHAT_IDS else None
-                    try:
-                        handle_command(text, reply_to)
-                    except Exception as e:
-                        print(f"[ntfy] command error: {e}")
-        except Exception as e:
-            print(f"[ntfy] listener error: {e}")
-            time.sleep(5)
-
-
 # ── Nightly GitHub backup of the learning data ────────────────────────────────
 def _gh_headers():
     return {"Authorization": f"Bearer {GITHUB_TOKEN}",
@@ -2444,7 +2323,6 @@ def main():
     print(f"  Prices:            {'on' if USE_PRICES else 'off'}")
     print(f"  State DB:          {STATE_DB}")
     print(f"  Telegram:          {len(TG_CHAT_IDS)} recipient(s)" if (TG_TOKEN and TG_CHAT_IDS) else "  Telegram:          NOT configured")
-    print(f"  ntfy push:         {NTFY_SERVER}/{NTFY_TOPIC}" if NTFY_TOPIC else "  ntfy push:         NOT configured")
     print("="*60)
 
     conn = init_db()
@@ -2484,10 +2362,8 @@ def main():
             send_position_update()
         return
 
-    # start the Telegram + ntfy command listeners in background threads
-    import threading
+    # start the Telegram command listener in a background thread
     threading.Thread(target=command_listener, daemon=True).start()
-    threading.Thread(target=ntfy_command_listener, daemon=True).start()
 
     # independent timers
     last_scan = 0.0

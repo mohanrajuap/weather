@@ -2,7 +2,7 @@
 
 A monitor for **Polymarket daily-temperature markets**. For 51 cities it blends
 many weather forecasts into a single prediction, compares that to live Polymarket
-prices, and alerts you (Telegram + ntfy) when there's a real edge — then **learns
+prices, and alerts you on **Telegram** when there's a real edge — then **learns
 from every outcome** so you can see whether to trust it before risking money.
 
 > **It never trades for you.** It uses your wallet as a *read-only public address*
@@ -149,9 +149,7 @@ This is what tells you whether the bot is trustworthy — see **Commands** below
 | Variable | What |
 |---|---|
 | `POLYMARKET_WALLET` | your **Polymarket profile/proxy** address (read-only) — *not* your MetaMask wallet |
-| `NTFY_TOPIC` | ntfy.sh topic for push notifications |
 | `TRADE_MODE` | `LIVE` (alerts) or `OBSERVE` (learn only, no buy alerts) |
-| `CMD_SECRET` | secret prefix required for ntfy commands (see Security) |
 | `BANKROLL` | your total USD pot — turns the Kelly fraction into a concrete suggested stake per alert |
 
 A full list is in [`.env.example`](.env.example).
@@ -160,10 +158,7 @@ A full list is in [`.env.example`](.env.example).
 
 ## Commands
 
-Send these on Telegram, or publish them to your ntfy topic (prefixed with
-`CMD_SECRET` if set, e.g. `mysecret /scan london`):
-
-On Telegram there's also a **button menu**: tap the blue **Menu** button (or send
+Send these on Telegram. There's also a **button menu**: tap the blue **Menu** button (or send
 `/menu`) for one-tap access to every command, and `/` autocompletes the full list.
 Typing commands manually always works too.
 
@@ -207,11 +202,8 @@ numbers hold up.
 
 - **No funds at risk from the bot.** Read-only wallet address; no private key, no
   signing, no order placement anywhere in the code.
-- **Command authorization:**
-  - *Telegram* commands are accepted only from `TELEGRAM_CHAT_ID`.
-  - *ntfy* has no sender identity, so set **`CMD_SECRET`** — ntfy commands must then
-    be prefixed with it. Without it, anyone who knows the topic name can send
-    (read-only) commands.
+- **Command authorization:** Telegram commands are accepted only from
+  `TELEGRAM_CHAT_ID`.
 - **Secrets** (tokens, API keys) live only in Railway env vars, never in code.
 - **GitHub backup token** (optional) should be a **fine-grained** PAT scoped to this
   one repo with **Contents: Read+Write** only, ideally with an expiry.

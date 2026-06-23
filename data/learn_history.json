@@ -12212,6 +12212,18 @@
           "yes_price": 0.198,
           "edge": 0.294
         }
+      },
+      "outcome": {
+        "actual_high": 34.0,
+        "actual_bucket": 34,
+        "pm_winning_bucket": 34,
+        "settled_at": "2026-06-23T02:46:06+00:00"
+      },
+      "score": {
+        "bot_bucket": 34,
+        "hit": true,
+        "made_call": false,
+        "trade_win": true
       }
     },
     "ankara": {
@@ -12258,6 +12270,18 @@
           "yes_price": 0.25,
           "edge": 0.369
         }
+      },
+      "outcome": {
+        "actual_high": 26.0,
+        "actual_bucket": 26,
+        "pm_winning_bucket": 26,
+        "settled_at": "2026-06-23T02:46:07+00:00"
+      },
+      "score": {
+        "bot_bucket": 27,
+        "hit": false,
+        "made_call": false,
+        "trade_win": false
       }
     },
     "istanbul": {
@@ -12299,6 +12323,18 @@
         },
         "pm_title": "Highest temperature in Istanbul on June 22?",
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 25.1,
+        "actual_bucket": 25,
+        "pm_winning_bucket": 26,
+        "settled_at": "2026-06-23T02:46:07+00:00"
+      },
+      "score": {
+        "bot_bucket": 26,
+        "hit": false,
+        "made_call": false,
+        "trade_win": null
       }
     },
     "moscow": {
@@ -12345,6 +12381,18 @@
           "yes_price": 0.66,
           "edge": 0.66
         }
+      },
+      "outcome": {
+        "actual_high": 24.0,
+        "actual_bucket": 24,
+        "pm_winning_bucket": 24,
+        "settled_at": "2026-06-23T02:46:07+00:00"
+      },
+      "score": {
+        "bot_bucket": 24,
+        "hit": true,
+        "made_call": false,
+        "trade_win": true
       }
     },
     "tel aviv": {
@@ -12386,6 +12434,18 @@
         },
         "pm_title": "Highest temperature in Tel Aviv on June 22?",
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 29.0,
+        "actual_bucket": 29,
+        "pm_winning_bucket": 29,
+        "settled_at": "2026-06-23T02:46:07+00:00"
+      },
+      "score": {
+        "bot_bucket": 29,
+        "hit": true,
+        "made_call": true,
+        "trade_win": null
       }
     },
     "lagos": {
@@ -12415,6 +12475,18 @@
         "pm_buckets": {},
         "pm_title": null,
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 32.0,
+        "actual_bucket": 32,
+        "pm_winning_bucket": null,
+        "settled_at": "2026-06-23T02:46:08+00:00"
+      },
+      "score": {
+        "bot_bucket": 31,
+        "hit": false,
+        "made_call": false,
+        "trade_win": null
       }
     },
     "cape town": {
@@ -12461,6 +12533,18 @@
           "yes_price": 0.234,
           "edge": 0.241
         }
+      },
+      "outcome": {
+        "actual_high": 14.0,
+        "actual_bucket": 14,
+        "pm_winning_bucket": 14,
+        "settled_at": "2026-06-23T02:46:08+00:00"
+      },
+      "score": {
+        "bot_bucket": 14,
+        "hit": true,
+        "made_call": false,
+        "trade_win": false
       }
     },
     "helsinki": {
@@ -12511,7 +12595,24 @@
         "edge": 0.425,
         "prob": 0.8,
         "unit": "\u00b0C",
-        "had_position": false
+        "had_position": false,
+        "result": {
+          "won": true,
+          "entry": 0.375,
+          "pnl": 1.67
+        }
+      },
+      "outcome": {
+        "actual_high": 23.0,
+        "actual_bucket": 23,
+        "pm_winning_bucket": 23,
+        "settled_at": "2026-06-23T02:46:08+00:00"
+      },
+      "score": {
+        "bot_bucket": 23,
+        "hit": true,
+        "made_call": true,
+        "trade_win": null
       }
     },
     "london": {
@@ -12553,6 +12654,18 @@
         },
         "pm_title": "Highest temperature in London on June 22?",
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 27.0,
+        "actual_bucket": 27,
+        "pm_winning_bucket": 27,
+        "settled_at": "2026-06-23T02:46:08+00:00"
+      },
+      "score": {
+        "bot_bucket": 27,
+        "hit": true,
+        "made_call": true,
+        "trade_win": null
       }
     },
     "paris": {
@@ -12608,7 +12721,24 @@
         "edge": 0.577,
         "prob": 0.885,
         "unit": "\u00b0C",
-        "had_position": false
+        "had_position": false,
+        "result": {
+          "won": false,
+          "entry": 0.4,
+          "pnl": -1.0
+        }
+      },
+      "outcome": {
+        "actual_high": 37.0,
+        "actual_bucket": 37,
+        "pm_winning_bucket": 37,
+        "settled_at": "2026-06-23T02:46:08+00:00"
+      },
+      "score": {
+        "bot_bucket": 38,
+        "hit": false,
+        "made_call": false,
+        "trade_win": false
       }
     },
     "munich": {
@@ -12650,6 +12780,18 @@
         },
         "pm_title": "Highest temperature in Munich on June 22?",
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 33.0,
+        "actual_bucket": 33,
+        "pm_winning_bucket": 33,
+        "settled_at": "2026-06-23T02:46:09+00:00"
+      },
+      "score": {
+        "bot_bucket": 33,
+        "hit": true,
+        "made_call": false,
+        "trade_win": null
       }
     },
     "milan": {
@@ -12679,6 +12821,18 @@
         "pm_buckets": {},
         "pm_title": null,
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 35.0,
+        "actual_bucket": 35,
+        "pm_winning_bucket": 35,
+        "settled_at": "2026-06-23T02:46:09+00:00"
+      },
+      "score": {
+        "bot_bucket": 35,
+        "hit": true,
+        "made_call": true,
+        "trade_win": null
       }
     },
     "warsaw": {
@@ -12729,7 +12883,24 @@
         "edge": 0.183,
         "prob": 0.708,
         "unit": "\u00b0C",
-        "had_position": false
+        "had_position": false,
+        "result": {
+          "won": false,
+          "entry": 0.525,
+          "pnl": -1.0
+        }
+      },
+      "outcome": {
+        "actual_high": 28.0,
+        "actual_bucket": 28,
+        "pm_winning_bucket": 28,
+        "settled_at": "2026-06-23T02:46:09+00:00"
+      },
+      "score": {
+        "bot_bucket": 28,
+        "hit": true,
+        "made_call": true,
+        "trade_win": null
       }
     },
     "amsterdam": {
@@ -12780,7 +12951,24 @@
         "edge": 0.201,
         "prob": 0.828,
         "unit": "\u00b0C",
-        "had_position": false
+        "had_position": false,
+        "result": {
+          "won": true,
+          "entry": 0.671,
+          "pnl": 0.49
+        }
+      },
+      "outcome": {
+        "actual_high": 25.0,
+        "actual_bucket": 25,
+        "pm_winning_bucket": 25,
+        "settled_at": "2026-06-23T02:46:09+00:00"
+      },
+      "score": {
+        "bot_bucket": 25,
+        "hit": true,
+        "made_call": true,
+        "trade_win": null
       }
     },
     "madrid": {
@@ -12810,6 +12998,18 @@
         "pm_buckets": {},
         "pm_title": null,
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 40.0,
+        "actual_bucket": 40,
+        "pm_winning_bucket": 39,
+        "settled_at": "2026-06-23T02:46:09+00:00"
+      },
+      "score": {
+        "bot_bucket": 40,
+        "hit": true,
+        "made_call": true,
+        "trade_win": null
       }
     },
     "sao paulo": {
@@ -12839,6 +13039,18 @@
         "pm_buckets": {},
         "pm_title": null,
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 27.0,
+        "actual_bucket": 27,
+        "pm_winning_bucket": null,
+        "settled_at": "2026-06-23T08:46:20+00:00"
+      },
+      "score": {
+        "bot_bucket": 26,
+        "hit": false,
+        "made_call": false,
+        "trade_win": null
       }
     },
     "buenos aires": {
@@ -12868,6 +13080,18 @@
         "pm_buckets": {},
         "pm_title": null,
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 12.0,
+        "actual_bucket": 12,
+        "pm_winning_bucket": null,
+        "settled_at": "2026-06-23T08:46:20+00:00"
+      },
+      "score": {
+        "bot_bucket": 13,
+        "hit": false,
+        "made_call": true,
+        "trade_win": null
       }
     },
     "panama city": {
@@ -12909,6 +13133,18 @@
         },
         "pm_title": "Highest temperature in Panama City on June 22?",
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 32.0,
+        "actual_bucket": 32,
+        "pm_winning_bucket": 30,
+        "settled_at": "2026-06-23T08:46:20+00:00"
+      },
+      "score": {
+        "bot_bucket": 32,
+        "hit": true,
+        "made_call": false,
+        "trade_win": null
       }
     },
     "toronto": {
@@ -12950,6 +13186,18 @@
         },
         "pm_title": "Highest temperature in Toronto on June 22?",
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 19.0,
+        "actual_bucket": 19,
+        "pm_winning_bucket": 20,
+        "settled_at": "2026-06-23T08:46:20+00:00"
+      },
+      "score": {
+        "bot_bucket": 19,
+        "hit": true,
+        "made_call": false,
+        "trade_win": null
       }
     },
     "new york": {
@@ -12992,6 +13240,18 @@
         },
         "pm_title": "Highest temperature in NYC on June 22?",
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 72.0,
+        "actual_bucket": 72,
+        "pm_winning_bucket": 73,
+        "settled_at": "2026-06-23T08:46:20+00:00"
+      },
+      "score": {
+        "bot_bucket": 72,
+        "hit": true,
+        "made_call": false,
+        "trade_win": null
       }
     },
     "miami": {
@@ -13034,6 +13294,18 @@
         },
         "pm_title": "Highest temperature in Miami on June 22?",
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 93.0,
+        "actual_bucket": 93,
+        "pm_winning_bucket": 93,
+        "settled_at": "2026-06-23T08:46:21+00:00"
+      },
+      "score": {
+        "bot_bucket": 93,
+        "hit": true,
+        "made_call": false,
+        "trade_win": null
       }
     },
     "atlanta": {
@@ -13076,6 +13348,18 @@
         },
         "pm_title": "Highest temperature in Atlanta on June 22?",
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 89.0,
+        "actual_bucket": 89,
+        "pm_winning_bucket": 89,
+        "settled_at": "2026-06-23T08:46:21+00:00"
+      },
+      "score": {
+        "bot_bucket": 91,
+        "hit": false,
+        "made_call": false,
+        "trade_win": null
       }
     },
     "mexico city": {
@@ -13131,7 +13415,24 @@
         "edge": 0.464,
         "prob": 0.824,
         "unit": "\u00b0C",
-        "had_position": false
+        "had_position": false,
+        "result": {
+          "won": false,
+          "entry": 0.49,
+          "pnl": -1.0
+        }
+      },
+      "outcome": {
+        "actual_high": 25.0,
+        "actual_bucket": 25,
+        "pm_winning_bucket": 25,
+        "settled_at": "2026-06-23T08:46:21+00:00"
+      },
+      "score": {
+        "bot_bucket": 26,
+        "hit": false,
+        "made_call": true,
+        "trade_win": false
       }
     },
     "chicago": {
@@ -13174,6 +13475,18 @@
         },
         "pm_title": "Highest temperature in Chicago on June 22?",
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 72.0,
+        "actual_bucket": 72,
+        "pm_winning_bucket": 73,
+        "settled_at": "2026-06-23T08:46:21+00:00"
+      },
+      "score": {
+        "bot_bucket": 72,
+        "hit": true,
+        "made_call": false,
+        "trade_win": null
       }
     },
     "austin": {
@@ -13216,6 +13529,18 @@
         },
         "pm_title": "Highest temperature in Austin on June 22?",
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 94.0,
+        "actual_bucket": 94,
+        "pm_winning_bucket": 95,
+        "settled_at": "2026-06-23T08:46:21+00:00"
+      },
+      "score": {
+        "bot_bucket": 95,
+        "hit": false,
+        "made_call": false,
+        "trade_win": null
       }
     },
     "houston": {
@@ -13258,6 +13583,18 @@
         },
         "pm_title": "Highest temperature in Houston on June 22?",
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 94.0,
+        "actual_bucket": 94,
+        "pm_winning_bucket": 93,
+        "settled_at": "2026-06-23T08:46:21+00:00"
+      },
+      "score": {
+        "bot_bucket": 94,
+        "hit": true,
+        "made_call": false,
+        "trade_win": null
       }
     },
     "dallas": {
@@ -13305,6 +13642,18 @@
           "yes_price": 0.6,
           "edge": 0.6
         }
+      },
+      "outcome": {
+        "actual_high": 95.0,
+        "actual_bucket": 95,
+        "pm_winning_bucket": 95,
+        "settled_at": "2026-06-23T08:46:22+00:00"
+      },
+      "score": {
+        "bot_bucket": 95,
+        "hit": true,
+        "made_call": false,
+        "trade_win": true
       }
     },
     "los angeles": {
@@ -13347,6 +13696,18 @@
         },
         "pm_title": "Highest temperature in Los Angeles on June 22?",
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 71.0,
+        "actual_bucket": 71,
+        "pm_winning_bucket": 71,
+        "settled_at": "2026-06-23T08:46:22+00:00"
+      },
+      "score": {
+        "bot_bucket": 71,
+        "hit": true,
+        "made_call": false,
+        "trade_win": null
       }
     },
     "san francisco": {
@@ -13389,6 +13750,18 @@
         },
         "pm_title": "Highest temperature in San Francisco on June 22?",
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 66.0,
+        "actual_bucket": 66,
+        "pm_winning_bucket": 67,
+        "settled_at": "2026-06-23T08:46:22+00:00"
+      },
+      "score": {
+        "bot_bucket": 68,
+        "hit": false,
+        "made_call": false,
+        "trade_win": null
       }
     },
     "aurora": {
@@ -13431,6 +13804,18 @@
         },
         "pm_title": "Highest temperature in Denver on June 22?",
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 89.0,
+        "actual_bucket": 89,
+        "pm_winning_bucket": 89,
+        "settled_at": "2026-06-23T08:46:22+00:00"
+      },
+      "score": {
+        "bot_bucket": 89,
+        "hit": true,
+        "made_call": false,
+        "trade_win": null
       }
     },
     "seattle": {
@@ -13473,39 +13858,51 @@
         },
         "pm_title": "Highest temperature in Seattle on June 22?",
         "best_trade": null
+      },
+      "outcome": {
+        "actual_high": 85.0,
+        "actual_bucket": 85,
+        "pm_winning_bucket": 85,
+        "settled_at": "2026-06-23T08:46:22+00:00"
+      },
+      "score": {
+        "bot_bucket": 85,
+        "hit": true,
+        "made_call": false,
+        "trade_win": null
       }
     }
   },
   "2026-06-23": {
     "wellington": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T03:49:26+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 16,
-        "top_prob": 0.523,
+        "top_prob": 0.535,
         "verdict": "SKIP",
         "made_call": false,
         "deb": 15.6,
         "deb_raw": 14.1,
         "peak_bias": 1.5,
-        "sigma": 0.55,
+        "sigma": 0.52,
         "forecasts": {
           "Open-Meteo": 15.3,
           "ECMWF": 14.4,
           "GFS": 14.6,
           "ICON": 14.3,
           "GEM": 14.2,
-          "MET.no": 13.1,
+          "MET.no": 13.0,
           "7Timer": 13.0,
           "WeatherAPI": 12.8
         },
         "timing": "FIRMING",
         "pm_buckets": {
           "13": 0.001,
-          "14": 0.355,
-          "15": 0.585,
-          "16": 0.021,
+          "14": 0.996,
+          "15": 0.004,
+          "16": 0.002,
           "18": 0.001,
           "19": 0.001,
           "9": 0.001,
@@ -13515,95 +13912,85 @@
           "17": 0.001
         },
         "pm_title": "Highest temperature in Wellington on June 23?",
-        "best_trade": {
-          "action": "BUY YES",
-          "temp": 16,
-          "yes_price": 0.021,
-          "edge": 0.502
-        }
+        "best_trade": null
       }
     },
     "seoul": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T06:55:05+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 29,
-        "top_prob": 0.668,
+        "top_bucket": 30,
+        "top_prob": 0.767,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 29.1,
-        "deb_raw": 27.6,
+        "deb": 29.2,
+        "deb_raw": 27.7,
         "peak_bias": 1.5,
-        "sigma": 0.51,
+        "sigma": 0.27,
         "forecasts": {
-          "Open-Meteo": 25.3,
+          "Open-Meteo": 24.8,
           "ECMWF": 27.6,
-          "GFS": 23.0,
-          "ICON": 29.0,
-          "GEM": 28.0,
+          "GFS": 23.5,
+          "ICON": 29.4,
+          "GEM": 27.8,
           "MET.no": 28.5,
-          "7Timer": 22.0,
+          "7Timer": 23.0,
           "WeatherAPI": 25.9
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
           "21": 0.001,
           "22": 0.001,
           "23": 0.001,
           "24": 0.001,
           "25": 0.001,
-          "26": 0.003,
-          "27": 0.029,
-          "28": 0.125,
-          "29": 0.435,
-          "30": 0.26,
-          "31": 0.098
+          "26": 0.001,
+          "27": 0.001,
+          "28": 0.001,
+          "29": 0.001,
+          "30": 0.993,
+          "31": 0.006
         },
         "pm_title": "Highest temperature in Seoul on June 23?",
-        "best_trade": {
-          "action": "BUY YES",
-          "temp": 29,
-          "yes_price": 0.435,
-          "edge": 0.233
-        }
+        "best_trade": null
       }
     },
     "busan": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T06:55:05+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 24,
-        "top_prob": 0.433,
+        "top_prob": 0.727,
         "verdict": "SKIP",
         "made_call": false,
         "deb": 24.3,
         "deb_raw": 22.9,
         "peak_bias": 1.39,
-        "sigma": 0.82,
+        "sigma": 0.33,
         "forecasts": {
-          "Open-Meteo": 23.9,
+          "Open-Meteo": 23.7,
           "ECMWF": 22.3,
-          "GFS": 23.6,
-          "ICON": 22.0,
-          "GEM": 22.5,
-          "MET.no": 22.9,
+          "GFS": 24.0,
+          "ICON": 21.9,
+          "GEM": 22.2,
+          "MET.no": 22.5,
           "7Timer": 23.0,
           "WeatherAPI": 22.9
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
           "19": 0.001,
           "20": 0.001,
-          "21": 0.04,
-          "22": 0.205,
-          "23": 0.315,
-          "24": 0.35,
-          "25": 0.075,
-          "26": 0.011,
-          "27": 0.006,
-          "28": 0.002,
+          "21": 0.001,
+          "22": 0.001,
+          "23": 0.001,
+          "24": 0.994,
+          "25": 0.006,
+          "26": 0.003,
+          "27": 0.003,
+          "28": 0.001,
           "29": 0.001
         },
         "pm_title": "Highest temperature in Busan on June 23?",
@@ -13612,130 +13999,135 @@
     },
     "hong kong": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T06:55:05+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 32,
-        "top_prob": 0.601,
+        "top_bucket": 33,
+        "top_prob": 0.969,
         "verdict": "WAIT",
         "made_call": false,
         "deb": 32.2,
         "deb_raw": 30.7,
         "peak_bias": 1.5,
-        "sigma": 0.51,
+        "sigma": 0.36,
         "forecasts": {
           "Open-Meteo": 30.2,
           "ECMWF": 30.8,
-          "GFS": 28.8,
+          "GFS": 28.9,
           "ICON": 31.9,
           "GEM": 31.1,
-          "MET.no": 31.5,
+          "MET.no": 31.3,
           "7Timer": 29.0,
           "WeatherAPI": 28.7
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
           "26": 0.001,
           "27": 0.001,
           "28": 0.001,
           "29": 0.001,
-          "30": 0.002,
-          "31": 0.019,
-          "32": 0.22,
-          "33": 0.615,
-          "34": 0.175,
-          "35": 0.009,
-          "36": 0.002
+          "30": 0.001,
+          "31": 0.001,
+          "32": 0.86,
+          "33": 0.145,
+          "34": 0.002,
+          "35": 0.001,
+          "36": 0.001
         },
         "pm_title": "Highest temperature in Hong Kong on June 23?",
         "best_trade": {
           "action": "BUY NO",
-          "temp": 33,
-          "yes_price": 0.615,
-          "edge": 0.557
+          "temp": 32,
+          "yes_price": 0.86,
+          "edge": 0.86
         }
+      },
+      "alert": {
+        "ts": "2026-06-23T04:10:04+00:00",
+        "action": "BUY YES",
+        "bucket": 32,
+        "yes_price": 0.46,
+        "edge": 0.452,
+        "prob": 0.912,
+        "unit": "\u00b0C",
+        "had_position": false
       }
     },
     "taipei": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T06:55:05+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 36,
-        "top_prob": 0.54,
-        "verdict": "SKIP",
+        "top_bucket": 37,
+        "top_prob": 0.973,
+        "verdict": "WAIT",
         "made_call": false,
-        "deb": 35.6,
-        "deb_raw": 34.1,
+        "deb": 35.5,
+        "deb_raw": 34.0,
         "peak_bias": 1.5,
-        "sigma": 0.51,
+        "sigma": 0.52,
         "forecasts": {
           "Open-Meteo": 34.7,
           "ECMWF": 33.8,
-          "GFS": 35.4,
-          "ICON": 33.9,
-          "GEM": 33.0,
-          "MET.no": 34.3,
+          "GFS": 35.3,
+          "ICON": 33.5,
+          "GEM": 33.4,
+          "MET.no": 33.3,
           "7Timer": 29.0,
           "WeatherAPI": 34.5
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
           "29": 0.001,
           "30": 0.001,
           "31": 0.001,
           "32": 0.001,
-          "33": 0.002,
-          "34": 0.009,
-          "35": 0.16,
-          "36": 0.215,
-          "37": 0.357,
-          "38": 0.231,
-          "39": 0.037
+          "33": 0.001,
+          "34": 0.001,
+          "35": 0.001,
+          "36": 0.001,
+          "37": 0.996,
+          "38": 0.005,
+          "39": 0.001
         },
         "pm_title": "Highest temperature in Taipei on June 23?",
-        "best_trade": {
-          "action": "BUY YES",
-          "temp": 36,
-          "yes_price": 0.215,
-          "edge": 0.325
-        }
+        "best_trade": null
       }
     },
     "shanghai": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T06:55:05+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 24,
-        "top_prob": 0.564,
-        "verdict": "WAIT",
-        "made_call": false,
-        "deb": 24.1,
-        "deb_raw": 23.9,
+        "top_prob": 0.818,
+        "verdict": "TRADE",
+        "made_call": true,
+        "deb": 24.0,
+        "deb_raw": 23.8,
         "peak_bias": 0.23,
-        "sigma": 0.9,
+        "sigma": 0.49,
         "forecasts": {
           "Open-Meteo": 23.4,
           "ECMWF": 23.8,
-          "GFS": 23.8,
-          "ICON": 25.8,
-          "GEM": 25.0,
+          "GFS": 23.7,
+          "ICON": 24.8,
+          "GEM": 25.2,
           "MET.no": 23.9,
           "7Timer": 23.0,
           "WeatherAPI": 23.2
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
-          "27": 0.004,
+          "27": 0.001,
           "19": 0.001,
           "20": 0.001,
           "21": 0.001,
           "22": 0.001,
-          "23": 0.001,
-          "24": 0.825,
-          "25": 0.165,
-          "26": 0.014,
+          "23": 0.002,
+          "24": 0.975,
+          "25": 0.014,
+          "26": 0.004,
           "28": 0.001,
           "29": 0.001
         },
@@ -13745,86 +14137,81 @@
     },
     "beijing": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T06:55:05+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 30,
-        "top_prob": 0.271,
-        "verdict": "SKIP",
+        "top_bucket": 27,
+        "top_prob": 0.655,
+        "verdict": "WAIT",
         "made_call": false,
-        "deb": 30.1,
-        "deb_raw": 29.6,
+        "deb": 30.2,
+        "deb_raw": 29.7,
         "peak_bias": 0.52,
-        "sigma": 1.45,
+        "sigma": 0.77,
         "forecasts": {
           "Open-Meteo": 29.1,
           "ECMWF": 30.1,
-          "GFS": 31.2,
-          "ICON": 29.0,
-          "GEM": 32.6,
+          "GFS": 32.3,
+          "ICON": 29.4,
+          "GEM": 30.2,
           "MET.no": 28.1,
-          "7Timer": 28.0,
+          "7Timer": 30.0,
           "WeatherAPI": 28.9
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
-          "26": 0.054,
-          "27": 0.186,
-          "28": 0.285,
-          "29": 0.28,
-          "30": 0.165,
-          "31": 0.085,
-          "32": 0.01,
-          "33": 0.006,
-          "34": 0.002,
+          "26": 0.001,
+          "27": 0.752,
+          "28": 0.21,
+          "29": 0.04,
+          "30": 0.036,
+          "31": 0.003,
+          "32": 0.002,
+          "33": 0.002,
+          "34": 0.001,
           "35": 0.001,
           "36": 0.001
         },
         "pm_title": "Highest temperature in Beijing on June 23?",
-        "best_trade": {
-          "action": "BUY NO",
-          "temp": 28,
-          "yes_price": 0.285,
-          "edge": 0.187
-        }
+        "best_trade": null
       }
     },
     "qingdao": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T06:55:05+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 29,
-        "top_prob": 0.526,
+        "top_bucket": 28,
+        "top_prob": 0.601,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 28.7,
-        "deb_raw": 28.4,
+        "deb": 28.4,
+        "deb_raw": 28.1,
         "peak_bias": 0.34,
-        "sigma": 0.62,
+        "sigma": 0.38,
         "forecasts": {
           "Open-Meteo": 29.9,
           "ECMWF": 28.0,
-          "GFS": 28.6,
-          "ICON": 27.0,
-          "GEM": 27.0,
-          "MET.no": 29.7,
+          "GFS": 28.9,
+          "ICON": 27.3,
+          "GEM": 27.5,
+          "MET.no": 27.9,
           "7Timer": 29.0,
           "WeatherAPI": 24.0
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
           "21": 0.001,
           "22": 0.001,
           "23": 0.001,
           "24": 0.001,
           "25": 0.001,
-          "26": 0.011,
-          "27": 0.08,
-          "28": 0.27,
-          "29": 0.34,
-          "30": 0.195,
-          "31": 0.074
+          "26": 0.001,
+          "27": 0.001,
+          "28": 0.97,
+          "29": 0.035,
+          "30": 0.001,
+          "31": 0.001
         },
         "pm_title": "Highest temperature in Qingdao on June 23?",
         "best_trade": null
@@ -13832,123 +14219,123 @@
     },
     "wuhan": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T06:55:05+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 24,
-        "top_prob": 0.734,
-        "verdict": "WAIT",
-        "made_call": false,
+        "top_bucket": 25,
+        "top_prob": 0.949,
+        "verdict": "TRADE",
+        "made_call": true,
         "deb": 24.3,
         "deb_raw": 23.2,
         "peak_bias": 1.11,
-        "sigma": 0.31,
+        "sigma": 0.3,
         "forecasts": {
           "Open-Meteo": 24.6,
           "ECMWF": 24.0,
-          "GFS": 22.0,
-          "ICON": 22.7,
-          "GEM": 23.0,
-          "MET.no": 24.2,
+          "GFS": 22.2,
+          "ICON": 23.0,
+          "GEM": 23.1,
+          "MET.no": 23.9,
           "7Timer": 22.0,
           "WeatherAPI": 21.7
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
           "21": 0.001,
-          "22": 0.117,
-          "23": 0.405,
-          "24": 0.275,
-          "25": 0.165,
-          "26": 0.064,
-          "27": 0.01,
-          "28": 0.002,
-          "29": 0.001,
+          "22": 0.001,
+          "23": 0.001,
+          "24": 0.001,
+          "25": 0.93,
+          "26": 0.067,
+          "27": 0.005,
+          "28": 0.001,
+          "29": 0.002,
           "30": 0.001,
           "31": 0.001
         },
         "pm_title": "Highest temperature in Wuhan on June 23?",
-        "best_trade": {
-          "action": "BUY YES",
-          "temp": 24,
-          "yes_price": 0.275,
-          "edge": 0.459
-        }
+        "best_trade": null
       }
     },
     "chengdu": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T06:55:05+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 29,
-        "top_prob": 0.376,
-        "verdict": "SKIP",
+        "top_prob": 0.669,
+        "verdict": "WAIT",
         "made_call": false,
         "deb": 29.1,
         "deb_raw": 27.6,
         "peak_bias": 1.49,
-        "sigma": 1.02,
+        "sigma": 0.66,
         "forecasts": {
           "Open-Meteo": 29.1,
           "ECMWF": 28.2,
-          "GFS": 26.4,
-          "ICON": 27.9,
-          "GEM": 28.4,
+          "GFS": 26.5,
+          "ICON": 29.0,
+          "GEM": 27.1,
           "MET.no": 27.9,
           "7Timer": 26.0,
           "WeatherAPI": 26.5
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
-          "25": 0.009,
-          "26": 0.052,
-          "27": 0.085,
-          "28": 0.275,
-          "29": 0.345,
-          "30": 0.255,
-          "31": 0.057,
-          "32": 0.004,
-          "33": 0.002,
+          "25": 0.001,
+          "26": 0.001,
+          "27": 0.001,
+          "28": 0.001,
+          "29": 0.475,
+          "30": 0.325,
+          "31": 0.147,
+          "32": 0.008,
+          "33": 0.003,
           "34": 0.001,
           "35": 0.001
         },
         "pm_title": "Highest temperature in Chengdu on June 23?",
-        "best_trade": null
+        "best_trade": {
+          "action": "BUY YES",
+          "temp": 29,
+          "yes_price": 0.475,
+          "edge": 0.194
+        }
       }
     },
     "chongqing": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T06:55:05+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 26,
-        "top_prob": 0.478,
+        "top_bucket": 25,
+        "top_prob": 0.479,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 26.0,
-        "deb_raw": 26.1,
+        "deb": 25.5,
+        "deb_raw": 25.6,
         "peak_bias": -0.09,
-        "sigma": 0.78,
+        "sigma": 0.57,
         "forecasts": {
           "Open-Meteo": 27.6,
           "ECMWF": 28.2,
-          "GFS": 26.1,
-          "ICON": 25.7,
-          "GEM": 24.4,
+          "GFS": 24.2,
+          "ICON": 25.2,
+          "GEM": 24.5,
           "MET.no": 28.5,
-          "7Timer": 24.0,
+          "7Timer": 23.0,
           "WeatherAPI": 26.8
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
-          "25": 0.615,
-          "26": 0.17,
-          "27": 0.2,
-          "28": 0.035,
-          "29": 0.013,
-          "30": 0.011,
-          "31": 0.002,
+          "25": 0.915,
+          "26": 0.055,
+          "27": 0.023,
+          "28": 0.005,
+          "29": 0.003,
+          "30": 0.003,
+          "31": 0.001,
           "32": 0.001,
           "33": 0.001,
           "34": 0.001,
@@ -13956,44 +14343,44 @@
         },
         "pm_title": "Highest temperature in Chongqing on June 23?",
         "best_trade": {
-          "action": "BUY NO",
-          "temp": 25,
-          "yes_price": 0.615,
-          "edge": 0.381
+          "action": "BUY YES",
+          "temp": 26,
+          "yes_price": 0.055,
+          "edge": 0.424
         }
       }
     },
     "shenzhen": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T06:55:05+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 33,
-        "top_prob": 0.743,
+        "top_prob": 0.727,
         "verdict": "WAIT",
         "made_call": false,
         "deb": 32.9,
         "deb_raw": 31.8,
         "peak_bias": 1.13,
-        "sigma": 0.43,
+        "sigma": 0.33,
         "forecasts": {
           "Open-Meteo": 31.7,
           "ECMWF": 31.3,
-          "GFS": 33.5,
-          "ICON": 31.5,
-          "GEM": 32.3,
-          "MET.no": 31.5,
-          "7Timer": 29.0,
+          "GFS": 33.4,
+          "ICON": 31.3,
+          "GEM": 32.2,
+          "MET.no": 31.2,
+          "7Timer": 30.0,
           "WeatherAPI": 30.5
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
-          "31": 0.024,
-          "32": 0.115,
-          "33": 0.415,
-          "34": 0.395,
-          "35": 0.086,
-          "36": 0.011,
+          "31": 0.001,
+          "32": 0.001,
+          "33": 0.64,
+          "34": 0.295,
+          "35": 0.095,
+          "36": 0.004,
           "26": 0.001,
           "27": 0.001,
           "28": 0.001,
@@ -14001,142 +14388,157 @@
           "30": 0.001
         },
         "pm_title": "Highest temperature in Shenzhen on June 23?",
-        "best_trade": {
-          "action": "BUY YES",
-          "temp": 33,
-          "yes_price": 0.415,
-          "edge": 0.328
-        }
+        "best_trade": null
       }
     },
     "guangzhou": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T06:55:05+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 36,
-        "top_prob": 0.643,
+        "top_prob": 0.682,
         "verdict": "WAIT",
         "made_call": false,
-        "deb": 36.0,
-        "deb_raw": 34.5,
+        "deb": 35.7,
+        "deb_raw": 34.2,
         "peak_bias": 1.5,
-        "sigma": 0.55,
+        "sigma": 0.38,
         "forecasts": {
           "Open-Meteo": 34.4,
           "ECMWF": 34.0,
-          "GFS": 35.2,
+          "GFS": 34.6,
           "ICON": 34.7,
-          "GEM": 34.7,
-          "MET.no": 33.8,
-          "7Timer": 35.0,
+          "GEM": 34.6,
+          "MET.no": 32.9,
+          "7Timer": 33.0,
           "WeatherAPI": 34.4
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
           "29": 0.001,
           "30": 0.001,
           "31": 0.001,
-          "32": 0.002,
-          "33": 0.004,
-          "34": 0.011,
-          "35": 0.145,
-          "36": 0.3,
-          "37": 0.355,
-          "38": 0.135,
-          "39": 0.021
+          "32": 0.001,
+          "33": 0.001,
+          "34": 0.001,
+          "35": 0.34,
+          "36": 0.32,
+          "37": 0.239,
+          "38": 0.035,
+          "39": 0.004
         },
         "pm_title": "Highest temperature in Guangzhou on June 23?",
         "best_trade": {
           "action": "BUY YES",
           "temp": 36,
-          "yes_price": 0.3,
-          "edge": 0.343
+          "yes_price": 0.32,
+          "edge": 0.362
         }
+      },
+      "alert": {
+        "ts": "2026-06-23T06:14:01+00:00",
+        "action": "BUY YES",
+        "bucket": 36,
+        "yes_price": 0.325,
+        "edge": 0.425,
+        "prob": 0.75,
+        "unit": "\u00b0C",
+        "had_position": false
       }
     },
     "singapore": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T06:55:05+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 31,
-        "top_prob": 0.475,
-        "verdict": "SKIP",
+        "top_prob": 0.727,
+        "verdict": "WAIT",
         "made_call": false,
         "deb": 30.9,
         "deb_raw": 30.3,
         "peak_bias": 0.64,
-        "sigma": 0.78,
+        "sigma": 0.33,
         "forecasts": {
           "Open-Meteo": 29.7,
           "ECMWF": 30.1,
-          "GFS": 29.8,
-          "ICON": 31.2,
-          "GEM": 30.6,
+          "GFS": 30.5,
+          "ICON": 31.8,
+          "GEM": 30.0,
           "MET.no": 30.7,
-          "7Timer": 31.0,
+          "7Timer": 30.0,
           "WeatherAPI": 28.4
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
           "25": 0.001,
           "26": 0.001,
           "27": 0.001,
-          "28": 0.006,
-          "29": 0.004,
-          "30": 0.15,
-          "31": 0.395,
-          "32": 0.365,
-          "33": 0.09,
-          "34": 0.007,
-          "35": 0.002
+          "28": 0.001,
+          "29": 0.001,
+          "30": 0.001,
+          "31": 0.091,
+          "32": 0.86,
+          "33": 0.036,
+          "34": 0.005,
+          "35": 0.001
         },
         "pm_title": "Highest temperature in Singapore on June 23?",
         "best_trade": {
-          "action": "BUY NO",
-          "temp": 32,
-          "yes_price": 0.365,
-          "edge": 0.164
+          "action": "BUY YES",
+          "temp": 31,
+          "yes_price": 0.091,
+          "edge": 0.636
         }
+      },
+      "alert": {
+        "ts": "2026-06-23T06:14:02+00:00",
+        "action": "BUY YES",
+        "bucket": 31,
+        "yes_price": 0.208,
+        "edge": 0.724,
+        "prob": 0.932,
+        "unit": "\u00b0C",
+        "had_position": false
       }
     },
     "tokyo": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T06:55:05+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 25,
-        "top_prob": 0.352,
+        "top_prob": 0.536,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 25.1,
-        "deb_raw": 24.2,
+        "deb": 25.0,
+        "deb_raw": 24.1,
         "peak_bias": 0.92,
-        "sigma": 1.09,
+        "sigma": 0.68,
         "forecasts": {
-          "Open-Meteo": 23.2,
+          "Open-Meteo": 23.0,
           "ECMWF": 24.2,
-          "GFS": 24.4,
-          "ICON": 23.3,
-          "GEM": 25.0,
+          "GFS": 23.8,
+          "ICON": 23.2,
+          "GEM": 25.2,
           "MET.no": 23.7,
           "7Timer": 25.0,
           "WeatherAPI": 22.4
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
           "19": 0.001,
           "20": 0.001,
           "21": 0.001,
-          "22": 0.006,
-          "23": 0.175,
-          "24": 0.345,
-          "25": 0.43,
-          "26": 0.085,
-          "27": 0.011,
-          "28": 0.006,
-          "29": 0.002
+          "22": 0.001,
+          "23": 0.977,
+          "24": 0.021,
+          "25": 0.005,
+          "26": 0.001,
+          "27": 0.003,
+          "28": 0.001,
+          "29": 0.001
         },
         "pm_title": "Highest temperature in Tokyo on June 23?",
         "best_trade": null
@@ -14144,40 +14546,40 @@
     },
     "kuala lumpur": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T06:55:05+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 33,
-        "top_prob": 0.405,
-        "verdict": "SKIP",
+        "top_bucket": 34,
+        "top_prob": 0.933,
+        "verdict": "WAIT",
         "made_call": false,
-        "deb": 32.9,
-        "deb_raw": 31.4,
+        "deb": 32.5,
+        "deb_raw": 31.0,
         "peak_bias": 1.5,
-        "sigma": 0.94,
+        "sigma": 0.63,
         "forecasts": {
           "Open-Meteo": 30.8,
           "ECMWF": 31.3,
-          "GFS": 31.8,
-          "ICON": 31.4,
-          "GEM": 30.0,
+          "GFS": 31.7,
+          "ICON": 31.9,
+          "GEM": 28.9,
           "MET.no": 30.4,
-          "7Timer": 33.0,
+          "7Timer": 31.0,
           "WeatherAPI": 31.1
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
           "26": 0.001,
           "27": 0.001,
           "28": 0.001,
-          "29": 0.003,
-          "30": 0.036,
-          "31": 0.12,
-          "32": 0.385,
-          "33": 0.38,
-          "34": 0.135,
-          "35": 0.005,
-          "36": 0.003
+          "29": 0.001,
+          "30": 0.001,
+          "31": 0.001,
+          "32": 0.001,
+          "33": 0.001,
+          "34": 0.974,
+          "35": 0.025,
+          "36": 0.005
         },
         "pm_title": "Highest temperature in Kuala Lumpur on June 23?",
         "best_trade": null
@@ -14185,69 +14587,74 @@
     },
     "manila": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T06:55:05+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 33,
-        "top_prob": 0.456,
-        "verdict": "SKIP",
+        "top_prob": 0.571,
+        "verdict": "WAIT",
         "made_call": false,
         "deb": 33.1,
         "deb_raw": 32.2,
         "peak_bias": 0.88,
-        "sigma": 0.82,
+        "sigma": 0.63,
         "forecasts": {
           "Open-Meteo": 32.2,
           "ECMWF": 32.0,
-          "GFS": 31.4,
+          "GFS": 31.8,
           "ICON": 33.3,
-          "GEM": 33.4,
-          "MET.no": 32.0,
+          "GEM": 33.0,
+          "MET.no": 31.9,
           "7Timer": 32.0,
           "WeatherAPI": 31.4
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
           "28": 0.001,
           "29": 0.001,
           "30": 0.001,
-          "31": 0.038,
-          "32": 0.275,
-          "33": 0.375,
-          "34": 0.275,
-          "35": 0.065,
-          "36": 0.005,
-          "37": 0.002,
+          "31": 0.001,
+          "32": 0.76,
+          "33": 0.175,
+          "34": 0.04,
+          "35": 0.002,
+          "36": 0.002,
+          "37": 0.001,
           "38": 0.002
         },
         "pm_title": "Highest temperature in Manila on June 23?",
-        "best_trade": null
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 32,
+          "yes_price": 0.76,
+          "edge": 0.595
+        }
       }
     },
     "jakarta": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T07:56:32+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 32,
-        "top_prob": 0.391,
+        "top_prob": 0.549,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 31.9,
-        "deb_raw": 31.2,
+        "deb": 31.8,
+        "deb_raw": 31.1,
         "peak_bias": 0.69,
-        "sigma": 0.98,
+        "sigma": 0.66,
         "forecasts": {
           "Open-Meteo": 32.0,
           "ECMWF": 30.8,
-          "GFS": 31.1,
-          "ICON": 30.8,
+          "GFS": 30.9,
+          "ICON": 30.6,
           "GEM": 31.8,
           "MET.no": 30.2,
           "7Timer": 31.0,
-          "WeatherAPI": 29.5
+          "WeatherAPI": 29.2
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {},
         "pm_title": null,
         "best_trade": null
@@ -14255,135 +14662,140 @@
     },
     "lucknow": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T10:21:16+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 40,
-        "top_prob": 0.704,
-        "verdict": "WAIT",
-        "made_call": false,
-        "deb": 39.9,
-        "deb_raw": 40.6,
+        "top_prob": 0.767,
+        "verdict": "TRADE",
+        "made_call": true,
+        "deb": 40.3,
+        "deb_raw": 41.0,
         "peak_bias": -0.68,
-        "sigma": 0.47,
+        "sigma": 0.27,
         "forecasts": {
           "Open-Meteo": 38.9,
-          "ECMWF": 38.5,
-          "GFS": 43.4,
-          "ICON": 40.9,
-          "GEM": 40.8,
-          "MET.no": 39.3,
+          "ECMWF": 38.9,
+          "GFS": 43.1,
+          "ICON": 41.4,
+          "GEM": 41.3,
+          "MET.no": 39.4,
           "7Timer": 43.0,
-          "WeatherAPI": 43.6
+          "WeatherAPI": 44.6
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
-          "39": 0.14,
-          "41": 0.345,
-          "42": 0.052,
-          "43": 0.011,
-          "44": 0.003,
-          "45": 0.003,
-          "46": 0.002,
+          "39": 0.001,
+          "41": 0.05,
+          "42": 0.004,
+          "43": 0.003,
+          "44": 0.001,
+          "45": 0.001,
+          "46": 0.001,
           "47": 0.001,
-          "37": 0.002,
-          "38": 0.004,
-          "40": 0.42
+          "37": 0.001,
+          "38": 0.001,
+          "40": 0.954
         },
         "pm_title": "Highest temperature in Lucknow on June 23?",
-        "best_trade": {
-          "action": "BUY YES",
-          "temp": 40,
-          "yes_price": 0.42,
-          "edge": 0.284
-        }
+        "best_trade": null
+      },
+      "alert": {
+        "ts": "2026-06-23T07:35:53+00:00",
+        "action": "BUY NO",
+        "bucket": 41,
+        "yes_price": 0.555,
+        "edge": 0.455,
+        "prob": 0.8,
+        "unit": "\u00b0C",
+        "had_position": false
       }
     },
     "karachi": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T10:41:40+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 36,
         "top_prob": 0.466,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 35.7,
-        "deb_raw": 34.5,
+        "deb": 35.6,
+        "deb_raw": 34.4,
         "peak_bias": 1.22,
-        "sigma": 0.74,
+        "sigma": 0.68,
         "forecasts": {
           "Open-Meteo": 35.0,
-          "ECMWF": 35.2,
-          "GFS": 33.4,
-          "ICON": 34.6,
-          "GEM": 33.7,
-          "MET.no": 34.4,
+          "ECMWF": 34.7,
+          "GFS": 33.5,
+          "ICON": 35.2,
+          "GEM": 33.6,
+          "MET.no": 33.4,
           "7Timer": 34.0,
           "WeatherAPI": 32.6
         },
-        "timing": "SPECULATIVE",
+        "timing": "FIRMING",
         "pm_buckets": {
           "29": 0.001,
           "30": 0.001,
           "31": 0.001,
-          "32": 0.004,
-          "33": 0.062,
-          "34": 0.255,
-          "35": 0.545,
-          "36": 0.15,
-          "37": 0.008,
+          "32": 0.001,
+          "33": 0.001,
+          "34": 0.971,
+          "35": 0.031,
+          "36": 0.002,
+          "37": 0.001,
           "38": 0.001,
           "39": 0.001
         },
         "pm_title": "Highest temperature in Karachi on June 23?",
-        "best_trade": {
-          "action": "BUY YES",
-          "temp": 36,
-          "yes_price": 0.15,
-          "edge": 0.316
-        }
+        "best_trade": null
       }
     },
     "jeddah": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T11:43:21+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 36,
-        "top_prob": 0.399,
+        "top_bucket": 35,
+        "top_prob": 0.466,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 36.4,
-        "deb_raw": 36.0,
-        "peak_bias": 0.38,
-        "sigma": 0.86,
+        "deb": 35.5,
+        "deb_raw": 35.8,
+        "peak_bias": -0.26,
+        "sigma": 0.55,
         "forecasts": {
           "Open-Meteo": 35.8,
-          "ECMWF": 37.9,
-          "GFS": 34.6,
-          "ICON": 36.2,
-          "GEM": 33.7,
-          "MET.no": 36.0,
+          "ECMWF": 38.0,
+          "GFS": 34.8,
+          "ICON": 36.0,
+          "GEM": 34.2,
+          "MET.no": 36.1,
           "7Timer": 39.0,
-          "WeatherAPI": 34.5
+          "WeatherAPI": 34.1
         },
-        "timing": "OVERNIGHT",
+        "timing": "FIRMING",
         "pm_buckets": {
           "28": 0.001,
           "29": 0.001,
           "30": 0.001,
           "31": 0.001,
           "32": 0.001,
-          "33": 0.003,
-          "34": 0.064,
-          "35": 0.155,
-          "36": 0.35,
-          "37": 0.345,
-          "38": 0.125
+          "33": 0.001,
+          "34": 0.545,
+          "35": 0.395,
+          "36": 0.165,
+          "37": 0.015,
+          "38": 0.003
         },
         "pm_title": "Highest temperature in Jeddah on June 23?",
-        "best_trade": null
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 34,
+          "yes_price": 0.545,
+          "edge": 0.511
+        }
       }
     },
     "istanbul": {
@@ -14398,140 +14810,125 @@
         "had_position": false
       },
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T13:59:20+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 26,
-        "top_prob": 0.676,
-        "verdict": "WAIT",
-        "made_call": false,
-        "deb": 26.3,
-        "deb_raw": 25.7,
-        "peak_bias": 0.55,
-        "sigma": 0.39,
+        "top_prob": 0.949,
+        "verdict": "TRADE",
+        "made_call": true,
+        "deb": 25.9,
+        "deb_raw": 25.5,
+        "peak_bias": 0.43,
+        "sigma": 0.3,
         "forecasts": {
-          "Open-Meteo": 26.0,
+          "Open-Meteo": 25.6,
           "ECMWF": 25.3,
           "GFS": 25.3,
-          "ICON": 26.0,
+          "ICON": 25.6,
           "GEM": 25.5,
-          "MET.no": 24.5,
+          "MET.no": 24.4,
           "7Timer": 23.0,
-          "WeatherAPI": 26.3
+          "WeatherAPI": 26.2
         },
-        "timing": "OVERNIGHT",
+        "timing": "FIRMING",
         "pm_buckets": {
           "21": 0.001,
-          "22": 0.003,
-          "23": 0.007,
-          "24": 0.04,
-          "25": 0.235,
-          "26": 0.51,
-          "27": 0.155,
-          "28": 0.03,
-          "29": 0.006,
+          "22": 0.001,
+          "23": 0.001,
+          "24": 0.001,
+          "25": 0.001,
+          "26": 0.972,
+          "27": 0.018,
+          "28": 0.006,
+          "29": 0.003,
           "30": 0.002,
           "31": 0.002
         },
         "pm_title": "Highest temperature in Istanbul on June 23?",
-        "best_trade": {
-          "action": "BUY NO",
-          "temp": 25,
-          "yes_price": 0.235,
-          "edge": 0.215
-        }
+        "best_trade": null
       }
     },
     "ankara": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T13:59:20+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 28,
-        "top_prob": 0.643,
-        "verdict": "WAIT",
+        "top_prob": 0.63,
+        "verdict": "SKIP",
         "made_call": false,
-        "deb": 28.0,
-        "deb_raw": 26.6,
-        "peak_bias": 1.45,
-        "sigma": 0.55,
+        "deb": 27.8,
+        "deb_raw": 26.4,
+        "peak_bias": 1.35,
+        "sigma": 0.52,
         "forecasts": {
-          "Open-Meteo": 26.9,
-          "ECMWF": 25.7,
-          "GFS": 26.4,
-          "ICON": 26.9,
-          "GEM": 27.6,
-          "MET.no": 26.3,
+          "Open-Meteo": 26.7,
+          "ECMWF": 25.4,
+          "GFS": 26.0,
+          "ICON": 26.7,
+          "GEM": 27.7,
+          "MET.no": 26.0,
           "7Timer": 25.0,
-          "WeatherAPI": 25.8
+          "WeatherAPI": 26.1
         },
-        "timing": "OVERNIGHT",
+        "timing": "FIRMING",
         "pm_buckets": {
-          "33": 0.002,
-          "23": 0.003,
-          "24": 0.004,
-          "25": 0.009,
-          "26": 0.045,
-          "27": 0.385,
-          "28": 0.415,
-          "29": 0.16,
-          "30": 0.005,
-          "31": 0.003,
+          "33": 0.001,
+          "23": 0.001,
+          "24": 0.001,
+          "25": 0.001,
+          "26": 0.001,
+          "27": 0.955,
+          "28": 0.123,
+          "29": 0.005,
+          "30": 0.003,
+          "31": 0.001,
           "32": 0.001
         },
         "pm_title": "Highest temperature in Ankara on June 23?",
-        "best_trade": {
-          "action": "BUY YES",
-          "temp": 28,
-          "yes_price": 0.415,
-          "edge": 0.228
-        }
+        "best_trade": null
       }
     },
     "moscow": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T13:59:20+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 24,
+        "top_bucket": 23,
         "top_prob": 0.676,
         "verdict": "WAIT",
         "made_call": false,
-        "deb": 23.7,
-        "deb_raw": 22.3,
-        "peak_bias": 1.41,
-        "sigma": 0.39,
+        "deb": 23.4,
+        "deb_raw": 22.1,
+        "peak_bias": 1.31,
+        "sigma": 0.22,
         "forecasts": {
-          "Open-Meteo": 23.1,
+          "Open-Meteo": 22.9,
           "ECMWF": 21.7,
-          "GFS": 21.6,
-          "ICON": 23.1,
-          "GEM": 22.0,
-          "MET.no": 21.6,
+          "GFS": 21.5,
+          "ICON": 22.9,
+          "GEM": 21.9,
+          "MET.no": 21.4,
           "7Timer": 22.0,
-          "WeatherAPI": 22.8
+          "WeatherAPI": 22.4
         },
-        "timing": "OVERNIGHT",
+        "timing": "FIRMING",
         "pm_buckets": {
           "17": 0.001,
-          "18": 0.002,
-          "19": 0.003,
-          "20": 0.007,
-          "21": 0.011,
-          "22": 0.165,
-          "23": 0.395,
-          "24": 0.385,
-          "25": 0.05,
-          "26": 0.005,
-          "27": 0.003
+          "18": 0.001,
+          "19": 0.001,
+          "20": 0.001,
+          "21": 0.001,
+          "22": 0.001,
+          "23": 0.93,
+          "24": 0.05,
+          "25": 0.004,
+          "26": 0.001,
+          "27": 0.001
         },
         "pm_title": "Highest temperature in Moscow on June 23?",
-        "best_trade": {
-          "action": "BUY YES",
-          "temp": 24,
-          "yes_price": 0.385,
-          "edge": 0.291
-        }
+        "best_trade": null
       },
       "alert": {
         "ts": "2026-06-22T14:45:14+00:00",
@@ -14546,74 +14943,69 @@
     },
     "tel aviv": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T13:59:20+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 29,
-        "top_prob": 0.607,
-        "verdict": "WAIT",
-        "made_call": false,
-        "deb": 29.0,
-        "deb_raw": 29.3,
-        "peak_bias": -0.33,
-        "sigma": 0.59,
+        "top_bucket": 30,
+        "top_prob": 0.932,
+        "verdict": "TRADE",
+        "made_call": true,
+        "deb": 29.1,
+        "deb_raw": 29.4,
+        "peak_bias": -0.29,
+        "sigma": 0.33,
         "forecasts": {
-          "Open-Meteo": 29.5,
-          "ECMWF": 30.6,
-          "GFS": 29.9,
-          "ICON": 29.5,
-          "GEM": 29.0,
-          "MET.no": 29.6,
+          "Open-Meteo": 29.4,
+          "ECMWF": 30.9,
+          "GFS": 29.8,
+          "ICON": 29.4,
+          "GEM": 29.3,
+          "MET.no": 29.2,
           "7Timer": 29.0,
-          "WeatherAPI": 28.0
+          "WeatherAPI": 28.6
         },
-        "timing": "OVERNIGHT",
+        "timing": "FIRMING",
         "pm_buckets": {
           "26": 0.001,
           "27": 0.001,
-          "28": 0.024,
-          "29": 0.405,
-          "30": 0.475,
-          "31": 0.065,
-          "32": 0.004,
-          "33": 0.001,
+          "28": 0.001,
+          "29": 0.001,
+          "30": 0.995,
+          "31": 0.004,
+          "32": 0.001,
+          "33": 0.002,
           "34": 0.001,
           "35": 0.001,
-          "36": 0.001
+          "36": 0.002
         },
         "pm_title": "Highest temperature in Tel Aviv on June 23?",
-        "best_trade": {
-          "action": "BUY NO",
-          "temp": 30,
-          "yes_price": 0.475,
-          "edge": 0.283
-        }
+        "best_trade": null
       }
     },
     "lagos": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T13:59:20+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 32,
-        "top_prob": 0.506,
+        "top_bucket": 25,
+        "top_prob": 0.494,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 31.7,
+        "deb": 31.9,
         "deb_raw": 30.4,
-        "peak_bias": 1.34,
-        "sigma": 0.66,
+        "peak_bias": 1.5,
+        "sigma": 0.44,
         "forecasts": {
           "Open-Meteo": 30.1,
-          "ECMWF": 29.6,
-          "GFS": 31.8,
-          "ICON": 30.6,
+          "ECMWF": 29.3,
+          "GFS": 32.2,
+          "ICON": 30.0,
           "GEM": 29.8,
-          "MET.no": 29.8,
-          "7Timer": 31.0,
-          "WeatherAPI": 29.5
+          "MET.no": 29.2,
+          "7Timer": 32.0,
+          "WeatherAPI": 29.7
         },
-        "timing": "OVERNIGHT",
+        "timing": "FIRMING",
         "pm_buckets": {},
         "pm_title": null,
         "best_trade": null
@@ -14621,494 +15013,504 @@
     },
     "cape town": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T13:59:20+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 17,
-        "top_prob": 0.581,
-        "verdict": "WAIT",
-        "made_call": false,
-        "deb": 16.8,
-        "deb_raw": 15.9,
-        "peak_bias": 0.86,
-        "sigma": 0.59,
+        "top_prob": 0.855,
+        "verdict": "TRADE",
+        "made_call": true,
+        "deb": 15.6,
+        "deb_raw": 16.1,
+        "peak_bias": -0.47,
+        "sigma": 0.44,
         "forecasts": {
           "Open-Meteo": 15.6,
-          "ECMWF": 15.6,
-          "GFS": 16.8,
-          "ICON": 16.4,
-          "GEM": 15.7,
-          "MET.no": 16.0,
+          "ECMWF": 15.9,
+          "GFS": 17.0,
+          "ICON": 16.5,
+          "GEM": 16.0,
+          "MET.no": 16.4,
           "7Timer": 15.0,
-          "WeatherAPI": 16.1
+          "WeatherAPI": 15.7
         },
-        "timing": "OVERNIGHT",
+        "timing": "FIRMING",
         "pm_buckets": {
-          "16": 0.37,
-          "17": 0.315,
-          "18": 0.13,
-          "19": 0.035,
-          "20": 0.004,
-          "21": 0.002,
+          "16": 0.001,
+          "17": 0.997,
+          "18": 0.004,
+          "19": 0.003,
+          "20": 0.001,
+          "21": 0.001,
           "11": 0.001,
           "12": 0.001,
           "13": 0.001,
-          "14": 0.029,
-          "15": 0.185
+          "14": 0.001,
+          "15": 0.001
         },
         "pm_title": "Highest temperature in Cape Town on June 23?",
-        "best_trade": {
-          "action": "BUY YES",
-          "temp": 17,
-          "yes_price": 0.315,
-          "edge": 0.266
-        }
+        "best_trade": null
       }
     },
     "helsinki": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T14:50:20+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 21,
-        "top_prob": 0.485,
+        "top_prob": 0.682,
         "verdict": "SKIP",
         "made_call": false,
         "deb": 20.7,
-        "deb_raw": 20.2,
-        "peak_bias": 0.47,
-        "sigma": 0.7,
+        "deb_raw": 20.3,
+        "peak_bias": 0.39,
+        "sigma": 0.38,
         "forecasts": {
           "Open-Meteo": 22.6,
-          "ECMWF": 19.2,
-          "GFS": 20.1,
-          "ICON": 19.2,
-          "GEM": 19.9,
-          "MET.no": 22.5,
+          "ECMWF": 19.6,
+          "GFS": 20.4,
+          "ICON": 19.6,
+          "GEM": 20.0,
+          "MET.no": 21.9,
           "7Timer": 20.0,
-          "WeatherAPI": 19.4
+          "WeatherAPI": 20.0
         },
-        "timing": "OVERNIGHT",
+        "timing": "FIRMING",
         "pm_buckets": {
           "14": 0.001,
           "15": 0.001,
-          "16": 0.002,
-          "17": 0.006,
-          "18": 0.034,
-          "19": 0.185,
-          "20": 0.355,
-          "21": 0.295,
-          "22": 0.165,
-          "23": 0.005,
-          "24": 0.004
+          "16": 0.001,
+          "17": 0.001,
+          "18": 0.001,
+          "19": 0.001,
+          "20": 0.996,
+          "21": 0.005,
+          "22": 0.002,
+          "23": 0.001,
+          "24": 0.001
         },
         "pm_title": "Highest temperature in Helsinki on June 23?",
-        "best_trade": {
-          "action": "BUY YES",
-          "temp": 21,
-          "yes_price": 0.295,
-          "edge": 0.19
-        }
+        "best_trade": null
       }
     },
     "london": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T14:50:20+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 34,
-        "top_prob": 0.526,
+        "top_bucket": 32,
+        "top_prob": 0.466,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 33.7,
-        "deb_raw": 33.8,
-        "peak_bias": -0.11,
-        "sigma": 0.63,
+        "deb": 32.5,
+        "deb_raw": 32.5,
+        "peak_bias": 0.01,
+        "sigma": 0.55,
         "forecasts": {
-          "Open-Meteo": 32.9,
-          "ECMWF": 31.4,
-          "GFS": 35.0,
-          "ICON": 33.7,
-          "GEM": 34.8,
-          "MET.no": 31.3,
-          "7Timer": 35.0,
-          "WeatherAPI": 35.0
+          "Open-Meteo": 33.0,
+          "ECMWF": 30.2,
+          "GFS": 34.3,
+          "ICON": 31.7,
+          "GEM": 33.0,
+          "MET.no": 30.1,
+          "7Timer": 33.0,
+          "WeatherAPI": 33.6
         },
-        "timing": "OVERNIGHT",
+        "timing": "FIRMING",
         "pm_buckets": {
-          "32": 0.097,
-          "33": 0.201,
-          "34": 0.335,
-          "35": 0.25,
-          "36": 0.145,
-          "37": 0.005,
-          "38": 0.005,
-          "39": 0.003,
-          "40": 0.002,
-          "41": 0.002,
-          "42": 0.002
+          "32": 0.912,
+          "33": 0.086,
+          "34": 0.013,
+          "35": 0.005,
+          "36": 0.003,
+          "37": 0.002,
+          "38": 0.001,
+          "39": 0.001,
+          "40": 0.001,
+          "41": 0.001,
+          "42": 0.001
         },
         "pm_title": "Highest temperature in London on June 23?",
         "best_trade": {
           "action": "BUY YES",
-          "temp": 34,
-          "yes_price": 0.335,
-          "edge": 0.191
+          "temp": 33,
+          "yes_price": 0.086,
+          "edge": 0.38
         }
       }
     },
     "paris": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T14:50:20+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 39,
-        "top_prob": 0.555,
+        "top_bucket": 33,
+        "top_prob": 0.458,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 39.2,
-        "deb_raw": 38.1,
-        "peak_bias": 1.1,
-        "sigma": 0.63,
+        "deb": 38.4,
+        "deb_raw": 37.4,
+        "peak_bias": 1.01,
+        "sigma": 0.71,
         "forecasts": {
-          "Open-Meteo": 37.6,
+          "Open-Meteo": 36.4,
           "ECMWF": 35.1,
-          "GFS": 39.9,
-          "ICON": 37.6,
-          "GEM": 37.6,
-          "MET.no": 35.6,
+          "GFS": 39.3,
+          "ICON": 36.4,
+          "GEM": 37.4,
+          "MET.no": 35.8,
           "7Timer": 38.0,
-          "WeatherAPI": 40.0
+          "WeatherAPI": 39.4
         },
-        "timing": "OVERNIGHT",
+        "timing": "FIRMING",
         "pm_buckets": {
-          "36": 0.087,
-          "37": 0.215,
-          "38": 0.325,
-          "39": 0.345,
-          "40": 0.065,
-          "41": 0.006,
-          "42": 0.002,
+          "36": 0.439,
+          "37": 0.113,
+          "38": 0.009,
+          "39": 0.004,
+          "40": 0.003,
+          "41": 0.002,
+          "42": 0.001,
           "43": 0.001,
           "44": 0.001,
-          "45": 0.002,
-          "35": 0.011
+          "45": 0.001,
+          "35": 0.457
         },
         "pm_title": "Highest temperature in Paris on June 23?",
         "best_trade": {
           "action": "BUY NO",
-          "temp": 37,
-          "yes_price": 0.215,
-          "edge": 0.215
+          "temp": 36,
+          "yes_price": 0.439,
+          "edge": 0.439
         }
       }
     },
     "munich": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T14:50:20+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 33,
-        "top_prob": 0.424,
-        "verdict": "SKIP",
+        "top_prob": 0.694,
+        "verdict": "WAIT",
         "made_call": false,
-        "deb": 33.0,
-        "deb_raw": 31.5,
+        "deb": 32.8,
+        "deb_raw": 31.3,
         "peak_bias": 1.5,
-        "sigma": 0.9,
+        "sigma": 0.38,
         "forecasts": {
-          "Open-Meteo": 32.1,
-          "ECMWF": 28.7,
-          "GFS": 28.2,
-          "ICON": 32.1,
-          "GEM": 31.3,
-          "MET.no": 30.0,
+          "Open-Meteo": 32.2,
+          "ECMWF": 28.8,
+          "GFS": 28.3,
+          "ICON": 32.2,
+          "GEM": 31.2,
+          "MET.no": 29.3,
           "7Timer": 28.0,
-          "WeatherAPI": 27.5
+          "WeatherAPI": 28.6
         },
-        "timing": "OVERNIGHT",
+        "timing": "FIRMING",
         "pm_buckets": {
           "27": 0.001,
-          "28": 0.006,
-          "29": 0.009,
-          "30": 0.14,
-          "31": 0.475,
-          "32": 0.305,
-          "33": 0.085,
-          "34": 0.009,
-          "35": 0.004,
-          "36": 0.002,
-          "37": 0.002
+          "28": 0.001,
+          "29": 0.001,
+          "30": 0.001,
+          "31": 0.001,
+          "32": 0.001,
+          "33": 0.994,
+          "34": 0.006,
+          "35": 0.005,
+          "36": 0.003,
+          "37": 0.001
         },
         "pm_title": "Highest temperature in Munich on June 23?",
-        "best_trade": {
-          "action": "BUY NO",
-          "temp": 31,
-          "yes_price": 0.475,
-          "edge": 0.43
-        }
+        "best_trade": null
       }
     },
     "milan": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T14:50:20+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 35,
-        "top_prob": 0.592,
-        "verdict": "WAIT",
+        "top_bucket": 34,
+        "top_prob": 0.5,
+        "verdict": "SKIP",
         "made_call": false,
-        "deb": 34.6,
-        "deb_raw": 34.7,
-        "peak_bias": -0.11,
-        "sigma": 0.39,
+        "deb": 34.5,
+        "deb_raw": 34.5,
+        "peak_bias": -0.02,
+        "sigma": 0.3,
         "forecasts": {
-          "Open-Meteo": 34.4,
-          "ECMWF": 34.2,
-          "GFS": 34.3,
-          "ICON": 34.4,
-          "GEM": 35.3,
-          "MET.no": 35.1,
-          "7Timer": 36.0,
-          "WeatherAPI": 34.9
+          "Open-Meteo": 34.8,
+          "ECMWF": 32.8,
+          "GFS": 34.5,
+          "ICON": 34.8,
+          "GEM": 35.7,
+          "MET.no": 33.0,
+          "7Timer": 35.0,
+          "WeatherAPI": 35.1
         },
-        "timing": "OVERNIGHT",
+        "timing": "FIRMING",
         "pm_buckets": {
           "41": 0.001,
           "42": 0.001,
           "43": 0.001,
-          "33": 0.028,
-          "34": 0.285,
-          "35": 0.475,
-          "36": 0.195,
-          "37": 0.051,
-          "38": 0.006,
+          "33": 0.001,
+          "34": 0.915,
+          "35": 0.078,
+          "36": 0.035,
+          "37": 0.005,
+          "38": 0.002,
           "39": 0.001,
           "40": 0.001
         },
         "pm_title": "Highest temperature in Milan on June 23?",
         "best_trade": {
-          "action": "BUY NO",
-          "temp": 36,
-          "yes_price": 0.195,
-          "edge": 0.184
+          "action": "BUY YES",
+          "temp": 35,
+          "yes_price": 0.078,
+          "edge": 0.422
         }
+      },
+      "alert": {
+        "ts": "2026-06-23T13:05:45+00:00",
+        "action": "BUY NO",
+        "bucket": 34,
+        "yes_price": 0.425,
+        "edge": 0.183,
+        "prob": 0.707,
+        "unit": "\u00b0C",
+        "had_position": false
       }
     },
     "warsaw": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T14:50:20+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 26,
-        "top_prob": 0.447,
-        "verdict": "SKIP",
-        "made_call": false,
-        "deb": 25.8,
-        "deb_raw": 26.2,
-        "peak_bias": -0.42,
-        "sigma": 0.82,
+        "top_bucket": 27,
+        "top_prob": 0.68,
+        "verdict": "TRADE",
+        "made_call": true,
+        "deb": 25.9,
+        "deb_raw": 26.1,
+        "peak_bias": -0.22,
+        "sigma": 0.41,
         "forecasts": {
-          "Open-Meteo": 27.7,
-          "ECMWF": 27.1,
-          "GFS": 26.2,
-          "ICON": 25.2,
-          "GEM": 26.9,
-          "MET.no": 27.2,
+          "Open-Meteo": 27.8,
+          "ECMWF": 26.9,
+          "GFS": 26.3,
+          "ICON": 25.3,
+          "GEM": 26.3,
+          "MET.no": 26.2,
           "7Timer": 26.0,
-          "WeatherAPI": 25.7
+          "WeatherAPI": 25.8
         },
-        "timing": "OVERNIGHT",
+        "timing": "FIRMING",
         "pm_buckets": {
           "21": 0.001,
-          "22": 0.002,
-          "23": 0.007,
-          "24": 0.043,
-          "25": 0.175,
-          "26": 0.385,
-          "27": 0.355,
-          "28": 0.081,
-          "29": 0.012,
-          "30": 0.004,
-          "31": 0.003
+          "22": 0.001,
+          "23": 0.001,
+          "24": 0.001,
+          "25": 0.001,
+          "26": 0.001,
+          "27": 0.996,
+          "28": 0.005,
+          "29": 0.004,
+          "30": 0.002,
+          "31": 0.001
         },
         "pm_title": "Highest temperature in Warsaw on June 23?",
-        "best_trade": {
-          "action": "BUY NO",
-          "temp": 27,
-          "yes_price": 0.355,
-          "edge": 0.177
-        }
+        "best_trade": null
       }
     },
     "amsterdam": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T14:50:20+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 29,
-        "top_prob": 0.523,
-        "verdict": "SKIP",
-        "made_call": false,
-        "deb": 29.0,
-        "deb_raw": 29.3,
-        "peak_bias": -0.33,
-        "sigma": 0.7,
+        "top_prob": 0.75,
+        "verdict": "TRADE",
+        "made_call": true,
+        "deb": 28.8,
+        "deb_raw": 29.2,
+        "peak_bias": -0.4,
+        "sigma": 0.38,
         "forecasts": {
-          "Open-Meteo": 33.1,
-          "ECMWF": 27.6,
-          "GFS": 30.5,
-          "ICON": 27.8,
-          "GEM": 30.5,
+          "Open-Meteo": 32.3,
+          "ECMWF": 27.5,
+          "GFS": 30.4,
+          "ICON": 28.9,
+          "GEM": 29.0,
           "MET.no": 27.3,
           "7Timer": 29.0,
-          "WeatherAPI": 29.8
+          "WeatherAPI": 30.0
         },
-        "timing": "OVERNIGHT",
+        "timing": "FIRMING",
         "pm_buckets": {
-          "26": 0.035,
-          "27": 0.095,
-          "28": 0.268,
-          "29": 0.385,
-          "30": 0.23,
-          "31": 0.05,
-          "32": 0.002,
-          "33": 0.004,
-          "34": 0.002,
+          "26": 0.001,
+          "27": 0.001,
+          "28": 0.635,
+          "29": 0.29,
+          "30": 0.045,
+          "31": 0.006,
+          "32": 0.003,
+          "33": 0.001,
+          "34": 0.001,
           "35": 0.001,
           "36": 0.001
         },
         "pm_title": "Highest temperature in Amsterdam on June 23?",
-        "best_trade": null
+        "best_trade": {
+          "action": "BUY YES",
+          "temp": 29,
+          "yes_price": 0.29,
+          "edge": 0.46
+        }
+      },
+      "alert": {
+        "ts": "2026-06-23T14:03:30+00:00",
+        "action": "BUY YES",
+        "bucket": 29,
+        "yes_price": 0.35,
+        "edge": 0.444,
+        "prob": 0.794,
+        "unit": "\u00b0C",
+        "had_position": false
       }
     },
     "madrid": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
+        "ts": "2026-06-23T14:50:20+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 40,
-        "top_prob": 0.756,
-        "verdict": "WAIT",
-        "made_call": false,
-        "deb": 40.0,
-        "deb_raw": 39.2,
-        "peak_bias": 0.78,
-        "sigma": 0.43,
+        "top_prob": 0.817,
+        "verdict": "TRADE",
+        "made_call": true,
+        "deb": 40.2,
+        "deb_raw": 39.4,
+        "peak_bias": 0.8,
+        "sigma": 0.33,
         "forecasts": {
-          "Open-Meteo": 39.2,
+          "Open-Meteo": 39.3,
           "ECMWF": 39.9,
-          "GFS": 39.5,
-          "ICON": 39.2,
-          "GEM": 38.5,
+          "GFS": 39.6,
+          "ICON": 39.3,
+          "GEM": 38.8,
           "MET.no": 39.3,
           "7Timer": 39.0,
           "WeatherAPI": 39.5
         },
-        "timing": "OVERNIGHT",
+        "timing": "FIRMING",
         "pm_buckets": {
           "36": 0.001,
-          "37": 0.002,
-          "38": 0.015,
-          "39": 0.18,
-          "40": 0.615,
-          "41": 0.215,
-          "42": 0.009,
+          "37": 0.001,
+          "38": 0.001,
+          "39": 0.001,
+          "40": 0.86,
+          "41": 0.115,
+          "42": 0.006,
           "43": 0.003,
           "44": 0.002,
           "45": 0.001,
           "46": 0.001
         },
         "pm_title": "Highest temperature in Madrid on June 23?",
-        "best_trade": {
-          "action": "BUY YES",
-          "temp": 40,
-          "yes_price": 0.615,
-          "edge": 0.141
-        }
+        "best_trade": null
+      },
+      "alert": {
+        "ts": "2026-06-23T14:03:29+00:00",
+        "action": "BUY YES",
+        "bucket": 40,
+        "yes_price": 0.62,
+        "edge": 0.265,
+        "prob": 0.885,
+        "unit": "\u00b0C",
+        "had_position": false
       }
     },
     "sao paulo": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 19,
-        "top_prob": 0.331,
+        "top_bucket": 23,
+        "top_prob": 0.302,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 18.7,
-        "deb_raw": 17.5,
-        "peak_bias": 1.21,
-        "sigma": 1.13,
+        "deb": 23.1,
+        "deb_raw": 21.8,
+        "peak_bias": 1.32,
+        "sigma": 1.52,
         "forecasts": {
-          "Open-Meteo": 14.1,
-          "ECMWF": 15.1,
-          "GFS": 16.0,
-          "ICON": 15.9,
-          "GEM": 15.2,
+          "Open-Meteo": 21.1,
+          "ECMWF": 21.9,
+          "GFS": 21.8,
+          "ICON": 21.6,
+          "GEM": 23.4,
           "MET.no": 20.8,
-          "7Timer": 20.0,
-          "WeatherAPI": 21.0
+          "7Timer": 21.0,
+          "WeatherAPI": 21.6
         },
-        "timing": "FORECAST",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
-          "18": 0.013,
-          "19": 0.05,
-          "20": 0.165,
-          "21": 0.325,
-          "22": 0.29,
-          "23": 0.18,
-          "24": 0.046,
+          "18": 0.001,
+          "19": 0.001,
+          "20": 0.001,
+          "21": 0.001,
+          "22": 0.855,
+          "23": 0.031,
+          "24": 0.011,
           "25": 0.005,
           "26": 0.002,
-          "27": 0.002,
+          "27": 0.001,
           "28": 0.001
         },
         "pm_title": "Highest temperature in Sao Paulo on June 23?",
         "best_trade": {
           "action": "BUY NO",
           "temp": 22,
-          "yes_price": 0.29,
-          "edge": 0.284
+          "yes_price": 0.855,
+          "edge": 0.62
         }
       }
     },
     "buenos aires": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 12,
-        "top_prob": 0.5,
-        "verdict": "SKIP",
+        "top_prob": 0.668,
+        "verdict": "WAIT",
         "made_call": false,
-        "deb": 12.0,
-        "deb_raw": 10.7,
-        "peak_bias": 1.31,
-        "sigma": 0.74,
+        "deb": 12.1,
+        "deb_raw": 10.9,
+        "peak_bias": 1.15,
+        "sigma": 0.51,
         "forecasts": {
-          "Open-Meteo": 11.0,
-          "ECMWF": 10.7,
-          "GFS": 10.5,
-          "ICON": 10.4,
-          "GEM": 10.5,
-          "MET.no": 11.3,
-          "7Timer": 10.0,
-          "WeatherAPI": 10.9
+          "Open-Meteo": 11.3,
+          "ECMWF": 11.4,
+          "GFS": 10.4,
+          "ICON": 11.2,
+          "GEM": 11.2,
+          "MET.no": 11.2,
+          "7Timer": 9.0,
+          "WeatherAPI": 10.5
         },
-        "timing": "FORECAST",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
           "6": 0.001,
           "7": 0.001,
-          "8": 0.001,
-          "9": 0.002,
-          "10": 0.005,
-          "11": 0.195,
-          "12": 0.505,
-          "13": 0.295,
-          "14": 0.035,
-          "15": 0.004,
+          "8": 0.003,
+          "9": 0.006,
+          "10": 0.038,
+          "11": 0.235,
+          "12": 0.57,
+          "13": 0.13,
+          "14": 0.015,
+          "15": 0.003,
           "16": 0.002
         },
         "pm_title": "Highest temperature in Buenos Aires on June 23?",
@@ -15117,47 +15519,47 @@
     },
     "panama city": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 32,
-        "top_prob": 0.412,
+        "top_bucket": 31,
+        "top_prob": 0.438,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 32.4,
-        "deb_raw": 31.0,
-        "peak_bias": 1.44,
-        "sigma": 0.82,
+        "deb": 31.1,
+        "deb_raw": 29.6,
+        "peak_bias": 1.5,
+        "sigma": 0.86,
         "forecasts": {
-          "Open-Meteo": 31.9,
-          "ECMWF": 30.4,
-          "GFS": 30.3,
-          "ICON": 33.0,
-          "GEM": 31.1,
-          "MET.no": 31.4,
-          "7Timer": 29.0,
-          "WeatherAPI": 29.6
+          "Open-Meteo": 30.4,
+          "ECMWF": 28.9,
+          "GFS": 29.4,
+          "ICON": 30.7,
+          "GEM": 31.5,
+          "MET.no": 29.5,
+          "7Timer": 28.0,
+          "WeatherAPI": 28.8
         },
-        "timing": "FORECAST",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
           "35": 0.003,
-          "36": 0.003,
-          "26": 0.003,
-          "27": 0.004,
-          "28": 0.005,
-          "29": 0.135,
-          "30": 0.375,
-          "31": 0.335,
-          "32": 0.095,
-          "33": 0.009,
-          "34": 0.006
+          "36": 0.002,
+          "26": 0.001,
+          "27": 0.001,
+          "28": 0.014,
+          "29": 0.26,
+          "30": 0.29,
+          "31": 0.425,
+          "32": 0.03,
+          "33": 0.006,
+          "34": 0.003
         },
         "pm_title": "Highest temperature in Panama City on June 23?",
         "best_trade": {
           "action": "BUY NO",
-          "temp": 30,
-          "yes_price": 0.375,
-          "edge": 0.365
+          "temp": 29,
+          "yes_price": 0.26,
+          "edge": 0.23
         }
       }
     },
@@ -15173,315 +15575,315 @@
         "had_position": false
       },
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 24,
-        "top_prob": 0.639,
+        "top_bucket": 22,
+        "top_prob": 0.574,
         "verdict": "WAIT",
         "made_call": false,
-        "deb": 24.2,
-        "deb_raw": 24.4,
-        "peak_bias": -0.18,
-        "sigma": 0.51,
+        "deb": 22.4,
+        "deb_raw": 23.2,
+        "peak_bias": -0.81,
+        "sigma": 0.43,
         "forecasts": {
-          "Open-Meteo": 24.8,
-          "ECMWF": 24.3,
-          "GFS": 24.8,
-          "ICON": 25.8,
-          "GEM": 25.3,
-          "MET.no": 24.0,
+          "Open-Meteo": 23.3,
+          "ECMWF": 22.5,
+          "GFS": 23.4,
+          "ICON": 23.0,
+          "GEM": 24.0,
+          "MET.no": 22.8,
           "7Timer": 21.0,
-          "WeatherAPI": 23.0
+          "WeatherAPI": 25.8
         },
-        "timing": "FORECAST",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
-          "20": 0.004,
-          "21": 0.004,
-          "22": 0.024,
-          "23": 0.17,
-          "27": 0.009,
-          "28": 0.003,
-          "29": 0.003,
-          "24": 0.475,
-          "25": 0.305,
-          "26": 0.045,
-          "30": 0.003
+          "20": 0.002,
+          "21": 0.003,
+          "22": 0.036,
+          "23": 0.285,
+          "27": 0.005,
+          "28": 0.002,
+          "29": 0.001,
+          "24": 0.455,
+          "25": 0.18,
+          "26": 0.018,
+          "30": 0.001
         },
         "pm_title": "Highest temperature in Toronto on June 23?",
         "best_trade": {
           "action": "BUY YES",
-          "temp": 24,
-          "yes_price": 0.475,
-          "edge": 0.164
+          "temp": 22,
+          "yes_price": 0.036,
+          "edge": 0.538
         }
       }
     },
     "new york": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "today",
         "unit": "\u00b0F",
-        "top_bucket": 82,
-        "top_prob": 0.402,
+        "top_bucket": 70,
+        "top_prob": 0.531,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 81.7,
-        "deb_raw": 82.4,
-        "peak_bias": -0.74,
-        "sigma": 0.9,
+        "deb": 69.8,
+        "deb_raw": 71.3,
+        "peak_bias": -1.5,
+        "sigma": 0.78,
         "forecasts": {
-          "Open-Meteo": 85.7,
-          "ECMWF": 80.3,
-          "GFS": 85.7,
-          "ICON": 81.5,
-          "GEM": 78.9,
-          "MET.no": 72.0,
-          "NWS": 77.0,
+          "Open-Meteo": 71.0,
+          "ECMWF": 71.5,
+          "GFS": 71.0,
+          "ICON": 70.5,
+          "GEM": 72.5,
+          "MET.no": 70.2,
+          "NWS": 73.0,
           "7Timer": 71.6,
-          "WeatherAPI": 71.1
+          "WeatherAPI": 73.8
         },
-        "timing": "FORECAST",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
-          "69": 0.056,
-          "71": 0.254,
-          "73": 0.337,
-          "75": 0.24,
-          "77": 0.105,
-          "79": 0.025,
-          "81": 0.007,
-          "83": 0.003,
-          "85": 0.002,
+          "69": 0.001,
+          "71": 0.815,
+          "73": 0.142,
+          "75": 0.035,
+          "77": 0.009,
+          "79": 0.004,
+          "81": 0.002,
+          "83": 0.001,
+          "85": 0.001,
           "87": 0.001,
           "88": 0.001
         },
         "pm_title": "Highest temperature in NYC on June 23?",
-        "best_trade": {
-          "action": "BUY NO",
-          "temp": 73,
-          "yes_price": 0.337,
-          "edge": 0.337
-        }
+        "best_trade": null
       }
     },
     "miami": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "today",
         "unit": "\u00b0F",
-        "top_bucket": 93,
-        "top_prob": 0.257,
+        "top_bucket": 94,
+        "top_prob": 0.271,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 92.6,
-        "deb_raw": 91.4,
-        "peak_bias": 1.17,
-        "sigma": 1.48,
+        "deb": 94.0,
+        "deb_raw": 92.8,
+        "peak_bias": 1.22,
+        "sigma": 1.45,
         "forecasts": {
-          "Open-Meteo": 91.0,
-          "ECMWF": 91.1,
-          "GFS": 91.0,
-          "ICON": 88.9,
-          "GEM": 89.4,
-          "MET.no": 92.3,
+          "Open-Meteo": 91.4,
+          "ECMWF": 91.5,
+          "GFS": 91.4,
+          "ICON": 89.3,
+          "GEM": 91.4,
+          "MET.no": 93.4,
           "NWS": 93.0,
-          "7Timer": 93.2,
-          "WeatherAPI": 90.5
+          "7Timer": 98.6,
+          "WeatherAPI": 96.3
         },
-        "timing": "FORECAST",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
           "85": 0.001,
-          "87": 0.004,
-          "89": 0.03,
-          "91": 0.15,
-          "93": 0.605,
-          "95": 0.159,
-          "97": 0.013,
-          "99": 0.004,
-          "101": 0.003,
+          "87": 0.001,
+          "89": 0.036,
+          "91": 0.24,
+          "93": 0.63,
+          "95": 0.09,
+          "97": 0.011,
+          "99": 0.003,
+          "101": 0.002,
           "103": 0.001,
-          "104": 0.001
+          "104": 0.002
         },
         "pm_title": "Highest temperature in Miami on June 23?",
         "best_trade": {
           "action": "BUY NO",
           "temp": 93,
-          "yes_price": 0.605,
-          "edge": 0.348
+          "yes_price": 0.63,
+          "edge": 0.415
         }
       }
     },
     "atlanta": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "today",
         "unit": "\u00b0F",
-        "top_bucket": 88,
-        "top_prob": 0.424,
+        "top_bucket": 84,
+        "top_prob": 0.399,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 88.0,
-        "deb_raw": 86.5,
-        "peak_bias": 1.5,
-        "sigma": 0.9,
+        "deb": 84.2,
+        "deb_raw": 83.0,
+        "peak_bias": 1.2,
+        "sigma": 0.94,
         "forecasts": {
-          "Open-Meteo": 91.8,
-          "ECMWF": 83.0,
-          "GFS": 91.8,
-          "ICON": 84.5,
-          "GEM": 81.8,
-          "MET.no": 81.0,
-          "NWS": 86.0,
+          "Open-Meteo": 82.2,
+          "ECMWF": 81.4,
+          "GFS": 82.2,
+          "ICON": 82.5,
+          "GEM": 84.3,
+          "MET.no": 81.5,
+          "NWS": 83.0,
           "7Timer": 84.2,
-          "WeatherAPI": 84.9
+          "WeatherAPI": 88.0
         },
-        "timing": "FORECAST",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
           "94": 0.002,
-          "75": 0.002,
-          "77": 0.004,
-          "79": 0.048,
-          "81": 0.205,
-          "83": 0.33,
-          "85": 0.255,
-          "87": 0.145,
-          "89": 0.041,
-          "91": 0.006,
-          "93": 0.003
+          "75": 0.001,
+          "77": 0.001,
+          "79": 0.029,
+          "81": 0.23,
+          "83": 0.605,
+          "85": 0.13,
+          "87": 0.03,
+          "89": 0.008,
+          "91": 0.002,
+          "93": 0.002
         },
         "pm_title": "Highest temperature in Atlanta on June 23?",
         "best_trade": {
           "action": "BUY NO",
           "temp": 83,
-          "yes_price": 0.33,
-          "edge": 0.33
+          "yes_price": 0.605,
+          "edge": 0.412
         }
       }
     },
     "mexico city": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 23,
-        "top_prob": 0.324,
-        "verdict": "SKIP",
+        "top_bucket": 25,
+        "top_prob": 0.633,
+        "verdict": "WAIT",
         "made_call": false,
-        "deb": 23.4,
-        "deb_raw": 23.6,
-        "peak_bias": -0.15,
-        "sigma": 1.13,
+        "deb": 24.9,
+        "deb_raw": 25.3,
+        "peak_bias": -0.4,
+        "sigma": 0.55,
         "forecasts": {
-          "Open-Meteo": 21.8,
-          "ECMWF": 22.7,
-          "GFS": 23.5,
-          "ICON": 24.6,
-          "GEM": 22.5,
-          "MET.no": 25.0,
-          "7Timer": 25.0,
-          "WeatherAPI": 23.7
+          "Open-Meteo": 25.2,
+          "ECMWF": 26.3,
+          "GFS": 26.6,
+          "ICON": 25.7,
+          "GEM": 23.0,
+          "MET.no": 25.4,
+          "7Timer": 26.0,
+          "WeatherAPI": 24.8
         },
-        "timing": "FORECAST",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
-          "20": 0.003,
+          "20": 0.002,
           "21": 0.003,
-          "22": 0.006,
+          "22": 0.007,
           "23": 0.058,
-          "24": 0.195,
-          "25": 0.29,
-          "26": 0.355,
-          "27": 0.113,
-          "28": 0.009,
-          "29": 0.005,
-          "30": 0.003
+          "24": 0.23,
+          "25": 0.415,
+          "26": 0.23,
+          "27": 0.043,
+          "28": 0.011,
+          "29": 0.006,
+          "30": 0.001
         },
         "pm_title": "Highest temperature in Mexico City on June 23?",
         "best_trade": {
-          "action": "BUY NO",
-          "temp": 26,
-          "yes_price": 0.355,
-          "edge": 0.326
+          "action": "BUY YES",
+          "temp": 25,
+          "yes_price": 0.415,
+          "edge": 0.218
         }
       }
     },
     "chicago": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "today",
         "unit": "\u00b0F",
         "top_bucket": 73,
-        "top_prob": 0.318,
+        "top_prob": 0.447,
         "verdict": "SKIP",
         "made_call": false,
         "deb": 73.2,
-        "deb_raw": 74.2,
-        "peak_bias": -1.03,
-        "sigma": 1.21,
+        "deb_raw": 74.0,
+        "peak_bias": -0.8,
+        "sigma": 0.82,
         "forecasts": {
-          "Open-Meteo": 70.1,
-          "ECMWF": 76.6,
-          "GFS": 70.1,
-          "ICON": 77.5,
-          "GEM": 78.5,
-          "MET.no": 71.1,
+          "Open-Meteo": 75.6,
+          "ECMWF": 71.5,
+          "GFS": 75.6,
+          "ICON": 72.1,
+          "GEM": 74.7,
+          "MET.no": 70.7,
           "NWS": 74.0,
-          "7Timer": 75.2,
-          "WeatherAPI": 74.1
+          "7Timer": 77.0,
+          "WeatherAPI": 78.1
         },
-        "timing": "FORECAST",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
-          "61": 0.002,
-          "63": 0.002,
-          "65": 0.003,
-          "67": 0.003,
-          "69": 0.009,
-          "71": 0.145,
-          "73": 0.435,
-          "75": 0.31,
-          "77": 0.085,
-          "79": 0.009,
-          "80": 0.004
+          "61": 0.001,
+          "63": 0.001,
+          "65": 0.001,
+          "67": 0.002,
+          "69": 0.006,
+          "71": 0.055,
+          "73": 0.475,
+          "75": 0.425,
+          "77": 0.08,
+          "79": 0.011,
+          "80": 0.002
         },
         "pm_title": "Highest temperature in Chicago on June 23?",
-        "best_trade": null
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 75,
+          "yes_price": 0.425,
+          "edge": 0.371
+        }
       }
     },
     "austin": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "today",
         "unit": "\u00b0F",
         "top_bucket": 95,
-        "top_prob": 0.278,
+        "top_prob": 0.364,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 95.5,
-        "deb_raw": 95.4,
-        "peak_bias": 0.06,
-        "sigma": 1.33,
+        "deb": 94.7,
+        "deb_raw": 95.0,
+        "peak_bias": -0.3,
+        "sigma": 1.02,
         "forecasts": {
-          "Open-Meteo": 95.9,
-          "ECMWF": 95.5,
-          "GFS": 95.9,
-          "ICON": 93.2,
+          "Open-Meteo": 94.0,
+          "ECMWF": 94.8,
+          "GFS": 94.0,
+          "ICON": 92.9,
           "GEM": 96.5,
-          "MET.no": 95.9,
+          "MET.no": 95.7,
           "NWS": 95.0,
-          "7Timer": 95.0,
-          "WeatherAPI": 95.9
+          "7Timer": 96.8,
+          "WeatherAPI": 94.5
         },
-        "timing": "FORECAST",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
           "85": 0.001,
-          "87": 0.003,
-          "89": 0.013,
-          "91": 0.035,
-          "93": 0.24,
-          "95": 0.41,
-          "97": 0.225,
-          "99": 0.03,
-          "101": 0.006,
-          "103": 0.004,
+          "87": 0.001,
+          "89": 0.005,
+          "91": 0.008,
+          "93": 0.255,
+          "95": 0.63,
+          "97": 0.095,
+          "99": 0.041,
+          "101": 0.004,
+          "103": 0.001,
           "104": 0.001
         },
         "pm_title": "Highest temperature in Austin on June 23?",
@@ -15490,283 +15892,1448 @@
     },
     "houston": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "today",
         "unit": "\u00b0F",
-        "top_bucket": 96,
-        "top_prob": 0.312,
+        "top_bucket": 95,
+        "top_prob": 0.428,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 96.1,
-        "deb_raw": 94.8,
-        "peak_bias": 1.32,
-        "sigma": 1.25,
+        "deb": 95.4,
+        "deb_raw": 94.0,
+        "peak_bias": 1.39,
+        "sigma": 0.78,
         "forecasts": {
-          "Open-Meteo": 97.3,
-          "ECMWF": 91.4,
-          "GFS": 97.3,
-          "ICON": 93.1,
-          "GEM": 93.1,
+          "Open-Meteo": 92.4,
+          "ECMWF": 91.8,
+          "GFS": 92.4,
+          "ICON": 92.6,
+          "GEM": 92.6,
           "MET.no": 91.6,
           "NWS": 95.0,
           "7Timer": 96.8,
-          "WeatherAPI": 95.8
+          "WeatherAPI": 97.0
         },
-        "timing": "FORECAST",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
-          "83": 0.002,
-          "85": 0.002,
+          "83": 0.001,
+          "85": 0.001,
           "87": 0.003,
-          "89": 0.011,
-          "91": 0.105,
-          "93": 0.425,
-          "95": 0.365,
-          "97": 0.058,
-          "99": 0.006,
-          "101": 0.002,
+          "89": 0.005,
+          "91": 0.07,
+          "93": 0.595,
+          "95": 0.305,
+          "97": 0.028,
+          "99": 0.005,
+          "101": 0.003,
           "102": 0.001
         },
         "pm_title": "Highest temperature in Houston on June 23?",
         "best_trade": {
           "action": "BUY NO",
           "temp": 93,
-          "yes_price": 0.425,
-          "edge": 0.408
+          "yes_price": 0.595,
+          "edge": 0.588
         }
       }
     },
     "dallas": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "today",
         "unit": "\u00b0F",
         "top_bucket": 96,
-        "top_prob": 0.271,
+        "top_prob": 0.269,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 96.1,
-        "deb_raw": 95.9,
-        "peak_bias": 0.23,
-        "sigma": 1.45,
+        "deb": 96.5,
+        "deb_raw": 96.3,
+        "peak_bias": 0.22,
+        "sigma": 1.37,
         "forecasts": {
-          "Open-Meteo": 98.9,
-          "ECMWF": 92.5,
-          "GFS": 98.9,
-          "ICON": 95.5,
-          "GEM": 95.7,
-          "MET.no": 93.2,
-          "NWS": 96.0,
-          "7Timer": 96.8,
-          "WeatherAPI": 97.2
+          "Open-Meteo": 95.5,
+          "ECMWF": 93.5,
+          "GFS": 95.5,
+          "ICON": 94.7,
+          "GEM": 94.7,
+          "MET.no": 95.2,
+          "NWS": 97.0,
+          "7Timer": 98.6,
+          "WeatherAPI": 100.9
         },
-        "timing": "FORECAST",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
           "83": 0.001,
-          "85": 0.002,
-          "87": 0.006,
-          "89": 0.031,
-          "91": 0.29,
-          "93": 0.285,
-          "95": 0.225,
-          "97": 0.155,
-          "99": 0.011,
-          "101": 0.007,
+          "85": 0.001,
+          "87": 0.001,
+          "89": 0.005,
+          "91": 0.04,
+          "93": 0.34,
+          "95": 0.445,
+          "97": 0.175,
+          "99": 0.034,
+          "101": 0.003,
           "102": 0.002
         },
         "pm_title": "Highest temperature in Dallas on June 23?",
         "best_trade": {
           "action": "BUY NO",
-          "temp": 91,
-          "yes_price": 0.29,
-          "edge": 0.29
+          "temp": 93,
+          "yes_price": 0.34,
+          "edge": 0.328
         }
       }
     },
     "los angeles": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "today",
         "unit": "\u00b0F",
-        "top_bucket": 74,
-        "top_prob": 0.301,
+        "top_bucket": 72,
+        "top_prob": 0.271,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 74.2,
-        "deb_raw": 74.6,
-        "peak_bias": -0.39,
-        "sigma": 1.29,
+        "deb": 72.1,
+        "deb_raw": 72.6,
+        "peak_bias": -0.53,
+        "sigma": 1.45,
         "forecasts": {
-          "Open-Meteo": 74.1,
-          "ECMWF": 81.4,
-          "GFS": 74.1,
-          "ICON": 75.3,
-          "GEM": 76.7,
-          "MET.no": 68.7,
+          "Open-Meteo": 71.3,
+          "ECMWF": 81.3,
+          "GFS": 71.3,
+          "ICON": 76.0,
+          "GEM": 74.8,
+          "MET.no": 69.4,
           "NWS": 71.0,
-          "7Timer": 78.8,
-          "WeatherAPI": 74.3
+          "7Timer": 77.0,
+          "WeatherAPI": 70.9
         },
-        "timing": "FORECAST",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
           "61": 0.001,
           "63": 0.001,
           "65": 0.001,
           "67": 0.001,
-          "69": 0.034,
-          "71": 0.42,
-          "73": 0.505,
-          "75": 0.048,
-          "77": 0.004,
+          "69": 0.003,
+          "71": 0.28,
+          "73": 0.63,
+          "75": 0.098,
+          "77": 0.007,
           "79": 0.001,
           "80": 0.001
         },
         "pm_title": "Highest temperature in Los Angeles on June 23?",
         "best_trade": {
           "action": "BUY NO",
-          "temp": 71,
-          "yes_price": 0.42,
-          "edge": 0.404
+          "temp": 73,
+          "yes_price": 0.63,
+          "edge": 0.405
         }
       }
     },
     "san francisco": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "today",
         "unit": "\u00b0F",
-        "top_bucket": 72,
-        "top_prob": 0.257,
+        "top_bucket": 69,
+        "top_prob": 0.212,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 71.6,
-        "deb_raw": 70.1,
-        "peak_bias": 1.5,
-        "sigma": 1.48,
+        "deb": 69.5,
+        "deb_raw": 68.4,
+        "peak_bias": 1.12,
+        "sigma": 1.8,
         "forecasts": {
-          "Open-Meteo": 71.7,
-          "ECMWF": 65.3,
-          "GFS": 71.7,
-          "ICON": 70.5,
-          "GEM": 69.3,
-          "MET.no": 65.1,
-          "NWS": 71.0,
+          "Open-Meteo": 67.9,
+          "ECMWF": 63.4,
+          "GFS": 67.9,
+          "ICON": 67.2,
+          "GEM": 67.7,
+          "MET.no": 64.6,
+          "NWS": 68.0,
           "7Timer": 80.6,
-          "WeatherAPI": 65.4
+          "WeatherAPI": 69.4
         },
-        "timing": "FORECAST",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
-          "63": 0.009,
-          "65": 0.043,
-          "67": 0.245,
-          "69": 0.285,
-          "71": 0.225,
-          "73": 0.165,
-          "75": 0.02,
-          "77": 0.005,
-          "78": 0.004,
-          "59": 0.003,
-          "61": 0.007
+          "63": 0.011,
+          "65": 0.056,
+          "67": 0.275,
+          "69": 0.445,
+          "71": 0.105,
+          "73": 0.044,
+          "75": 0.001,
+          "77": 0.001,
+          "78": 0.001,
+          "59": 0.002,
+          "61": 0.009
         },
         "pm_title": "Highest temperature in San Francisco on June 23?",
         "best_trade": {
           "action": "BUY NO",
-          "temp": 67,
-          "yes_price": 0.245,
-          "edge": 0.245
+          "temp": 69,
+          "yes_price": 0.445,
+          "edge": 0.233
         }
       }
     },
     "aurora": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "today",
         "unit": "\u00b0F",
         "top_bucket": 86,
-        "top_prob": 0.097,
+        "top_prob": 0.431,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 86.3,
-        "deb_raw": 87.8,
-        "peak_bias": -1.5,
-        "sigma": 4.18,
+        "deb": 86.2,
+        "deb_raw": 87.1,
+        "peak_bias": -0.94,
+        "sigma": 0.86,
         "forecasts": {
-          "Open-Meteo": 92.2,
-          "ECMWF": 84.5,
-          "GFS": 92.2,
-          "ICON": 87.6,
-          "GEM": 90.9,
-          "MET.no": 81.9,
+          "Open-Meteo": 87.9,
+          "ECMWF": 86.6,
+          "GFS": 87.9,
+          "ICON": 89.0,
+          "GEM": 89.3,
+          "MET.no": 82.6,
           "NWS": 84.0,
-          "7Timer": 87.8,
-          "WeatherAPI": 87.5
+          "7Timer": 89.6,
+          "WeatherAPI": 90.5
         },
-        "timing": "FORECAST",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
-          "73": 0.003,
-          "75": 0.002,
-          "77": 0.029,
-          "79": 0.07,
-          "81": 0.12,
-          "83": 0.325,
-          "85": 0.355,
-          "87": 0.102,
+          "73": 0.001,
+          "75": 0.001,
+          "77": 0.009,
+          "79": 0.025,
+          "81": 0.17,
+          "83": 0.455,
+          "85": 0.245,
+          "87": 0.107,
           "89": 0.015,
-          "91": 0.004,
-          "92": 0.003
+          "91": 0.002,
+          "92": 0.002
         },
         "pm_title": "Highest temperature in Denver on June 23?",
         "best_trade": {
           "action": "BUY NO",
-          "temp": 85,
-          "yes_price": 0.355,
-          "edge": 0.263
+          "temp": 83,
+          "yes_price": 0.455,
+          "edge": 0.455
         }
       }
     },
     "seattle": {
       "pred": {
-        "ts": "2026-06-23T01:46:15+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "today",
         "unit": "\u00b0F",
         "top_bucket": 85,
-        "top_prob": 0.279,
+        "top_prob": 0.258,
         "verdict": "SKIP",
         "made_call": false,
         "deb": 85.1,
         "deb_raw": 86.6,
         "peak_bias": -1.5,
-        "sigma": 1.41,
+        "sigma": 1.52,
         "forecasts": {
-          "Open-Meteo": 88.1,
-          "ECMWF": 87.6,
-          "GFS": 88.1,
-          "ICON": 82.6,
-          "GEM": 87.3,
+          "Open-Meteo": 86.1,
+          "ECMWF": 86.0,
+          "GFS": 86.1,
+          "ICON": 82.0,
+          "GEM": 88.8,
           "MET.no": 86.7,
           "NWS": 87.0,
-          "7Timer": 87.8,
-          "WeatherAPI": 86.2
+          "7Timer": 86.0,
+          "WeatherAPI": 91.9
         },
-        "timing": "FORECAST",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
-          "79": 0.004,
-          "81": 0.011,
-          "83": 0.045,
-          "85": 0.195,
-          "87": 0.445,
-          "89": 0.17,
-          "91": 0.059,
-          "93": 0.011,
-          "95": 0.004,
-          "97": 0.002,
+          "79": 0.001,
+          "81": 0.002,
+          "83": 0.02,
+          "85": 0.06,
+          "87": 0.225,
+          "89": 0.465,
+          "91": 0.196,
+          "93": 0.037,
+          "95": 0.005,
+          "97": 0.001,
           "98": 0.002
         },
         "pm_title": "Highest temperature in Seattle on June 23?",
         "best_trade": {
           "action": "BUY NO",
-          "temp": 87,
-          "yes_price": 0.445,
-          "edge": 0.328
+          "temp": 89,
+          "yes_price": 0.465,
+          "edge": 0.454
+        }
+      }
+    }
+  },
+  "2026-06-24": {
+    "wellington": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "today",
+        "unit": "\u00b0C",
+        "top_bucket": 16,
+        "top_prob": 0.5,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 16.0,
+        "deb_raw": 14.8,
+        "peak_bias": 1.18,
+        "sigma": 0.74,
+        "forecasts": {
+          "Open-Meteo": 15.3,
+          "ECMWF": 14.3,
+          "GFS": 14.9,
+          "ICON": 14.4,
+          "GEM": 14.7,
+          "MET.no": 15.9,
+          "7Timer": 14.0,
+          "WeatherAPI": 14.6
+        },
+        "timing": "OVERNIGHT",
+        "pm_buckets": {
+          "11": 0.001,
+          "12": 0.001,
+          "13": 0.001,
+          "14": 0.001,
+          "15": 0.085,
+          "16": 0.31,
+          "17": 0.56,
+          "18": 0.035,
+          "19": 0.005,
+          "20": 0.001,
+          "21": 0.001
+        },
+        "pm_title": "Highest temperature in Wellington on June 24?",
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 17,
+          "yes_price": 0.56,
+          "edge": 0.331
+        }
+      }
+    },
+    "seoul": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 28,
+        "top_prob": 0.422,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 28.1,
+        "deb_raw": 26.6,
+        "peak_bias": 1.5,
+        "sigma": 0.9,
+        "forecasts": {
+          "Open-Meteo": 25.7,
+          "ECMWF": 26.7,
+          "GFS": 23.8,
+          "ICON": 27.5,
+          "GEM": 26.1,
+          "MET.no": 27.3,
+          "7Timer": 23.0,
+          "WeatherAPI": 25.3
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "22": 0.001,
+          "23": 0.001,
+          "24": 0.003,
+          "25": 0.003,
+          "26": 0.008,
+          "27": 0.055,
+          "28": 0.23,
+          "29": 0.415,
+          "30": 0.249,
+          "31": 0.054,
+          "32": 0.009
+        },
+        "pm_title": "Highest temperature in Seoul on June 24?",
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 30,
+          "yes_price": 0.249,
+          "edge": 0.194
+        }
+      }
+    },
+    "busan": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 23,
+        "top_prob": 0.581,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 23.2,
+        "deb_raw": 21.8,
+        "peak_bias": 1.39,
+        "sigma": 0.59,
+        "forecasts": {
+          "Open-Meteo": 21.9,
+          "ECMWF": 22.4,
+          "GFS": 21.0,
+          "ICON": 21.6,
+          "GEM": 23.4,
+          "MET.no": 22.7,
+          "7Timer": 20.0,
+          "WeatherAPI": 20.2
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "17": 0.002,
+          "18": 0.002,
+          "19": 0.002,
+          "20": 0.008,
+          "21": 0.08,
+          "22": 0.34,
+          "23": 0.415,
+          "24": 0.13,
+          "25": 0.011,
+          "26": 0.011,
+          "27": 0.002
+        },
+        "pm_title": "Highest temperature in Busan on June 24?",
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 22,
+          "yes_price": 0.34,
+          "edge": 0.226
+        }
+      }
+    },
+    "hong kong": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 32,
+        "top_prob": 0.548,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 32.8,
+        "deb_raw": 31.3,
+        "peak_bias": 1.5,
+        "sigma": 0.59,
+        "forecasts": {
+          "Open-Meteo": 30.4,
+          "ECMWF": 31.7,
+          "GFS": 29.6,
+          "ICON": 32.7,
+          "GEM": 31.5,
+          "MET.no": 32.2,
+          "7Timer": 29.0,
+          "WeatherAPI": 29.6
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "26": 0.001,
+          "27": 0.001,
+          "28": 0.001,
+          "29": 0.001,
+          "30": 0.004,
+          "31": 0.064,
+          "32": 0.395,
+          "33": 0.415,
+          "34": 0.145,
+          "35": 0.037,
+          "36": 0.005
+        },
+        "pm_title": "Highest temperature in Hong Kong on June 24?",
+        "best_trade": {
+          "action": "BUY YES",
+          "temp": 32,
+          "yes_price": 0.395,
+          "edge": 0.153
+        }
+      }
+    },
+    "taipei": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 35,
+        "top_prob": 0.442,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 35.4,
+        "deb_raw": 33.9,
+        "peak_bias": 1.5,
+        "sigma": 0.74,
+        "forecasts": {
+          "Open-Meteo": 34.5,
+          "ECMWF": 34.2,
+          "GFS": 35.0,
+          "ICON": 33.4,
+          "GEM": 33.2,
+          "MET.no": 33.5,
+          "7Timer": 29.0,
+          "WeatherAPI": 34.5
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "30": 0.001,
+          "31": 0.001,
+          "32": 0.001,
+          "33": 0.001,
+          "34": 0.068,
+          "35": 0.165,
+          "36": 0.205,
+          "37": 0.392,
+          "38": 0.206,
+          "39": 0.029,
+          "40": 0.002
+        },
+        "pm_title": "Highest temperature in Taipei on June 24?",
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 37,
+          "yes_price": 0.392,
+          "edge": 0.324
+        }
+      }
+    },
+    "shanghai": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 25,
+        "top_prob": 0.428,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 24.6,
+        "deb_raw": 24.4,
+        "peak_bias": 0.23,
+        "sigma": 0.78,
+        "forecasts": {
+          "Open-Meteo": 25.2,
+          "ECMWF": 24.6,
+          "GFS": 23.9,
+          "ICON": 23.9,
+          "GEM": 24.3,
+          "MET.no": 24.9,
+          "7Timer": 24.0,
+          "WeatherAPI": 24.2
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "21": 0.001,
+          "22": 0.002,
+          "23": 0.1,
+          "24": 0.475,
+          "25": 0.355,
+          "26": 0.085,
+          "27": 0.013,
+          "28": 0.003,
+          "29": 0.001,
+          "30": 0.001,
+          "31": 0.001
+        },
+        "pm_title": "Highest temperature in Shanghai on June 24?",
+        "best_trade": null
+      }
+    },
+    "beijing": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 31,
+        "top_prob": 0.388,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 31.3,
+        "deb_raw": 30.8,
+        "peak_bias": 0.52,
+        "sigma": 0.94,
+        "forecasts": {
+          "Open-Meteo": 31.3,
+          "ECMWF": 29.3,
+          "GFS": 33.6,
+          "ICON": 29.0,
+          "GEM": 30.2,
+          "MET.no": 28.2,
+          "7Timer": 32.0,
+          "WeatherAPI": 33.0
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "27": 0.015,
+          "28": 0.101,
+          "29": 0.285,
+          "30": 0.345,
+          "31": 0.145,
+          "32": 0.06,
+          "33": 0.018,
+          "34": 0.013,
+          "35": 0.003,
+          "36": 0.003,
+          "37": 0.002
+        },
+        "pm_title": "Highest temperature in Beijing on June 24?",
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 29,
+          "yes_price": 0.285,
+          "edge": 0.259
+        }
+      }
+    },
+    "qingdao": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 30,
+        "top_prob": 0.581,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 30.2,
+        "deb_raw": 29.9,
+        "peak_bias": 0.34,
+        "sigma": 0.59,
+        "forecasts": {
+          "Open-Meteo": 31.9,
+          "ECMWF": 28.8,
+          "GFS": 31.4,
+          "ICON": 28.1,
+          "GEM": 29.6,
+          "MET.no": 30.9,
+          "7Timer": 30.0,
+          "WeatherAPI": 25.0
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "22": 0.001,
+          "23": 0.001,
+          "24": 0.001,
+          "25": 0.003,
+          "26": 0.006,
+          "27": 0.021,
+          "28": 0.021,
+          "29": 0.175,
+          "30": 0.345,
+          "31": 0.27,
+          "32": 0.205
+        },
+        "pm_title": "Highest temperature in Qingdao on June 24?",
+        "best_trade": {
+          "action": "BUY YES",
+          "temp": 30,
+          "yes_price": 0.345,
+          "edge": 0.236
+        }
+      }
+    },
+    "wuhan": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 28,
+        "top_prob": 0.306,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 27.6,
+        "deb_raw": 26.5,
+        "peak_bias": 1.11,
+        "sigma": 1.21,
+        "forecasts": {
+          "Open-Meteo": 28.2,
+          "ECMWF": 27.8,
+          "GFS": 23.8,
+          "ICON": 25.2,
+          "GEM": 27.0,
+          "MET.no": 28.0,
+          "7Timer": 25.0,
+          "WeatherAPI": 24.3
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "25": 0.112,
+          "26": 0.185,
+          "27": 0.33,
+          "28": 0.255,
+          "29": 0.037,
+          "30": 0.008,
+          "31": 0.005,
+          "32": 0.003,
+          "33": 0.002,
+          "34": 0.002,
+          "35": 0.001
+        },
+        "pm_title": "Highest temperature in Wuhan on June 24?",
+        "best_trade": null
+      }
+    },
+    "chengdu": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 28,
+        "top_prob": 0.324,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 27.6,
+        "deb_raw": 26.1,
+        "peak_bias": 1.49,
+        "sigma": 1.13,
+        "forecasts": {
+          "Open-Meteo": 28.8,
+          "ECMWF": 27.9,
+          "GFS": 23.5,
+          "ICON": 25.6,
+          "GEM": 27.5,
+          "MET.no": 28.2,
+          "7Timer": 23.0,
+          "WeatherAPI": 23.1
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "24": 0.043,
+          "25": 0.065,
+          "26": 0.17,
+          "27": 0.275,
+          "28": 0.24,
+          "29": 0.165,
+          "30": 0.045,
+          "31": 0.004,
+          "32": 0.003,
+          "33": 0.002,
+          "34": 0.002
+        },
+        "pm_title": "Highest temperature in Chengdu on June 24?",
+        "best_trade": null
+      }
+    },
+    "chongqing": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 26,
+        "top_prob": 0.496,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 25.9,
+        "deb_raw": 26.0,
+        "peak_bias": -0.09,
+        "sigma": 0.74,
+        "forecasts": {
+          "Open-Meteo": 28.0,
+          "ECMWF": 27.7,
+          "GFS": 23.0,
+          "ICON": 27.1,
+          "GEM": 26.0,
+          "MET.no": 28.7,
+          "7Timer": 24.0,
+          "WeatherAPI": 23.7
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "24": 0.165,
+          "25": 0.185,
+          "26": 0.24,
+          "27": 0.225,
+          "28": 0.135,
+          "29": 0.066,
+          "30": 0.006,
+          "31": 0.002,
+          "32": 0.002,
+          "33": 0.002,
+          "34": 0.002
+        },
+        "pm_title": "Highest temperature in Chongqing on June 24?",
+        "best_trade": {
+          "action": "BUY YES",
+          "temp": 26,
+          "yes_price": 0.24,
+          "edge": 0.256
+        }
+      }
+    },
+    "shenzhen": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 34,
+        "top_prob": 0.571,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 33.7,
+        "deb_raw": 32.6,
+        "peak_bias": 1.13,
+        "sigma": 0.55,
+        "forecasts": {
+          "Open-Meteo": 32.5,
+          "ECMWF": 31.0,
+          "GFS": 34.9,
+          "ICON": 31.8,
+          "GEM": 32.7,
+          "MET.no": 32.4,
+          "7Timer": 30.0,
+          "WeatherAPI": 31.6
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "27": 0.001,
+          "28": 0.001,
+          "29": 0.001,
+          "30": 0.004,
+          "31": 0.013,
+          "32": 0.155,
+          "33": 0.325,
+          "34": 0.395,
+          "35": 0.155,
+          "36": 0.019,
+          "37": 0.005
+        },
+        "pm_title": "Highest temperature in Shenzhen on June 24?",
+        "best_trade": null
+      }
+    },
+    "guangzhou": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 36,
+        "top_prob": 0.456,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 36.1,
+        "deb_raw": 34.6,
+        "peak_bias": 1.5,
+        "sigma": 0.82,
+        "forecasts": {
+          "Open-Meteo": 34.8,
+          "ECMWF": 34.0,
+          "GFS": 35.6,
+          "ICON": 33.8,
+          "GEM": 34.4,
+          "MET.no": 33.6,
+          "7Timer": 35.0,
+          "WeatherAPI": 35.8
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "30": 0.001,
+          "31": 0.002,
+          "32": 0.002,
+          "33": 0.004,
+          "34": 0.115,
+          "35": 0.2,
+          "36": 0.395,
+          "37": 0.27,
+          "38": 0.065,
+          "39": 0.009,
+          "40": 0.003
+        },
+        "pm_title": "Highest temperature in Guangzhou on June 24?",
+        "best_trade": null
+      }
+    },
+    "singapore": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 30,
+        "top_prob": 0.416,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 30.3,
+        "deb_raw": 29.7,
+        "peak_bias": 0.64,
+        "sigma": 0.86,
+        "forecasts": {
+          "Open-Meteo": 28.9,
+          "ECMWF": 28.8,
+          "GFS": 30.9,
+          "ICON": 29.7,
+          "GEM": 29.8,
+          "MET.no": 28.8,
+          "7Timer": 30.0,
+          "WeatherAPI": 30.1
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "25": 0.001,
+          "26": 0.001,
+          "27": 0.001,
+          "28": 0.02,
+          "29": 0.08,
+          "30": 0.345,
+          "31": 0.445,
+          "32": 0.145,
+          "33": 0.018,
+          "34": 0.006,
+          "35": 0.003
+        },
+        "pm_title": "Highest temperature in Singapore on June 24?",
+        "best_trade": null
+      }
+    },
+    "tokyo": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 26,
+        "top_prob": 0.385,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 26.2,
+        "deb_raw": 25.3,
+        "peak_bias": 0.92,
+        "sigma": 0.98,
+        "forecasts": {
+          "Open-Meteo": 23.5,
+          "ECMWF": 24.5,
+          "GFS": 25.4,
+          "ICON": 24.4,
+          "GEM": 25.9,
+          "MET.no": 23.9,
+          "7Timer": 27.0,
+          "WeatherAPI": 23.9
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "20": 0.001,
+          "21": 0.003,
+          "22": 0.007,
+          "23": 0.035,
+          "24": 0.17,
+          "25": 0.425,
+          "26": 0.323,
+          "27": 0.07,
+          "28": 0.011,
+          "29": 0.004,
+          "30": 0.002
+        },
+        "pm_title": "Highest temperature in Tokyo on June 24?",
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 25,
+          "yes_price": 0.425,
+          "edge": 0.228
+        }
+      }
+    },
+    "kuala lumpur": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 32,
+        "top_prob": 0.391,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 32.1,
+        "deb_raw": 30.6,
+        "peak_bias": 1.5,
+        "sigma": 0.98,
+        "forecasts": {
+          "Open-Meteo": 29.8,
+          "ECMWF": 29.1,
+          "GFS": 31.8,
+          "ICON": 30.2,
+          "GEM": 29.2,
+          "MET.no": 29.0,
+          "7Timer": 32.0,
+          "WeatherAPI": 31.6
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "34": 0.024,
+          "35": 0.003,
+          "36": 0.002,
+          "26": 0.001,
+          "27": 0.001,
+          "28": 0.003,
+          "29": 0.046,
+          "30": 0.23,
+          "31": 0.365,
+          "32": 0.245,
+          "33": 0.105
+        },
+        "pm_title": "Highest temperature in Kuala Lumpur on June 24?",
+        "best_trade": null
+      }
+    },
+    "manila": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 31,
+        "top_prob": 0.399,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 30.8,
+        "deb_raw": 29.9,
+        "peak_bias": 0.88,
+        "sigma": 0.94,
+        "forecasts": {
+          "Open-Meteo": 31.2,
+          "ECMWF": 29.9,
+          "GFS": 29.1,
+          "ICON": 30.4,
+          "GEM": 31.0,
+          "MET.no": 30.0,
+          "7Timer": 29.0,
+          "WeatherAPI": 29.2
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "26": 0.002,
+          "27": 0.003,
+          "28": 0.004,
+          "29": 0.017,
+          "30": 0.073,
+          "31": 0.345,
+          "32": 0.395,
+          "33": 0.1,
+          "34": 0.009,
+          "35": 0.005,
+          "36": 0.003
+        },
+        "pm_title": "Highest temperature in Manila on June 24?",
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 32,
+          "yes_price": 0.395,
+          "edge": 0.202
+        }
+      }
+    },
+    "jakarta": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 33,
+        "top_prob": 0.474,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 32.6,
+        "deb_raw": 31.9,
+        "peak_bias": 0.69,
+        "sigma": 0.66,
+        "forecasts": {
+          "Open-Meteo": 32.4,
+          "ECMWF": 31.1,
+          "GFS": 31.6,
+          "ICON": 31.8,
+          "GEM": 32.6,
+          "MET.no": 30.5,
+          "7Timer": 32.0,
+          "WeatherAPI": 29.8
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {},
+        "pm_title": null,
+        "best_trade": null
+      }
+    },
+    "lucknow": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 40,
+        "top_prob": 0.57,
+        "verdict": "WAIT",
+        "made_call": false,
+        "deb": 39.9,
+        "deb_raw": 40.6,
+        "peak_bias": -0.68,
+        "sigma": 0.62,
+        "forecasts": {
+          "Open-Meteo": 39.5,
+          "ECMWF": 39.5,
+          "GFS": 44.1,
+          "ICON": 40.9,
+          "GEM": 39.7,
+          "MET.no": 39.9,
+          "7Timer": 44.0,
+          "WeatherAPI": 44.0
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "36": 0.003,
+          "37": 0.005,
+          "38": 0.012,
+          "39": 0.055,
+          "40": 0.415,
+          "41": 0.425,
+          "42": 0.035,
+          "43": 0.013,
+          "44": 0.003,
+          "45": 0.002,
+          "46": 0.002
+        },
+        "pm_title": "Highest temperature in Lucknow on June 24?",
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 41,
+          "yes_price": 0.425,
+          "edge": 0.262
+        }
+      }
+    },
+    "karachi": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 35,
+        "top_prob": 0.405,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 35.1,
+        "deb_raw": 33.9,
+        "peak_bias": 1.22,
+        "sigma": 0.94,
+        "forecasts": {
+          "Open-Meteo": 34.1,
+          "ECMWF": 34.7,
+          "GFS": 32.7,
+          "ICON": 34.2,
+          "GEM": 33.5,
+          "MET.no": 33.7,
+          "7Timer": 33.0,
+          "WeatherAPI": 32.1
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "29": 0.001,
+          "30": 0.001,
+          "31": 0.001,
+          "32": 0.012,
+          "33": 0.044,
+          "34": 0.375,
+          "35": 0.495,
+          "36": 0.054,
+          "37": 0.006,
+          "38": 0.001,
+          "39": 0.001
+        },
+        "pm_title": "Highest temperature in Karachi on June 24?",
+        "best_trade": null
+      }
+    },
+    "jeddah": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 35,
+        "top_prob": 0.424,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 35.5,
+        "deb_raw": 35.8,
+        "peak_bias": -0.26,
+        "sigma": 0.7,
+        "forecasts": {
+          "Open-Meteo": 36.2,
+          "ECMWF": 36.8,
+          "GFS": 36.3,
+          "ICON": 35.9,
+          "GEM": 33.7,
+          "MET.no": 35.4,
+          "7Timer": 39.0,
+          "WeatherAPI": 34.2
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "28": 0.001,
+          "29": 0.001,
+          "30": 0.002,
+          "31": 0.001,
+          "32": 0.001,
+          "33": 0.015,
+          "34": 0.1,
+          "35": 0.225,
+          "36": 0.29,
+          "37": 0.255,
+          "38": 0.155
+        },
+        "pm_title": "Highest temperature in Jeddah on June 24?",
+        "best_trade": null
+      }
+    },
+    "ankara": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 29,
+        "top_prob": 0.526,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 28.7,
+        "deb_raw": 27.3,
+        "peak_bias": 1.35,
+        "sigma": 0.62,
+        "forecasts": {
+          "Open-Meteo": 28.6,
+          "ECMWF": 27.1,
+          "GFS": 26.1,
+          "ICON": 28.6,
+          "GEM": 28.1,
+          "MET.no": 27.3,
+          "7Timer": 24.0,
+          "WeatherAPI": 26.0
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "23": 0.001,
+          "24": 0.002,
+          "25": 0.002,
+          "26": 0.013,
+          "27": 0.115,
+          "28": 0.3,
+          "29": 0.375,
+          "30": 0.175,
+          "31": 0.002,
+          "32": 0.002,
+          "33": 0.002
+        },
+        "pm_title": "Highest temperature in Ankara on June 24?",
+        "best_trade": {
+          "action": "BUY YES",
+          "temp": 29,
+          "yes_price": 0.375,
+          "edge": 0.151
+        }
+      }
+    },
+    "istanbul": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 26,
+        "top_prob": 0.571,
+        "verdict": "TRADE",
+        "made_call": true,
+        "deb": 26.3,
+        "deb_raw": 25.9,
+        "peak_bias": 0.43,
+        "sigma": 0.55,
+        "forecasts": {
+          "Open-Meteo": 26.0,
+          "ECMWF": 25.2,
+          "GFS": 25.7,
+          "ICON": 26.0,
+          "GEM": 26.2,
+          "MET.no": 24.5,
+          "7Timer": 23.0,
+          "WeatherAPI": 26.8
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "21": 0.001,
+          "22": 0.002,
+          "23": 0.002,
+          "24": 0.007,
+          "25": 0.25,
+          "26": 0.44,
+          "27": 0.2,
+          "28": 0.095,
+          "29": 0.004,
+          "30": 0.004,
+          "31": 0.003
+        },
+        "pm_title": "Highest temperature in Istanbul on June 24?",
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 25,
+          "yes_price": 0.25,
+          "edge": 0.179
+        }
+      }
+    },
+    "moscow": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 23,
+        "top_prob": 0.571,
+        "verdict": "WAIT",
+        "made_call": false,
+        "deb": 22.7,
+        "deb_raw": 21.4,
+        "peak_bias": 1.31,
+        "sigma": 0.55,
+        "forecasts": {
+          "Open-Meteo": 21.5,
+          "ECMWF": 20.0,
+          "GFS": 21.6,
+          "ICON": 21.5,
+          "GEM": 22.5,
+          "MET.no": 19.8,
+          "7Timer": 22.0,
+          "WeatherAPI": 21.8
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "17": 0.003,
+          "18": 0.003,
+          "19": 0.005,
+          "20": 0.125,
+          "21": 0.215,
+          "22": 0.39,
+          "23": 0.264,
+          "24": 0.025,
+          "25": 0.01,
+          "26": 0.003,
+          "27": 0.003
+        },
+        "pm_title": "Highest temperature in Moscow on June 24?",
+        "best_trade": {
+          "action": "BUY YES",
+          "temp": 23,
+          "yes_price": 0.264,
+          "edge": 0.307
+        }
+      }
+    },
+    "tel aviv": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 30,
+        "top_prob": 0.633,
+        "verdict": "WAIT",
+        "made_call": false,
+        "deb": 29.9,
+        "deb_raw": 30.2,
+        "peak_bias": -0.29,
+        "sigma": 0.55,
+        "forecasts": {
+          "Open-Meteo": 30.0,
+          "ECMWF": 32.0,
+          "GFS": 30.7,
+          "ICON": 30.0,
+          "GEM": 30.2,
+          "MET.no": 30.7,
+          "7Timer": 30.0,
+          "WeatherAPI": 28.5
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "27": 0.001,
+          "28": 0.001,
+          "29": 0.077,
+          "30": 0.475,
+          "31": 0.38,
+          "32": 0.085,
+          "33": 0.009,
+          "34": 0.004,
+          "35": 0.001,
+          "36": 0.001,
+          "37": 0.001
+        },
+        "pm_title": "Highest temperature in Tel Aviv on June 24?",
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 31,
+          "yes_price": 0.38,
+          "edge": 0.245
+        }
+      }
+    },
+    "lagos": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 31,
+        "top_prob": 0.54,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 31.4,
+        "deb_raw": 29.9,
+        "peak_bias": 1.5,
+        "sigma": 0.51,
+        "forecasts": {
+          "Open-Meteo": 30.2,
+          "ECMWF": 28.9,
+          "GFS": 31.0,
+          "ICON": 30.1,
+          "GEM": 30.1,
+          "MET.no": 28.9,
+          "7Timer": 30.0,
+          "WeatherAPI": 29.5
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {},
+        "pm_title": null,
+        "best_trade": null
+      }
+    },
+    "cape town": {
+      "pred": {
+        "ts": "2026-06-23T14:50:20+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0C",
+        "top_bucket": 15,
+        "top_prob": 0.465,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 15.2,
+        "deb_raw": 15.7,
+        "peak_bias": -0.47,
+        "sigma": 0.78,
+        "forecasts": {
+          "Open-Meteo": 16.6,
+          "ECMWF": 15.0,
+          "GFS": 16.4,
+          "ICON": 16.0,
+          "GEM": 15.3,
+          "MET.no": 15.7,
+          "7Timer": 14.0,
+          "WeatherAPI": 15.9
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "12": 0.002,
+          "13": 0.002,
+          "14": 0.006,
+          "15": 0.086,
+          "16": 0.31,
+          "17": 0.355,
+          "18": 0.255,
+          "19": 0.021,
+          "20": 0.004,
+          "21": 0.006,
+          "22": 0.003
+        },
+        "pm_title": "Highest temperature in Cape Town on June 24?",
+        "best_trade": {
+          "action": "BUY YES",
+          "temp": 15,
+          "yes_price": 0.086,
+          "edge": 0.379
         }
       }
     }

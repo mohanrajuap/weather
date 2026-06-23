@@ -27,6 +27,7 @@ import time
 import json
 import sqlite3
 import argparse
+import threading
 from datetime import datetime, timezone, timedelta
 
 # Force line-buffered stdout so Railway shows the app's logs immediately instead
@@ -145,6 +146,14 @@ GITHUB_BACKUP_BRANCH = os.environ.get("GITHUB_BACKUP_BRANCH", "learning-data").s
 BACKUP_HOUR_UTC      = int(os.environ.get("BACKUP_HOUR_UTC", "2"))         # nightly hour (UTC)
 THRESHOLD     = float(os.environ.get("PROB_THRESHOLD", "0.70"))
 USE_PRICES    = os.environ.get("USE_PRICES", "1") == "1"
+# Outgoing webhook — POST every signal (with bias + no-bias values) to your other
+# bot's API. Set WEBHOOK_URL to enable. WEBHOOK_TOKEN (optional) is sent as a
+# Bearer auth header. WEBHOOK_EVENTS picks which events to forward.
+WEBHOOK_URL     = os.environ.get("WEBHOOK_URL", "").strip()
+WEBHOOK_TOKEN   = os.environ.get("WEBHOOK_TOKEN", "").strip()
+WEBHOOK_TIMEOUT = float(os.environ.get("WEBHOOK_TIMEOUT", "10"))
+WEBHOOK_EVENTS  = {e for e in os.environ.get(
+    "WEBHOOK_EVENTS", "new_signal,bucket_shift,collapse").replace(" ", "").split(",") if e}
 STATE_DB      = os.environ.get("STATE_DB", "/data/monitor_state.db")
 _alert_cities = os.environ.get("ALERT_CITIES", "").strip()
 ALERT_CITIES  = [c.strip() for c in _alert_cities.split(",") if c.strip()] or list(pw.CITIES.keys())
@@ -322,6 +331,105 @@ def alert_signal(text: str) -> bool:
     if OBSERVE_ONLY:
         return False
     return send_telegram(text)
+
+
+# ── Outgoing webhook to your other bot ────────────────────────────────────────
+def build_signal_payload(p, event="new_signal") -> dict:
+    """Structured JSON for the external bot — includes the bias-adjusted blend,
+    the no-bias blend, both probability distributions, the edge/trade, the live
+    market prices and the airport reading."""
+    bt  = p.get("best_trade") or {}
+    mkt = _market_prices(p)
+    fav = max(mkt, key=mkt.get) if mkt else None
+    stake = None
+    if bt.get("kelly_quarter") and bt.get("yes_price"):
+        s = BANKROLL * bt["kelly_quarter"]
+        stake = round(s, 2) if s >= 1 else None
+    live = p.get("live") or {}
+    return {
+        "event":        event,                 # new_signal | bucket_shift | collapse
+        "ts":           datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "source":       "polyweather",
+        "mode":         TRADE_MODE,
+        "city":         p.get("city"),
+        "city_display": city_display(p.get("city")),
+        "target_date":  p.get("target_date"),
+        "predicting":   p.get("predicting"),
+        "unit":         p.get("temp_unit"),
+        "verdict":      p.get("verdict"),
+        "timing":       (p.get("timing") or {}).get("quality"),
+        "reliable":     p.get("reliable"),
+        "blend": {
+            "with_bias":  p.get("deb"),        # the value the bot trades on
+            "no_bias":    p.get("deb_raw"),    # raw model blend, bias removed
+            "peak_bias":  p.get("peak_bias"),
+            "sigma":      p.get("sigma"),
+        },
+        "top_bucket":  p.get("top_bucket"),
+        "top_prob":    p.get("top_prob"),
+        "confidence":  p.get("confidence"),
+        "agreement":   p.get("agreement"),
+        "distribution":          p.get("distribution"),      # with bias
+        "distribution_no_bias":  p.get("distribution_raw"),  # without bias
+        "nobias_note": p.get("nobias_note"),
+        "forecasts":   p.get("forecasts"),
+        "best_trade": ({
+            "action":              bt.get("action"),
+            "bucket":              bt.get("temp"),
+            "yes_price":           bt.get("yes_price"),
+            "edge":                bt.get("best_edge"),
+            "model_prob":          bt.get("model_prob"),
+            "ev":                  bt.get("ev"),
+            "kelly":               bt.get("kelly"),
+            "kelly_quarter":       bt.get("kelly_quarter"),
+            "suggested_stake_usd": stake,
+        } if bt else None),
+        "market": {
+            "favorite_bucket": fav,
+            "favorite_price":  (mkt.get(fav) if fav is not None else None),
+            "prices":          {str(k): v for k, v in mkt.items()},
+            "url":             (p.get("polymarket") or {}).get("url"),
+        },
+        "live": {
+            "max_so_far":   live.get("max_so_far"),
+            "current_temp": live.get("current_temp"),
+            "source":       live.get("source"),
+            "airport_icao": live.get("airport_icao"),
+            "airport_max":  live.get("airport_max"),
+        },
+    }
+
+
+def send_webhook(payload: dict) -> bool:
+    """POST one JSON payload to WEBHOOK_URL. Never raises."""
+    if not WEBHOOK_URL:
+        return False
+    headers = {"Content-Type": "application/json"}
+    if WEBHOOK_TOKEN:
+        headers["Authorization"] = f"Bearer {WEBHOOK_TOKEN}"
+    try:
+        r = httpx.post(WEBHOOK_URL, json=payload, headers=headers, timeout=WEBHOOK_TIMEOUT)
+        if not (200 <= r.status_code < 300):
+            print(f"[webhook] {r.status_code} from target: {r.text[:120]}")
+            return False
+        return True
+    except Exception as e:
+        print(f"[webhook] error: {e}")
+        return False
+
+
+def fire_webhook(p, event="new_signal"):
+    """Build + POST a signal to the external bot in a background thread (so a slow
+    target never delays the scan). No-op unless WEBHOOK_URL is set and the event
+    is enabled in WEBHOOK_EVENTS."""
+    if not WEBHOOK_URL or event not in WEBHOOK_EVENTS:
+        return
+    try:
+        payload = build_signal_payload(p, event)
+    except Exception as e:
+        print(f"[webhook] build error: {e}")
+        return
+    threading.Thread(target=send_webhook, args=(payload,), daemon=True).start()
 
 
 def reply_telegram(chat_id, text: str, keyboard=None) -> bool:
@@ -1133,10 +1241,12 @@ def watch_active_signals(conn):
 
         if bucket_shifted:
             alert_signal(fmt_bucket_shift(p, prev_bucket, prev_prob))
+            fire_webhook(p, "bucket_shift")
             upsert_state(conn, key, city, tdate, bucket, prob, alerted_high=1)
             print(f"  ⚡🔄 FAST SHIFT {city} {prev_bucket}°→{bucket}°")
         elif collapsed:
             alert_signal(fmt_collapse(p, prev_prob if prev_prob is not None else prob))
+            fire_webhook(p, "collapse")
             upsert_state(conn, key, city, tdate, bucket, prob, alerted_high=0)
             print(f"  ⚡🔴 FAST COLLAPSE {city} {prob*100:.0f}%")
         else:
@@ -1333,6 +1443,7 @@ def run_scan(conn):
                 except Exception: pass
         if crossed_up:
             alert_signal(fmt_new_signal(p))   # suppressed in OBSERVE mode
+            fire_webhook(p, "new_signal")     # forward to your other bot (if set)
             upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=1)
             new_alerts += 1
             bt = p.get("best_trade")
@@ -1353,6 +1464,7 @@ def run_scan(conn):
         elif bucket_shifted:
             alert_signal(fmt_bucket_shift(p, prev_bucket, prev_prob if prev_prob is not None else prob,
                                           position=held_positions.get(p["city"])))
+            fire_webhook(p, "bucket_shift")
             # keep alerted_high=1 since it's still a high-conf signal, just a new bucket
             upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=1)
             shifts += 1
@@ -1360,6 +1472,7 @@ def run_scan(conn):
             print(f"  🔄 SHIFT {city} {prev_bucket}°→{bucket}° {prob*100:.0f}%{mode_tag}")
         elif collapsed:
             alert_signal(fmt_collapse(p, prev_prob if prev_prob is not None else prob))
+            fire_webhook(p, "collapse")
             upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=0)
             collapses += 1
             _log(f"🔴 {cdisp} {bucket}{psym} weakened to {prob*100:.0f}%")
@@ -1611,6 +1724,7 @@ def set_bot_commands():
         {"command": "mute",      "description": "🔕 Silence a city (/mute <city>)"},
         {"command": "unmute",    "description": "🔔 Unmute a city (/unmute <city>)"},
         {"command": "muted",     "description": "📋 List muted cities"},
+        {"command": "webhook",   "description": "📡 Test the outgoing webhook"},
         {"command": "backup",    "description": "💾 Back up learning data"},
         {"command": "help",      "description": "❓ Command list"},
     ]
@@ -1791,6 +1905,7 @@ def handle_command(text, chat_id):
             "/watch <city> <bucket> below|above <price> — price alert "
             "(e.g. /watch london 14 below 50); /watches, /unwatch &lt;n&gt;\n"
             "/mute <city> · /unmute <city> · /muted — silence a city (keeps learning)\n"
+            "/webhook — test the outgoing API webhook to your other bot\n"
             "/backup — back up learning data to GitHub\n"
             "/help — this message")
         return
@@ -1831,6 +1946,21 @@ def handle_command(text, chat_id):
 
     if low.startswith("/pnl") or low.startswith("/ledger"):
         reply_telegram(chat_id, learn.report_pnl())
+        return
+
+    if low.startswith("/webhook"):
+        if not WEBHOOK_URL:
+            reply_telegram(chat_id, "📡 Webhook not configured. Set <b>WEBHOOK_URL</b> "
+                           "(and optional <b>WEBHOOK_TOKEN</b>) in Railway.")
+            return
+        reply_telegram(chat_id, f"📡 Sending a test payload to {esc(WEBHOOK_URL[:50])}…")
+        ok = send_webhook({"event": "test", "source": "polyweather",
+                           "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                           "message": "PolyWeather webhook test — your endpoint is reachable."})
+        events = ", ".join(sorted(WEBHOOK_EVENTS)) or "none"
+        reply_telegram(chat_id, (f"✅ Webhook OK (2xx). Forwarding events: {events}."
+                                 if ok else
+                                 "❌ Webhook failed — check the URL / token / target logs."))
         return
 
     if low == "/muted" or low.startswith("/mute") or low.startswith("/unmute"):
@@ -1963,7 +2093,8 @@ def handle_command(text, chat_id):
         # market named "positions". Route it to the real handler instead of erroring.
         _CMD_WORDS = {"positions", "pnl", "ledger", "learn", "missed", "history",
                       "alerts", "today", "backup", "pick", "help", "start", "menu",
-                      "mute", "muted", "unmute", "watch", "watches", "unwatch", "watchlist"}
+                      "mute", "muted", "unmute", "watch", "watches", "unwatch",
+                      "watchlist", "webhook"}
         first = scope.split()[0] if scope else ""
         if first in _CMD_WORDS:
             handle_command("/" + scope, chat_id)
@@ -2253,6 +2384,8 @@ def main():
         print(f"  Position WATCH:    every {POS_WATCH_MIN} min (flips + stop-loss)")
         print(f"  Profit alert:      at +{PROFIT_TAKE_PCT:.0f}% per position")
     print(f"  Bankroll (sizing): ${BANKROLL:.0f}  (¼-Kelly stakes in alerts)")
+    if WEBHOOK_URL:
+        print(f"  Webhook → {WEBHOOK_URL[:48]}  events={','.join(sorted(WEBHOOK_EVENTS))}")
     if ENABLE_DIGEST and not OBSERVE_ONLY:
         print(f"  Morning digest:    daily at {DIGEST_HOUR_UTC:02d}:00 UTC")
     if MUTED:

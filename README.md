@@ -97,6 +97,29 @@ name the station and show its current/max reading; if Wunderground and the raw
 airport METAR disagree by ≥1°, the alert flags it — **settlement follows the
 airport**. This works for every city automatically, no extra config.
 
+### 4c. Outgoing webhook (integrate with another bot)
+Set `WEBHOOK_URL` and the bot **POSTs every signal as JSON** to your other bot's
+API — including the **bias-adjusted blend, the no-bias blend, both probability
+distributions, the edge/trade, live market prices and the airport reading**.
+Optional `WEBHOOK_TOKEN` is sent as `Authorization: Bearer <token>`. Choose which
+events to forward with `WEBHOOK_EVENTS` (`new_signal`, `bucket_shift`, `collapse`).
+Test the connection any time with `/webhook`. Example payload:
+
+```json
+{
+  "event": "new_signal",
+  "city": "istanbul", "target_date": "2026-06-22", "unit": "°C",
+  "verdict": "TRADE", "timing": "FIRMING",
+  "blend": { "with_bias": 31.3, "no_bias": 31.1, "peak_bias": 0.2, "sigma": 0.33 },
+  "top_bucket": 31, "top_prob": 0.73,
+  "distribution":         [{ "value": 31, "probability": 0.73 }],
+  "distribution_no_bias": [{ "value": 31, "probability": 0.89 }],
+  "best_trade": { "action": "BUY YES", "bucket": 31, "yes_price": 0.12,
+                  "edge": 0.61, "suggested_stake_usd": 17.0 },
+  "market": { "favorite_bucket": 33, "favorite_price": 0.64, "url": "https://polymarket.com/..." }
+}
+```
+
 ### 5. Learning
 Every scan records the prediction; once a market settles, the bot fetches the
 actual high, scores the call, and feeds the result back into the bias learner.

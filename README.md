@@ -103,6 +103,12 @@ API — including the **bias-adjusted blend, the no-bias blend, both probability
 distributions, the edge/trade, live market prices and the airport reading**.
 Optional `WEBHOOK_TOKEN` is sent as `Authorization: Bearer <token>`. Choose which
 events to forward with `WEBHOOK_EVENTS` (`new_signal`, `bucket_shift`, `collapse`).
+
+- **Automatic** — every signal the scan finds is forwarded on its own.
+- **Manual** — after a `/scan` you get a one-tap **📡 Send** button per signal, or
+  use `/send <city>` to forward that city's current signal on demand. Manual
+  sends carry `"event": "manual_signal"` so your bot can tell them apart.
+
 Test the connection any time with `/webhook`. Example payload:
 
 ```json

@@ -1635,6 +1635,9 @@ def scan_for_command(scope="all", reply_to=None):
     if single_city:
         if single_pred:
             reply_telegram(reply_to, fmt_new_signal(single_pred))
+            # offer a one-tap forward when there's an actual trade to send
+            if single_pred.get("best_trade"):
+                _forward_prompt(reply_to, [single_pred["city"]])
         else:
             reply_telegram(reply_to, f"{header}\n\n❌ Could not fetch data.")
         print(f"[{ts}] /scan {scope} done")
@@ -1650,6 +1653,8 @@ def scan_for_command(scope="all", reply_to=None):
     reply_telegram(reply_to, f"{header}\n\n✅ {len(hits)} tradeable signal(s):")
     for p in hits[:10]:
         reply_telegram(reply_to, fmt_new_signal(p))
+    # offer to forward the found signals to the external bot (manual option)
+    _forward_prompt(reply_to, [p["city"] for p in hits[:8]])
     print(f"[{ts}] /scan {scope} done — {len(hits)} tradeable")
 
 
@@ -1704,6 +1709,38 @@ def _regions_keyboard():
     ]
 
 
+def _forward_prompt(reply_to, cities):
+    """After a manual scan, offer one-tap buttons to forward each signal to the
+    external bot. No-op unless a webhook is configured."""
+    cities = [c for c in (cities or []) if c]
+    if not WEBHOOK_URL or not cities or not reply_to:
+        return
+    rows = [[{"text": f"📡 Send {city_display(c)}", "callback_data": f"send:{c}"}]
+            for c in cities[:8]]
+    reply_telegram(reply_to, "📡 <b>Forward to your other bot?</b>", keyboard=rows)
+
+
+def _manual_send(ck, reply_to):
+    """Forward one city's CURRENT signal to the webhook synchronously, reporting
+    success/failure back to the user. Used by the /send command and Send buttons."""
+    if not WEBHOOK_URL:
+        reply_telegram(reply_to, "📡 Webhook not configured (set WEBHOOK_URL).")
+        return
+    ck = pw.resolve_city(ck) or ck
+    if ck not in pw.CITIES:
+        reply_telegram(reply_to, f"❓ Unknown city '{esc(ck)}'.")
+        return
+    reply_telegram(reply_to, f"📡 Sending {city_display(ck)} to your bot…")
+    ok = False
+    try:
+        pp = pw.predict(ck, fetch_prices=True)
+        ok = send_webhook(build_signal_payload(pp, "manual_signal"))
+    except Exception as e:
+        print(f"[send] {ck}: {e}")
+    reply_telegram(reply_to, f"✅ Sent {city_display(ck)} (event=manual_signal)." if ok
+                   else "❌ Send failed — run /webhook to test the connection.")
+
+
 def set_bot_commands():
     """Register the command list so Telegram shows the blue 'Menu' button next to
     the input box and '/' autocomplete. Typed commands keep working regardless."""
@@ -1724,6 +1761,7 @@ def set_bot_commands():
         {"command": "mute",      "description": "🔕 Silence a city (/mute <city>)"},
         {"command": "unmute",    "description": "🔔 Unmute a city (/unmute <city>)"},
         {"command": "muted",     "description": "📋 List muted cities"},
+        {"command": "send",      "description": "📡 Forward a city's signal to your bot (/send london)"},
         {"command": "webhook",   "description": "📡 Test the outgoing webhook"},
         {"command": "backup",    "description": "💾 Back up learning data"},
         {"command": "help",      "description": "❓ Command list"},
@@ -1905,6 +1943,7 @@ def handle_command(text, chat_id):
             "/watch <city> <bucket> below|above <price> — price alert "
             "(e.g. /watch london 14 below 50); /watches, /unwatch &lt;n&gt;\n"
             "/mute <city> · /unmute <city> · /muted — silence a city (keeps learning)\n"
+            "/send <city> — forward that city's signal to your other bot now\n"
             "/webhook — test the outgoing API webhook to your other bot\n"
             "/backup — back up learning data to GitHub\n"
             "/help — this message")
@@ -1961,6 +2000,15 @@ def handle_command(text, chat_id):
         reply_telegram(chat_id, (f"✅ Webhook OK (2xx). Forwarding events: {events}."
                                  if ok else
                                  "❌ Webhook failed — check the URL / token / target logs."))
+        return
+
+    if low.startswith("/send"):
+        parts = text.split(maxsplit=1)
+        if len(parts) < 2:
+            reply_telegram(chat_id, "Usage: <code>/send &lt;city&gt;</code> — forward that "
+                           "city's current signal to your other bot.\ne.g. /send london")
+            return
+        _manual_send(parts[1].strip(), chat_id)
         return
 
     if low == "/muted" or low.startswith("/mute") or low.startswith("/unmute"):
@@ -2094,7 +2142,7 @@ def handle_command(text, chat_id):
         _CMD_WORDS = {"positions", "pnl", "ledger", "learn", "missed", "history",
                       "alerts", "today", "backup", "pick", "help", "start", "menu",
                       "mute", "muted", "unmute", "watch", "watches", "unwatch",
-                      "watchlist", "webhook"}
+                      "watchlist", "webhook", "send"}
         first = scope.split()[0] if scope else ""
         if first in _CMD_WORDS:
             handle_command("/" + scope, chat_id)
@@ -2178,6 +2226,8 @@ def command_listener():
                         elif data == "menu:regions":
                             reply_telegram(cq_chat, "🌍 Pick a region to scan:",
                                            keyboard=_regions_keyboard())
+                        elif data.startswith("send:"):                # forward to bot
+                            _manual_send(data.split(":", 1)[1], cq_chat)
                         elif data.startswith("scan:"):                # legacy /pick
                             scan_for_command(data.split(":", 1)[1], reply_to=cq_chat)
         except Exception as e:

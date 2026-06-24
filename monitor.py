@@ -856,7 +856,11 @@ def fmt_positions_update(wallet: str, positions) -> str:
         emoji = "🟢" if pnl >= 0 else "🔴"
 
         short = title[:34]
-        lines.append(f"{emoji} <b>{short}</b>")
+        # readable header: pull "City — bucket" out of the long weather title
+        # (they all start "Will the highest temperature in…"), else truncate.
+        _m = re.search(r"\bin\s+(.+?)\s+on\b.*?\bbe\s+(.+?)\s*\??$", title, re.I)
+        hdr = f"{_m.group(1)} — {_m.group(2)}" if _m else title[:40]
+        lines.append(f"{emoji} <b>{esc(hdr)}</b>")
         lines.append(f"   {side} | {e_s}→{n_s} | ${val:.2f} (P&L {pnl:+.2f})")
         # ── winning amount: each share pays $1 if it settles in your favour ──
         shares = pos.get("size") or 0.0

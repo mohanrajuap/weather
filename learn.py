@@ -183,6 +183,8 @@ def _build_snap(p: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         "predicting": p.get("predicting"),
         "unit":       p.get("temp_unit"),
         "top_bucket": p.get("top_bucket"),
+        "top_lo":     p.get("top_lo"),         # range-market bucket span (else None)
+        "top_hi":     p.get("top_hi"),
         "top_prob":   round(float(p.get("top_prob") or 0.0), 3),
         "verdict":    p.get("verdict"),
         "made_call":  p.get("verdict") == "TRADE",
@@ -370,16 +372,25 @@ def settle(feed_deb: bool = True) -> int:
 
             pred       = rec["pred"]
             bot_bucket = pred.get("top_bucket")
-            hit        = (bot_bucket is not None and bot_bucket == actual_bucket)
+            lo, hi     = pred.get("top_lo"), pred.get("top_hi")
+            # Range markets (e.g. SF '68-69°F'): the call hits if the actual falls
+            # anywhere in the predicted span, not just on the key degree.
+            if lo is not None and hi is not None and lo != hi:
+                hit = (actual_bucket is not None and lo <= actual_bucket <= hi)
+            else:
+                hit = (bot_bucket is not None and bot_bucket == actual_bucket)
 
-            # Would the bot's actual trade have won?
+            # Would the bot's actual trade have won? (range-aware for the YES side)
             trade_win = None
             bt = pred.get("best_trade")
             if bt and bt.get("temp") is not None:
+                in_bucket = (lo <= actual_bucket <= hi) if (lo is not None and hi is not None
+                             and lo != hi and actual_bucket is not None) \
+                            else (bt["temp"] == actual_bucket)
                 if bt.get("action") == "BUY YES":
-                    trade_win = (bt["temp"] == actual_bucket)
+                    trade_win = in_bucket
                 elif bt.get("action") == "BUY NO":
-                    trade_win = (bt["temp"] != actual_bucket)
+                    trade_win = not in_bucket
 
             rec["outcome"] = {
                 "actual_high":       actual,

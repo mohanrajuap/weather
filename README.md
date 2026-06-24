@@ -126,6 +126,14 @@ Test the connection any time with `/webhook`. Example payload:
 }
 ```
 
+### 4d. Range-bucket markets
+Some cities (e.g. **San Francisco**) use **2-degree range buckets** — `68-69°F`,
+`70-71°F`, … — instead of single degrees. The bot detects these automatically and
+re-bins its per-degree model distribution onto the market's buckets (so the
+`68-69°F` bucket gets P(68)+P(69)). Probabilities, the verdict, edges, alerts and
+learning all use the correct range, and alerts show range labels (`68-69°F`,
+`80+°F`, `≤61°F`). Normal single-degree markets are unaffected.
+
 ### 5. Learning
 Every scan records the prediction; once a market settles, the bot fetches the
 actual high, scores the call, and feeds the result back into the bias learner.

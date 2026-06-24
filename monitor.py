@@ -471,6 +471,24 @@ def _outlier_line(p) -> str:
     return ""
 
 
+def _range_label(lo, hi, sym):
+    """Pretty label for a bucket span: '68-69°F', '80+°F', '≤61°F', or None for a
+    single-degree bucket (caller falls back to the plain value)."""
+    if lo is None or hi is None or lo == hi:
+        return None
+    if hi >= 9000:
+        return f"{lo}+{sym}"
+    if lo <= -9000:
+        return f"≤{hi}{sym}"
+    return f"{lo}-{hi}{sym}"
+
+def _bucket_label(p, value, sym):
+    """Label for a bucket value, using the market's range if it's a range market."""
+    pmb = (p.get("polymarket") or {}).get("buckets") or {}
+    b = pmb.get(value) or pmb.get(str(value)) or {}
+    return _range_label(b.get("lo"), b.get("hi"), sym) or f"{value}{sym}"
+
+
 def _market_prices(p) -> dict:
     """{bucket_value:int -> yes_price:float} from the live Polymarket book."""
     pm  = p.get("polymarket") or {}
@@ -531,7 +549,7 @@ def fmt_new_signal(p) -> str:
     L.append(head)
     L.append(f"📍 <b>{esc(city)}</b>  ·  {esc(p.get('target_date'))} ({esc(p.get('predicting',''))})")
     L.append(_DIV)
-    L.append(f"🎯 <b>{p['top_bucket']}{sym}</b>  at  <b>{p['top_prob']*100:.0f}%</b>")
+    L.append(f"🎯 <b>{_bucket_label(p, p['top_bucket'], sym)}</b>  at  <b>{p['top_prob']*100:.0f}%</b>")
     L.append(f"🕐 {esc(tim.get('quality','?'))} · local {esc(tim.get('city_local_now','?'))} · peak {esc(tim.get('peak_window','?'))}")
     L.append(badge)
     L.append("")
@@ -598,7 +616,8 @@ def fmt_new_signal(p) -> str:
         L.append("🎲 <b>Probabilities</b> (with bias · vs market price)")
         for b in dist[:4]:
             bar = "▰" * max(1, round(b['probability'] * 10))
-            L.append(f"   {b['value']}{sym}  {bar} {b['probability']*100:.0f}%{_mp(b['value'])}")
+            lbl = _range_label(b.get('lo'), b.get('hi'), sym) or f"{b['value']}{sym}"
+            L.append(f"   {lbl}  {bar} {b['probability']*100:.0f}%{_mp(b['value'])}")
 
     # probabilities WITHOUT the per-city bias — same bars, raw model centre
     dist_raw = p.get("distribution_raw") or []
@@ -607,7 +626,8 @@ def fmt_new_signal(p) -> str:
         L.append(f"🎲 <b>Probabilities (no bias · raw {p.get('deb_raw')}{sym})</b>")
         for b in dist_raw[:4]:
             bar = "▱" * max(1, round(b['probability'] * 10))
-            L.append(f"   {b['value']}{sym}  {bar} {b['probability']*100:.0f}%{_mp(b['value'])}")
+            lbl = _range_label(b.get('lo'), b.get('hi'), sym) or f"{b['value']}{sym}"
+            L.append(f"   {lbl}  {bar} {b['probability']*100:.0f}%{_mp(b['value'])}")
     elif p.get("nobias_note"):
         L.append("")
         L.append(f"🎲 <i>No-bias view n/a — {esc(p['nobias_note'])}</i>")
@@ -620,28 +640,29 @@ def fmt_new_signal(p) -> str:
         fav_p = mkt[fav]
         model_b = p.get("top_bucket")
         L.append("")
+        fav_l = _bucket_label(p, fav, sym)
         if model_b is None:
             # model has no firm pick — just report the market's favourite
-            L.append(f"🏛️ Market favours {fav}{sym} @ {fav_p*100:.0f}¢ ({fav_p*100:.0f}% implied)")
+            L.append(f"🏛️ Market favours {fav_l} @ {fav_p*100:.0f}¢ ({fav_p*100:.0f}% implied)")
         elif fav != model_b:
             in_model = any(b.get("value") == fav for b in (dist or []))
-            L.append(f"🏛️ <b>Market favours {fav}{sym} @ {fav_p*100:.0f}¢</b> "
-                     f"({fav_p*100:.0f}% implied) — model picks {model_b}{sym}.")
+            L.append(f"🏛️ <b>Market favours {fav_l} @ {fav_p*100:.0f}¢</b> "
+                     f"({fav_p*100:.0f}% implied) — model picks {_bucket_label(p, model_b, sym)}.")
             if fav_p >= 0.50:
                 L.append(f"   ⚠️ Market strongly disagrees with the model. The edge is "
                          f"only real if the model is right and the market is wrong — "
-                         f"if unsure, trust the market's {fav}{sym}.")
+                         f"if unsure, trust the market's {fav_l}.")
             if not in_model:
-                L.append(f"   ℹ️ The model gives {fav}{sym} ~0% — that's the gap to weigh.")
+                L.append(f"   ℹ️ The model gives {fav_l} ~0% — that's the gap to weigh.")
         else:
-            L.append(f"🏛️ Market agrees with model: {fav}{sym} @ {fav_p*100:.0f}¢")
+            L.append(f"🏛️ Market agrees with model: {fav_l} @ {fav_p*100:.0f}¢")
 
     # best trade — only call it a BUY when action_ok; else show as "if it holds"
     if bt:
         L.append("")
         L.append(_DIV)
         if action_ok:
-            L.append(f"🏆 <b>{esc(bt['action'])} {bt['temp']}{sym} @ {bt['yes_price']*100:.0f}¢</b>")
+            L.append(f"🏆 <b>{esc(bt['action'])} {_bucket_label(p, bt['temp'], sym)} @ {bt['yes_price']*100:.0f}¢</b>")
             L.append(f"    edge <b>{bt['best_edge']*100:+.0f}%</b> · model {bt['model_prob']*100:.0f}%")
             # concrete stake: quarter-Kelly of your bankroll → shares + payout
             kq = bt.get("kelly_quarter") or 0.0

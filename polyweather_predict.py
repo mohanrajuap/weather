@@ -1146,14 +1146,17 @@ def _batched_rows(icao: str):
         return _METAR_BATCH.get((icao or "").upper())   # [] = fetched, no obs
 
 
-def _parse_metar_rows(rows: list, tz_offset: int) -> Optional[Dict]:
-    """Turn raw aviationweather rows into the live-obs dict (today's max etc.)."""
+def _parse_metar_rows(rows: list, tz_offset: int, use_fahrenheit: bool = False) -> Optional[Dict]:
+    """Turn raw aviationweather rows into the live-obs dict (today's max etc.).
+    METAR temps are always °C; convert to °F for Fahrenheit-settled cities."""
     today_local = (_now_utc() + timedelta(seconds=tz_offset)).strftime("%Y-%m-%d")
     results = []
     for row in rows:
         temp = _sf(row.get("temp"))
         if temp is None:
             continue
+        if use_fahrenheit:
+            temp = temp * 9.0 / 5.0 + 32.0      # METAR is °C → city settles in °F
         obs_raw = row.get("reportTime") or row.get("receiptTime") or row.get("observation_time")
         if not obs_raw:
             continue
@@ -1197,12 +1200,13 @@ def _parse_metar_rows(rows: list, tz_offset: int) -> Optional[Dict]:
     }
 
 
-def fetch_metar(icao: str, tz_offset: int = 0,
-                local_date: str = None) -> Optional[Dict]:
+def fetch_metar(icao: str, tz_offset: int = 0, local_date: str = None,
+                use_fahrenheit: bool = False) -> Optional[Dict]:
     """
     Live METAR for TODAY's observations (current temp / max_so_far). Serves from
     the once-per-scan batched cache when available, else makes a single per-station
-    call covering the whole local day.
+    call covering the whole local day. METAR is °C; pass use_fahrenheit=True for
+    cities that settle in °F so the obs come back in the right unit.
     """
     rows = _batched_rows(icao)              # [] = fetched-but-empty, None = not cached
     if rows is None:
@@ -1213,7 +1217,7 @@ def fetch_metar(icao: str, tz_offset: int = 0,
         rows = data if isinstance(data, list) else None
     if not rows:
         return None
-    return _parse_metar_rows(rows, tz_offset)
+    return _parse_metar_rows(rows, tz_offset, use_fahrenheit)
 
 # ══════════════════════════════════════════════════════════════════════════════
 # POLYMARKET LIVE PRICES  (Gamma API for discovery + CLOB API for prices)
@@ -1330,11 +1334,15 @@ def fetch_polymarket_market(city_key: str, target_date: str, debug: bool = False
                 no_price = pr
 
         vol = _sf(m.get("volume") or m.get("volumeNum") or m.get("volume24hr")) or 0.0
+        rng = _extract_range_from_title(question)
+        lo, hi = rng if rng else (temp, temp)
         buckets[temp] = {
             "yes":       round(yes_price, 3) if yes_price is not None else None,
             "no":        round(no_price, 3) if no_price is not None else None,
             "token_yes": token_yes,
             "vol":       round(vol, 0),
+            "lo":        lo,    # bucket spans [lo, hi] degrees (lo==hi = single)
+            "hi":        hi,
         }
 
     if debug:
@@ -1350,6 +1358,39 @@ def fetch_polymarket_market(city_key: str, target_date: str, debug: bool = False
         "url":     f"https://polymarket.com/event/{slug}" if slug else "https://polymarket.com",
     }
 
+def _market_is_range(pm_data) -> bool:
+    """True only if the market uses TRUE finite multi-degree range buckets, e.g.
+    San Francisco's '68-69°F'. Open-ended edge buckets ('35°C or below') alone do
+    NOT count — those exist on normal single-degree markets, which keep their
+    existing behaviour untouched."""
+    if not pm_data or not pm_data.get("buckets"):
+        return False
+    for b in pm_data["buckets"].values():
+        lo, hi = b.get("lo"), b.get("hi")
+        if lo is None or hi is None:
+            continue
+        if -9000 < lo and hi < 9000 and hi != lo:   # finite span of 2+ degrees
+            return True
+    return False
+
+def _remap_distribution(dist, pm_data):
+    """Aggregate a single-degree model distribution into the MARKET's buckets.
+    Each market bucket gets the SUM of the model's per-degree probabilities whose
+    value falls in its [lo, hi] span — so a '68-69°F' bucket gets P(68)+P(69).
+    No-op (returns dist unchanged) for normal single-degree markets, so existing
+    behaviour is untouched."""
+    if not dist or not _market_is_range(pm_data):
+        return dist
+    out = []
+    for key, b in pm_data["buckets"].items():
+        lo = b.get("lo"); hi = b.get("hi")
+        if lo is None or hi is None:
+            lo = hi = key
+        psum = sum(d["probability"] for d in dist if lo <= d["value"] <= hi)
+        out.append({"value": key, "probability": round(psum, 4), "lo": lo, "hi": hi})
+    out.sort(key=lambda x: x["probability"], reverse=True)
+    return out
+
 def _extract_temp_from_title(text: str) -> Optional[int]:
     """Pull the integer temperature out of a market question like '29°C' or '84-85°F'."""
     import re
@@ -1364,6 +1405,30 @@ def _extract_temp_from_title(text: str) -> Optional[int]:
     if m:
         return int(m.group(1))
     return None
+
+def _extract_range_from_title(text: str):
+    """Bucket span (lo, hi) for a market question. Handles 2-degree range buckets
+    (e.g. San Francisco '68-69°F' → (68, 69)), open-ended buckets ('80°F or higher'
+    → (80, 9999); '61°F or below' → (-9999, 61)) and single buckets ('32°C' → (32,32)).
+    Returns None if no number is present."""
+    import re
+    if not text:
+        return None
+    # explicit "68-69" / "84–85" range (hyphen or en-dash)
+    m = re.search(r"(\d{1,3})\s*[-–]\s*(\d{1,3})", text)
+    if m:
+        a, b = int(m.group(1)), int(m.group(2))
+        return (min(a, b), max(a, b))
+    # open-ended upward
+    m = re.search(r"(\d{1,3})\s*°?\s*[CF]?\s*or\s+(?:higher|above|more|greater|warmer)", text, re.I)
+    if m:
+        return (int(m.group(1)), 9999)
+    # open-ended downward
+    m = re.search(r"(\d{1,3})\s*°?\s*[CF]?\s*or\s+(?:below|lower|less|under|colder)", text, re.I)
+    if m:
+        return (-9999, int(m.group(1)))
+    v = _extract_temp_from_title(text)
+    return (v, v) if v is not None else None
 
 def fetch_clob_price(token_id: str, side: str = "buy",
                      cache_ttl: float = None) -> Optional[float]:
@@ -1803,14 +1868,14 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         # Primary live source: Wunderground (Polymarket's settlement source),
         # falling back to METAR if WU returns nothing.
         wu = fetch_wunderground(icao, tz, use_f, local_date)
-        res["metar"] = wu if wu else fetch_metar(icao, tz, local_date)
+        res["metar"] = wu if wu else fetch_metar(icao, tz, local_date, use_f)
 
     def _air():
         # Raw airport METAR (aviationweather.gov — the same feed metar-taf.com
         # shows). Fetched in its OWN thread so it runs in parallel with _met
         # instead of serialising two HTTP calls. Cached, so if _met also needed
         # METAR this is a cache hit. Lets the alert show the exact station reading.
-        res["airport_metar"] = fetch_metar(icao, tz, local_date)
+        res["airport_metar"] = fetch_metar(icao, tz, local_date, use_f)
 
     # Free no-key sources, each toggleable via ENABLE_<SOURCE>. _met (live obs) and
     # _air (raw airport METAR) are always on — they provide max_so_far, not forecasts.
@@ -2045,6 +2110,22 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
                     f"only {frac-0.5:.1f}° from rounding DOWN to {(sv or 0)-1}!"
                 )
 
+    # ── Range-bucket markets (e.g. SF '68-69°F') ─────────────────────────────
+    # Fetch the market now (before the verdict) and, if it uses multi-degree
+    # ranges, re-bin the model's single-degree distribution onto the market's
+    # buckets so prob / verdict / edges all reflect the RANGE, not one degree.
+    pm_data = None
+    range_market = False
+    if fetch_prices:
+        try:
+            pm_data = fetch_polymarket_market(city_key, target_date)
+        except Exception:
+            pm_data = None
+        if pm_data and _market_is_range(pm_data):
+            range_market = True
+            dist     = _remap_distribution(dist, pm_data)
+            dist_raw = _remap_distribution(dist_raw, pm_data)
+
     top        = dist[0] if dist else {}
     model_prob = top.get("probability") or 0.0
     confidence = "HIGH" if model_prob >= 0.60 else "MEDIUM" if model_prob >= 0.40 else "LOW"
@@ -2064,8 +2145,9 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
             agreement = "weak"
 
     # ── boundary risk: is mu sitting on a rounding edge? ──────────────────────
+    # Irrelevant for range-bucket markets — a mid-range µ isn't a coin-flip there.
     on_boundary = False
-    if mu is not None and not use_hko:
+    if mu is not None and not use_hko and not range_market:
         frac = mu - math.floor(mu)
         # WU rounds at .5; danger zone is .35–.65 (model can't tell which bucket)
         on_boundary = 0.35 <= frac <= 0.65
@@ -2129,33 +2211,32 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     if verdict == "TRADE" and not reasons:
         reasons.append("clear signal — strong bucket, low uncertainty, models agree")
 
-    # ── Polymarket live prices + edge calculation ────────────────────────────
-    pm_data = None
+    # ── Polymarket edge calculation ──────────────────────────────────────────
+    # pm_data was already fetched above (and the distribution re-binned to the
+    # market's buckets for range markets), so reuse it — no second fetch.
     edges   = []
     best_trade = None
-    if fetch_prices:
+    if fetch_prices and pm_data:
         try:
-            pm_data = fetch_polymarket_market(city_key, target_date)
-            if pm_data:
-                # Confidence (0-1) from how clean the read is: shaky reads (high σ,
-                # models disagree, pre-peak) must clear a HIGHER edge bar to trade.
-                conf = 1.0
-                if agreement == "weak":
-                    conf *= 0.55
-                elif agreement == "moderate":
-                    conf *= 0.80
-                if sigma and sigma > 0.7:
-                    conf *= 0.80
-                if not timing.get("reliable", False):
-                    conf *= 0.85
-                edges = compute_edges(dist, pm_data, sym, confidence=conf)
-                # best actionable trade = highest edge that cleared the bar
-                for e in edges:
-                    if e["action"] in ("BUY YES", "BUY NO"):
-                        best_trade = e
-                        break
+            # Confidence (0-1) from how clean the read is: shaky reads (high σ,
+            # models disagree, pre-peak) must clear a HIGHER edge bar to trade.
+            conf = 1.0
+            if agreement == "weak":
+                conf *= 0.55
+            elif agreement == "moderate":
+                conf *= 0.80
+            if sigma and sigma > 0.7:
+                conf *= 0.80
+            if not timing.get("reliable", False):
+                conf *= 0.85
+            edges = compute_edges(dist, pm_data, sym, confidence=conf)
+            # best actionable trade = highest edge that cleared the bar
+            for e in edges:
+                if e["action"] in ("BUY YES", "BUY NO"):
+                    best_trade = e
+                    break
         except Exception:
-            pm_data = None
+            pass
 
     # ── MARKET-DECIDED GUARD ──────────────────────────────────────────────────
     # The market is the source of truth once it concentrates on a bucket. If one
@@ -2248,6 +2329,9 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         "distribution_raw": dist_raw[:6],     # no-bias version of the distribution
         "nobias_note":    nobias_note,        # why no-bias graph is omitted (if so)
         "top_bucket":     top.get("value"),
+        "top_lo":         top.get("lo"),
+        "top_hi":         top.get("hi"),
+        "range_market":   range_market,
         "top_prob":       model_prob,
         "confidence":     confidence,
         "boundary_alert": boundary,

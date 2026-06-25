@@ -193,9 +193,10 @@ Nearly decided — only 3 bucket(s) still alive (>2¢).
 ✅ Bot agrees with the market's front-runner.
 ```
 
-It fires once per ending market, and only when the main signal *didn't* (so it
-complements, never duplicates). Tune with `ENDGAME_*` vars; scan on demand with
-`/endgame`. (Highest-temperature markets only.)
+**Automatic alerts are OFF by default** — set `ENABLE_ENDGAME=1` to also get them
+during scans (they fire once per ending market, only when the main signal
+*didn't*). The **`/endgame` command works on demand regardless.** Tune with
+`ENDGAME_*` vars. (Highest-temperature markets only.)
 
 ### 5. Learning
 Every scan records the prediction; once a market settles, the bot fetches the

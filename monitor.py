@@ -137,9 +137,10 @@ USE_PRICES    = os.environ.get("USE_PRICES", "1") == "1"
 # ── ENDGAME / closing-market scanner (separate from the main signal) ──────────
 # Finds markets that are nearly decided — only a few buckets still "alive" (priced
 # above ENDGAME_ALIVE_CENTS) with one clear front-runner — and just SHOWS the bot's
-# model pick for that market. No edge comparison/filtering: it's an informational
-# "this market is ending, here's what the model thinks" heads-up.
-ENABLE_ENDGAME      = os.environ.get("ENABLE_ENDGAME", "1") == "1"
+# model pick for that market. No edge comparison/filtering.
+# ENABLE_ENDGAME controls the AUTOMATIC alerts during scans (default OFF). The
+# /endgame command for an on-demand scan works regardless.
+ENABLE_ENDGAME      = os.environ.get("ENABLE_ENDGAME", "0") == "1"
 ENDGAME_MAX_ALIVE   = int(os.environ.get("ENDGAME_MAX_ALIVE", "3"))          # ≤ this many buckets alive
 ENDGAME_ALIVE_CENTS = float(os.environ.get("ENDGAME_ALIVE_CENTS", "2")) / 100.0  # >2¢ = alive
 ENDGAME_DOMINANT    = float(os.environ.get("ENDGAME_DOMINANT", "0.70"))      # front-runner ≥70¢ = ending
@@ -2461,8 +2462,7 @@ def main():
         print(f"  Position WATCH:    every {POS_WATCH_MIN} min (flips + stop-loss)")
         print(f"  Profit alert:      at +{PROFIT_TAKE_PCT:.0f}% per position")
     print(f"  Bankroll (sizing): ${BANKROLL:.0f}  (¼-Kelly stakes in alerts)")
-    if ENABLE_ENDGAME:
-        print(f"  Endgame scanner:   on  (≤{ENDGAME_MAX_ALIVE} alive, front-runner ≥{ENDGAME_DOMINANT*100:.0f}¢) — shows model pick")
+    print(f"  Endgame alerts:    {'AUTO on' if ENABLE_ENDGAME else 'off'} (/endgame works on demand)")
     if WEBHOOK_URL:
         print(f"  Webhook → {WEBHOOK_URL[:48]}  events={','.join(sorted(WEBHOOK_EVENTS))}")
     if ENABLE_DIGEST and not OBSERVE_ONLY:

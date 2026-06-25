@@ -427,6 +427,806 @@
       "t": "7:22 AM",
       "city": "chengdu",
       "line": "\ud83d\udd1a Chengdu ending \u00b7 front 25\u00b0C@83\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "7:42 AM",
+      "city": "qingdao",
+      "line": "\ud83d\udd1a Qingdao ending \u00b7 front 30\u00b0C@88\u00a2 \u00b7 bot 31\u00b0C"
+    },
+    {
+      "t": "7:42 AM",
+      "city": "chengdu",
+      "line": "\ud83d\udd1a Chengdu ending \u00b7 front 25\u00b0C@86\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "8:02 AM",
+      "city": "qingdao",
+      "line": "\ud83d\udd1a Qingdao ending \u00b7 front 30\u00b0C@88\u00a2 \u00b7 bot 31\u00b0C"
+    },
+    {
+      "t": "8:02 AM",
+      "city": "chengdu",
+      "line": "\ud83d\udd1a Chengdu ending \u00b7 front 25\u00b0C@86\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "8:23 AM",
+      "city": "qingdao",
+      "line": "\ud83d\udd1a Qingdao ending \u00b7 front 30\u00b0C@94\u00a2 \u00b7 bot 31\u00b0C"
+    },
+    {
+      "t": "8:23 AM",
+      "city": "chengdu",
+      "line": "\ud83d\udd1a Chengdu ending \u00b7 front 25\u00b0C@88\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "8:23 AM",
+      "city": "chongqing",
+      "line": "\ud83d\udd1a Chongqing ending \u00b7 front 25\u00b0C@74\u00a2 \u00b7 bot 24\u00b0C"
+    },
+    {
+      "t": "8:23 AM",
+      "city": "tokyo",
+      "line": "\ud83d\udd1a Tokyo ending \u00b7 front 22\u00b0C@88\u00a2 \u00b7 bot 22\u00b0C"
+    },
+    {
+      "t": "8:43 AM",
+      "city": "qingdao",
+      "line": "\ud83d\udd1a Qingdao ending \u00b7 front 30\u00b0C@94\u00a2 \u00b7 bot 31\u00b0C"
+    },
+    {
+      "t": "8:43 AM",
+      "city": "chengdu",
+      "line": "\ud83d\udd1a Chengdu ending \u00b7 front 25\u00b0C@90\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "8:43 AM",
+      "city": "chongqing",
+      "line": "\ud83d\udd1a Chongqing ending \u00b7 front 25\u00b0C@80\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "8:43 AM",
+      "city": "tokyo",
+      "line": "\ud83d\udd1a Tokyo ending \u00b7 front 22\u00b0C@88\u00a2 \u00b7 bot 22\u00b0C"
+    },
+    {
+      "t": "9:03 AM",
+      "city": "chengdu",
+      "line": "\ud83d\udd1a Chengdu ending \u00b7 front 25\u00b0C@90\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "9:03 AM",
+      "city": "chongqing",
+      "line": "\ud83d\udd1a Chongqing ending \u00b7 front 25\u00b0C@80\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "9:03 AM",
+      "city": "tokyo",
+      "line": "\ud83d\udd1a Tokyo ending \u00b7 front 22\u00b0C@94\u00a2 \u00b7 bot 22\u00b0C"
+    },
+    {
+      "t": "9:24 AM",
+      "city": "chengdu",
+      "line": "\ud83d\udd1a Chengdu ending \u00b7 front 25\u00b0C@91\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "9:24 AM",
+      "city": "chongqing",
+      "line": "\ud83d\udd1a Chongqing ending \u00b7 front 25\u00b0C@84\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "9:24 AM",
+      "city": "tokyo",
+      "line": "\ud83d\udd1a Tokyo ending \u00b7 front 22\u00b0C@95\u00a2 \u00b7 bot 22\u00b0C"
+    },
+    {
+      "t": "9:24 AM",
+      "city": "austin",
+      "line": "\ud83d\udfe2 Austin 95\u00b0F@83% \u00b7 BUY YES 95\u00b0F@40\u00a2 +42%"
+    },
+    {
+      "t": "9:44 AM",
+      "city": "hong kong",
+      "line": "\ud83d\udfe2 Hong Kong 33\u00b0C@86% \u00b7 BUY NO 32\u00b0C@33\u00a2 +33%"
+    },
+    {
+      "t": "9:44 AM",
+      "city": "chengdu",
+      "line": "\ud83d\udd1a Chengdu ending \u00b7 front 25\u00b0C@88\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "9:44 AM",
+      "city": "chongqing",
+      "line": "\ud83d\udd1a Chongqing ending \u00b7 front 25\u00b0C@84\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "9:44 AM",
+      "city": "tokyo",
+      "line": "\ud83d\udd1a Tokyo ending \u00b7 front 22\u00b0C@95\u00a2 \u00b7 bot 22\u00b0C"
+    },
+    {
+      "t": "10:04 AM",
+      "city": "seoul",
+      "line": "\ud83d\udd1a Seoul ending \u00b7 front 26\u00b0C@85\u00a2 \u00b7 bot 26\u00b0C"
+    },
+    {
+      "t": "10:04 AM",
+      "city": "chengdu",
+      "line": "\ud83d\udd1a Chengdu ending \u00b7 front 25\u00b0C@88\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "10:04 AM",
+      "city": "chongqing",
+      "line": "\ud83d\udd1a Chongqing ending \u00b7 front 25\u00b0C@84\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "10:04 AM",
+      "city": "tokyo",
+      "line": "\ud83d\udd1a Tokyo ending \u00b7 front 22\u00b0C@98\u00a2 \u00b7 bot 23\u00b0C"
+    },
+    {
+      "t": "10:25 AM",
+      "city": "seoul",
+      "line": "\ud83d\udd1a Seoul ending \u00b7 front 26\u00b0C@85\u00a2 \u00b7 bot 26\u00b0C"
+    },
+    {
+      "t": "10:25 AM",
+      "city": "chongqing",
+      "line": "\ud83d\udd1a Chongqing ending \u00b7 front 25\u00b0C@83\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "10:25 AM",
+      "city": "tokyo",
+      "line": "\ud83d\udd1a Tokyo ending \u00b7 front 22\u00b0C@98\u00a2 \u00b7 bot 23\u00b0C"
+    },
+    {
+      "t": "10:46 AM",
+      "city": "seoul",
+      "line": "\ud83d\udd1a Seoul ending \u00b7 front 26\u00b0C@95\u00a2 \u00b7 bot 26\u00b0C"
+    },
+    {
+      "t": "10:46 AM",
+      "city": "busan",
+      "line": "\ud83d\udd1a Busan ending \u00b7 front 28\u00b0C@94\u00a2 \u00b7 bot 27\u00b0C"
+    },
+    {
+      "t": "10:46 AM",
+      "city": "hong kong",
+      "line": "\ud83d\udd1a Hong Kong ending \u00b7 front 32\u00b0C@80\u00a2 \u00b7 bot 33\u00b0C"
+    },
+    {
+      "t": "10:46 AM",
+      "city": "shanghai",
+      "line": "\ud83d\udd1a Shanghai ending \u00b7 front 25\u00b0C@73\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "10:46 AM",
+      "city": "chongqing",
+      "line": "\ud83d\udd1a Chongqing ending \u00b7 front 25\u00b0C@92\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "10:46 AM",
+      "city": "tokyo",
+      "line": "\ud83d\udd1a Tokyo ending \u00b7 front 22\u00b0C@98\u00a2 \u00b7 bot 22\u00b0C"
+    },
+    {
+      "t": "10:46 AM",
+      "city": "manila",
+      "line": "\ud83d\udd1a Manila ending \u00b7 front 32\u00b0C@88\u00a2 \u00b7 bot 32\u00b0C"
+    },
+    {
+      "t": "10:46 AM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@75\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "11:06 AM",
+      "city": "seoul",
+      "line": "\ud83d\udd1a Seoul ending \u00b7 front 26\u00b0C@95\u00a2 \u00b7 bot 26\u00b0C"
+    },
+    {
+      "t": "11:06 AM",
+      "city": "busan",
+      "line": "\ud83d\udd1a Busan ending \u00b7 front 28\u00b0C@94\u00a2 \u00b7 bot 28\u00b0C"
+    },
+    {
+      "t": "11:06 AM",
+      "city": "hong kong",
+      "line": "\ud83d\udd1a Hong Kong ending \u00b7 front 32\u00b0C@80\u00a2 \u00b7 bot 33\u00b0C"
+    },
+    {
+      "t": "11:06 AM",
+      "city": "shanghai",
+      "line": "\ud83d\udd1a Shanghai ending \u00b7 front 25\u00b0C@73\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "11:06 AM",
+      "city": "chongqing",
+      "line": "\ud83d\udd1a Chongqing ending \u00b7 front 25\u00b0C@92\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "11:06 AM",
+      "city": "tokyo",
+      "line": "\ud83d\udd1a Tokyo ending \u00b7 front 22\u00b0C@98\u00a2 \u00b7 bot 22\u00b0C"
+    },
+    {
+      "t": "11:06 AM",
+      "city": "manila",
+      "line": "\ud83d\udd1a Manila ending \u00b7 front 32\u00b0C@88\u00a2 \u00b7 bot 32\u00b0C"
+    },
+    {
+      "t": "11:06 AM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@75\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "11:26 AM",
+      "city": "seoul",
+      "line": "\ud83d\udd1a Seoul ending \u00b7 front 26\u00b0C@99\u00a2 \u00b7 bot 26\u00b0C"
+    },
+    {
+      "t": "11:26 AM",
+      "city": "busan",
+      "line": "\ud83d\udd1a Busan ending \u00b7 front 28\u00b0C@78\u00a2 \u00b7 bot 28\u00b0C"
+    },
+    {
+      "t": "11:26 AM",
+      "city": "hong kong",
+      "line": "\ud83d\udd1a Hong Kong ending \u00b7 front 32\u00b0C@95\u00a2 \u00b7 bot 33\u00b0C"
+    },
+    {
+      "t": "11:26 AM",
+      "city": "shanghai",
+      "line": "\ud83d\udd1a Shanghai ending \u00b7 front 25\u00b0C@88\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "11:26 AM",
+      "city": "chongqing",
+      "line": "\ud83d\udd1a Chongqing ending \u00b7 front 25\u00b0C@92\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "11:26 AM",
+      "city": "manila",
+      "line": "\ud83d\udd1a Manila ending \u00b7 front 32\u00b0C@90\u00a2 \u00b7 bot 32\u00b0C"
+    },
+    {
+      "t": "11:26 AM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@76\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "11:47 AM",
+      "city": "seoul",
+      "line": "\ud83d\udd1a Seoul ending \u00b7 front 26\u00b0C@99\u00a2 \u00b7 bot 26\u00b0C"
+    },
+    {
+      "t": "11:47 AM",
+      "city": "busan",
+      "line": "\ud83d\udd1a Busan ending \u00b7 front 28\u00b0C@97\u00a2 \u00b7 bot 28\u00b0C"
+    },
+    {
+      "t": "11:47 AM",
+      "city": "hong kong",
+      "line": "\ud83d\udd1a Hong Kong ending \u00b7 front 32\u00b0C@96\u00a2 \u00b7 bot 33\u00b0C"
+    },
+    {
+      "t": "11:47 AM",
+      "city": "shanghai",
+      "line": "\ud83d\udd1a Shanghai ending \u00b7 front 25\u00b0C@88\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "11:47 AM",
+      "city": "beijing",
+      "line": "\ud83d\udfe2 Beijing 31\u00b0C@71% \u00b7 BUY YES 31\u00b0C@34\u00a2 +36%"
+    },
+    {
+      "t": "11:47 AM",
+      "city": "chongqing",
+      "line": "\ud83d\udd1a Chongqing ending \u00b7 front 25\u00b0C@94\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "11:47 AM",
+      "city": "manila",
+      "line": "\ud83d\udd1a Manila ending \u00b7 front 32\u00b0C@99\u00a2 \u00b7 bot 32\u00b0C"
+    },
+    {
+      "t": "11:47 AM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@76\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "12:07 PM",
+      "city": "busan",
+      "line": "\ud83d\udd1a Busan ending \u00b7 front 28\u00b0C@97\u00a2 \u00b7 bot 28\u00b0C"
+    },
+    {
+      "t": "12:07 PM",
+      "city": "hong kong",
+      "line": "\ud83d\udd1a Hong Kong ending \u00b7 front 32\u00b0C@96\u00a2 \u00b7 bot 33\u00b0C"
+    },
+    {
+      "t": "12:07 PM",
+      "city": "taipei",
+      "line": "\ud83d\udd1a Taipei ending \u00b7 front 31\u00b0C@99\u00a2 \u00b7 bot 32\u00b0C"
+    },
+    {
+      "t": "12:08 PM",
+      "city": "chongqing",
+      "line": "\ud83d\udd1a Chongqing ending \u00b7 front 25\u00b0C@94\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "12:08 PM",
+      "city": "shenzhen",
+      "line": "\ud83d\udd1a Shenzhen ending \u00b7 front 34\u00b0C@95\u00a2 \u00b7 bot 34\u00b0C"
+    },
+    {
+      "t": "12:08 PM",
+      "city": "singapore",
+      "line": "\ud83d\udd1a Singapore ending \u00b7 front 31\u00b0C@74\u00a2 \u00b7 bot 32\u00b0C"
+    },
+    {
+      "t": "12:08 PM",
+      "city": "kuala lumpur",
+      "line": "\ud83d\udd1a Kuala Lumpur ending \u00b7 front 31\u00b0C@70\u00a2 \u00b7 bot 32\u00b0C"
+    },
+    {
+      "t": "12:08 PM",
+      "city": "manila",
+      "line": "\ud83d\udd1a Manila ending \u00b7 front 32\u00b0C@99\u00a2 \u00b7 bot 32\u00b0C"
+    },
+    {
+      "t": "12:08 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@76\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "12:28 PM",
+      "city": "hong kong",
+      "line": "\ud83d\udd1a Hong Kong ending \u00b7 front 32\u00b0C@82\u00a2 \u00b7 bot 33\u00b0C"
+    },
+    {
+      "t": "12:28 PM",
+      "city": "taipei",
+      "line": "\ud83d\udd1a Taipei ending \u00b7 front 31\u00b0C@99\u00a2 \u00b7 bot 32\u00b0C"
+    },
+    {
+      "t": "12:28 PM",
+      "city": "chongqing",
+      "line": "\ud83d\udd1a Chongqing ending \u00b7 front 25\u00b0C@97\u00a2 \u00b7 bot 25\u00b0C"
+    },
+    {
+      "t": "12:28 PM",
+      "city": "shenzhen",
+      "line": "\ud83d\udd1a Shenzhen ending \u00b7 front 34\u00b0C@95\u00a2 \u00b7 bot 34\u00b0C"
+    },
+    {
+      "t": "12:28 PM",
+      "city": "singapore",
+      "line": "\ud83d\udd1a Singapore ending \u00b7 front 31\u00b0C@74\u00a2 \u00b7 bot 32\u00b0C"
+    },
+    {
+      "t": "12:28 PM",
+      "city": "kuala lumpur",
+      "line": "\ud83d\udd1a Kuala Lumpur ending \u00b7 front 31\u00b0C@70\u00a2 \u00b7 bot 32\u00b0C"
+    },
+    {
+      "t": "12:28 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@78\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "12:49 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@84\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "1:09 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@84\u00a2 \u00b7 bot 20\u00b0C"
+    },
+    {
+      "t": "1:29 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@88\u00a2 \u00b7 bot 20\u00b0C"
+    },
+    {
+      "t": "1:50 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@85\u00a2 \u00b7 bot 20\u00b0C"
+    },
+    {
+      "t": "1:50 PM",
+      "city": "lucknow",
+      "line": "\ud83d\udd1a Lucknow ending \u00b7 front 40\u00b0C@72\u00a2 \u00b7 bot 39\u00b0C"
+    },
+    {
+      "t": "2:10 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@85\u00a2 \u00b7 bot 20\u00b0C"
+    },
+    {
+      "t": "2:10 PM",
+      "city": "lucknow",
+      "line": "\ud83d\udd1a Lucknow ending \u00b7 front 40\u00b0C@72\u00a2 \u00b7 bot 39\u00b0C"
+    },
+    {
+      "t": "2:31 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@83\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "2:51 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@85\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "2:51 PM",
+      "city": "lucknow",
+      "line": "\ud83d\udd1a Lucknow ending \u00b7 front 39\u00b0C@74\u00a2 \u00b7 bot 39\u00b0C"
+    },
+    {
+      "t": "3:12 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@85\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "3:12 PM",
+      "city": "lucknow",
+      "line": "\ud83d\udd1a Lucknow ending \u00b7 front 39\u00b0C@74\u00a2 \u00b7 bot 39\u00b0C"
+    },
+    {
+      "t": "3:32 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@84\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "3:32 PM",
+      "city": "lucknow",
+      "line": "\ud83d\udd1a Lucknow ending \u00b7 front 39\u00b0C@93\u00a2 \u00b7 bot 39\u00b0C"
+    },
+    {
+      "t": "3:32 PM",
+      "city": "karachi",
+      "line": "\ud83d\udd1a Karachi ending \u00b7 front 33\u00b0C@94\u00a2 \u00b7 bot 33\u00b0C"
+    },
+    {
+      "t": "3:53 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@84\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "3:53 PM",
+      "city": "lucknow",
+      "line": "\ud83d\udd1a Lucknow ending \u00b7 front 39\u00b0C@93\u00a2 \u00b7 bot 39\u00b0C"
+    },
+    {
+      "t": "3:53 PM",
+      "city": "karachi",
+      "line": "\ud83d\udd1a Karachi ending \u00b7 front 33\u00b0C@94\u00a2 \u00b7 bot 33\u00b0C"
+    },
+    {
+      "t": "4:13 PM",
+      "city": "istanbul",
+      "line": "\ud83d\udd1a Istanbul ending \u00b7 front 27\u00b0C@71\u00a2 \u00b7 bot 27\u00b0C"
+    },
+    {
+      "t": "4:13 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@82\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "4:13 PM",
+      "city": "karachi",
+      "line": "\ud83d\udd1a Karachi ending \u00b7 front 33\u00b0C@90\u00a2 \u00b7 bot 33\u00b0C"
+    },
+    {
+      "t": "4:33 PM",
+      "city": "istanbul",
+      "line": "\ud83d\udd1a Istanbul ending \u00b7 front 27\u00b0C@70\u00a2 \u00b7 bot 27\u00b0C"
+    },
+    {
+      "t": "4:33 PM",
+      "city": "tel aviv",
+      "line": "\ud83d\udd1a Tel Aviv ending \u00b7 front 30\u00b0C@97\u00a2 \u00b7 bot 30\u00b0C"
+    },
+    {
+      "t": "4:33 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@84\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "4:54 PM",
+      "city": "istanbul",
+      "line": "\ud83d\udd1a Istanbul ending \u00b7 front 27\u00b0C@70\u00a2 \u00b7 bot 27\u00b0C"
+    },
+    {
+      "t": "4:54 PM",
+      "city": "tel aviv",
+      "line": "\ud83d\udd1a Tel Aviv ending \u00b7 front 30\u00b0C@97\u00a2 \u00b7 bot 30\u00b0C"
+    },
+    {
+      "t": "4:54 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@84\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "5:14 PM",
+      "city": "tel aviv",
+      "line": "\ud83d\udd1a Tel Aviv ending \u00b7 front 30\u00b0C@98\u00a2 \u00b7 bot 30\u00b0C"
+    },
+    {
+      "t": "5:14 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@85\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "5:34 PM",
+      "city": "istanbul",
+      "line": "\ud83d\udd1a Istanbul ending \u00b7 front 27\u00b0C@77\u00a2 \u00b7 bot 27\u00b0C"
+    },
+    {
+      "t": "5:34 PM",
+      "city": "moscow",
+      "line": "\ud83d\udd1a Moscow ending \u00b7 front 17\u00b0C@74\u00a2 \u00b7 bot 19\u00b0C"
+    },
+    {
+      "t": "5:35 PM",
+      "city": "cape town",
+      "line": "\ud83d\udd1a Cape Town ending \u00b7 front 22\u00b0C@80\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "5:35 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@86\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "5:55 PM",
+      "city": "ankara",
+      "line": "\ud83d\udfe2 Ankara 29\u00b0C@78% \u00b7 BUY YES 29\u00b0C@57\u00a2 +21%"
+    },
+    {
+      "t": "5:55 PM",
+      "city": "istanbul",
+      "line": "\ud83d\udd1a Istanbul ending \u00b7 front 27\u00b0C@77\u00a2 \u00b7 bot 27\u00b0C"
+    },
+    {
+      "t": "5:55 PM",
+      "city": "moscow",
+      "line": "\ud83d\udd1a Moscow ending \u00b7 front 17\u00b0C@74\u00a2 \u00b7 bot 19\u00b0C"
+    },
+    {
+      "t": "5:55 PM",
+      "city": "cape town",
+      "line": "\ud83d\udd1a Cape Town ending \u00b7 front 22\u00b0C@80\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "5:55 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@86\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "6:15 PM",
+      "city": "istanbul",
+      "line": "\ud83d\udd1a Istanbul ending \u00b7 front 27\u00b0C@80\u00a2 \u00b7 bot 27\u00b0C"
+    },
+    {
+      "t": "6:15 PM",
+      "city": "moscow",
+      "line": "\ud83d\udd1a Moscow ending \u00b7 front 17\u00b0C@72\u00a2 \u00b7 bot 19\u00b0C"
+    },
+    {
+      "t": "6:15 PM",
+      "city": "warsaw",
+      "line": "\ud83d\udd1a Warsaw ending \u00b7 front 31\u00b0C@71\u00a2 \u00b7 bot 31\u00b0C"
+    },
+    {
+      "t": "6:16 PM",
+      "city": "cape town",
+      "line": "\ud83d\udd1a Cape Town ending \u00b7 front 22\u00b0C@80\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "6:16 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@88\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "6:36 PM",
+      "city": "istanbul",
+      "line": "\ud83d\udd1a Istanbul ending \u00b7 front 27\u00b0C@84\u00a2 \u00b7 bot 27\u00b0C"
+    },
+    {
+      "t": "6:36 PM",
+      "city": "helsinki",
+      "line": "\ud83d\udd1a Helsinki ending \u00b7 front 21\u00b0C@96\u00a2 \u00b7 bot 22\u00b0C"
+    },
+    {
+      "t": "6:36 PM",
+      "city": "cape town",
+      "line": "\ud83d\udd1a Cape Town ending \u00b7 front 22\u00b0C@88\u00a2 \u00b7 bot 22\u00b0C"
+    },
+    {
+      "t": "6:36 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@88\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "6:56 PM",
+      "city": "istanbul",
+      "line": "\ud83d\udd1a Istanbul ending \u00b7 front 27\u00b0C@84\u00a2 \u00b7 bot 27\u00b0C"
+    },
+    {
+      "t": "6:56 PM",
+      "city": "helsinki",
+      "line": "\ud83d\udd1a Helsinki ending \u00b7 front 21\u00b0C@96\u00a2 \u00b7 bot 22\u00b0C"
+    },
+    {
+      "t": "6:56 PM",
+      "city": "cape town",
+      "line": "\ud83d\udd1a Cape Town ending \u00b7 front 22\u00b0C@88\u00a2 \u00b7 bot 22\u00b0C"
+    },
+    {
+      "t": "6:56 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@88\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "7:11 PM",
+      "city": "ankara",
+      "line": "\ud83d\udd1a Ankara ending \u00b7 front 29\u00b0C@79\u00a2 \u00b7 bot 29\u00b0C"
+    },
+    {
+      "t": "7:11 PM",
+      "city": "istanbul",
+      "line": "\ud83d\udd1a Istanbul ending \u00b7 front 27\u00b0C@94\u00a2 \u00b7 bot 27\u00b0C"
+    },
+    {
+      "t": "7:11 PM",
+      "city": "moscow",
+      "line": "\ud83d\udd1a Moscow ending \u00b7 front 18\u00b0C@88\u00a2 \u00b7 bot 19\u00b0C"
+    },
+    {
+      "t": "7:11 PM",
+      "city": "warsaw",
+      "line": "\ud83d\udd1a Warsaw ending \u00b7 front 31\u00b0C@88\u00a2 \u00b7 bot 31\u00b0C"
+    },
+    {
+      "t": "7:11 PM",
+      "city": "helsinki",
+      "line": "\ud83d\udd1a Helsinki ending \u00b7 front 21\u00b0C@76\u00a2 \u00b7 bot 22\u00b0C"
+    },
+    {
+      "t": "7:11 PM",
+      "city": "cape town",
+      "line": "\ud83d\udd1a Cape Town ending \u00b7 front 22\u00b0C@98\u00a2 \u00b7 bot 22\u00b0C"
+    },
+    {
+      "t": "7:11 PM",
+      "city": "wellington",
+      "line": "\ud83d\udd1a Wellington ending \u00b7 front 11\u00b0C@74\u00a2 \u00b7 bot 11\u00b0C"
+    },
+    {
+      "t": "7:18 PM",
+      "city": "istanbul",
+      "line": "\ud83d\udd1a Istanbul ending \u00b7 front 27\u00b0C@94\u00a2 \u00b7 bot 27\u00b0C"
+    },
+    {
+      "t": "7:18 PM",
+      "city": "moscow",
+      "line": "\ud83d\udd1a Moscow ending \u00b7 front 18\u00b0C@77\u00a2 \u00b7 bot 19\u00b0C"
+    },
+    {
+      "t": "7:18 PM",
+      "city": "london",
+      "line": "\ud83d\udd1a London ending \u00b7 front 29\u00b0C@73\u00a2 \u00b7 bot 29\u00b0C"
+    },
+    {
+      "t": "7:18 PM",
+      "city": "paris",
+      "line": "\ud83d\udfe2 Paris 40\u00b0C@84% \u00b7 BUY YES 40\u00b0C@48\u00a2 +36%"
+    },
+    {
+      "t": "7:18 PM",
+      "city": "warsaw",
+      "line": "\ud83d\udd1a Warsaw ending \u00b7 front 31\u00b0C@88\u00a2 \u00b7 bot 31\u00b0C"
+    },
+    {
+      "t": "7:18 PM",
+      "city": "helsinki",
+      "line": "\ud83d\udd1a Helsinki ending \u00b7 front 21\u00b0C@81\u00a2 \u00b7 bot 22\u00b0C"
+    },
+    {
+      "t": "7:18 PM",
+      "city": "cape town",
+      "line": "\ud83d\udd1a Cape Town ending \u00b7 front 22\u00b0C@98\u00a2 \u00b7 bot 22\u00b0C"
+    },
+    {
+      "t": "7:19 PM",
+      "city": "wellington",
+      "line": "\ud83d\udd1a Wellington ending \u00b7 front 11\u00b0C@76\u00a2 \u00b7 bot 11\u00b0C"
+    },
+    {
+      "t": "7:39 PM",
+      "city": "london",
+      "line": "\ud83d\udd1a London ending \u00b7 front 29\u00b0C@73\u00a2 \u00b7 bot 29\u00b0C"
+    },
+    {
+      "t": "7:39 PM",
+      "city": "warsaw",
+      "line": "\ud83d\udd1a Warsaw ending \u00b7 front 31\u00b0C@88\u00a2 \u00b7 bot 31\u00b0C"
+    },
+    {
+      "t": "7:39 PM",
+      "city": "amsterdam",
+      "line": "\ud83d\udfe2 Amsterdam 30\u00b0C@72% \u00b7 BUY YES 30\u00b0C@51\u00a2 +22%"
+    },
+    {
+      "t": "7:39 PM",
+      "city": "helsinki",
+      "line": "\ud83d\udd1a Helsinki ending \u00b7 front 21\u00b0C@81\u00a2 \u00b7 bot 22\u00b0C"
+    },
+    {
+      "t": "7:39 PM",
+      "city": "wellington",
+      "line": "\ud83d\udd1a Wellington ending \u00b7 front 11\u00b0C@76\u00a2 \u00b7 bot 11\u00b0C"
+    },
+    {
+      "t": "7:46 PM",
+      "city": "london",
+      "line": "\ud83d\udd1a London ending \u00b7 front 29\u00b0C@76\u00a2 \u00b7 bot 29\u00b0C"
+    },
+    {
+      "t": "7:46 PM",
+      "city": "munich",
+      "line": "\ud83d\udd1a Munich ending \u00b7 front 34\u00b0C@85\u00a2 \u00b7 bot 35\u00b0C"
+    },
+    {
+      "t": "7:46 PM",
+      "city": "helsinki",
+      "line": "\ud83d\udd1a Helsinki ending \u00b7 front 21\u00b0C@97\u00a2 \u00b7 bot 22\u00b0C"
+    },
+    {
+      "t": "7:46 PM",
+      "city": "wellington",
+      "line": "\ud83d\udd1a Wellington ending \u00b7 front 11\u00b0C@71\u00a2 \u00b7 bot 11\u00b0C"
+    },
+    {
+      "t": "7:46 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@84\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "7:55 PM",
+      "city": "london",
+      "line": "\ud83d\udd1a London ending \u00b7 front 29\u00b0C@74\u00a2 \u00b7 bot 29\u00b0C"
+    },
+    {
+      "t": "7:55 PM",
+      "city": "munich",
+      "line": "\ud83d\udd1a Munich ending \u00b7 front 34\u00b0C@92\u00a2 \u00b7 bot 35\u00b0C"
+    },
+    {
+      "t": "7:55 PM",
+      "city": "milan",
+      "line": "\ud83d\udfe2 Milan 35\u00b0C@71% \u00b7 BUY YES 35\u00b0C@46\u00a2 +25%"
+    },
+    {
+      "t": "7:55 PM",
+      "city": "wellington",
+      "line": "\ud83d\udd1a Wellington ending \u00b7 front 11\u00b0C@71\u00a2 \u00b7 bot 11\u00b0C"
+    },
+    {
+      "t": "7:55 PM",
+      "city": "toronto",
+      "line": "\ud83d\udd1a Toronto ending \u00b7 front 20\u00b0C@84\u00a2 \u00b7 bot 21\u00b0C"
+    },
+    {
+      "t": "8:03 PM",
+      "city": "milan",
+      "line": "\ud83d\udd34 Milan 34\u00b0C weakened to 57%"
+    },
+    {
+      "t": "8:03 PM",
+      "city": "amsterdam",
+      "line": "\ud83d\udd34 Amsterdam 29\u00b0C weakened to 49%"
     }
   ]
 }

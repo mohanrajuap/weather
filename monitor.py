@@ -134,6 +134,15 @@ GITHUB_BACKUP_BRANCH = os.environ.get("GITHUB_BACKUP_BRANCH", "learning-data").s
 BACKUP_HOUR_UTC      = int(os.environ.get("BACKUP_HOUR_UTC", "2"))         # nightly hour (UTC)
 THRESHOLD     = float(os.environ.get("PROB_THRESHOLD", "0.70"))
 USE_PRICES    = os.environ.get("USE_PRICES", "1") == "1"
+# ── ENDGAME / closing-market scanner (separate from the main signal) ──────────
+# Finds markets that are nearly decided — only a few buckets still "alive" (priced
+# above ENDGAME_ALIVE_CENTS) with one clear front-runner — and alerts when the
+# bot's predicted bucket still has a small positive edge before the market closes.
+ENABLE_ENDGAME      = os.environ.get("ENABLE_ENDGAME", "1") == "1"
+ENDGAME_MAX_ALIVE   = int(os.environ.get("ENDGAME_MAX_ALIVE", "3"))          # ≤ this many buckets alive
+ENDGAME_ALIVE_CENTS = float(os.environ.get("ENDGAME_ALIVE_CENTS", "2")) / 100.0  # >2¢ = alive
+ENDGAME_DOMINANT    = float(os.environ.get("ENDGAME_DOMINANT", "0.70"))      # front-runner ≥70¢ = ending
+ENDGAME_EDGE_MIN    = float(os.environ.get("ENDGAME_EDGE_MIN", "0.04"))      # small edge is enough (4%)
 # Outgoing webhook — POST every signal (with bias + no-bias values) to your other
 # bot's API. Set WEBHOOK_URL to enable. WEBHOOK_TOKEN (optional) is sent as a
 # Bearer auth header. WEBHOOK_EVENTS picks which events to forward.
@@ -141,7 +150,7 @@ WEBHOOK_URL     = os.environ.get("WEBHOOK_URL", "").strip()
 WEBHOOK_TOKEN   = os.environ.get("WEBHOOK_TOKEN", "").strip()
 WEBHOOK_TIMEOUT = float(os.environ.get("WEBHOOK_TIMEOUT", "10"))
 WEBHOOK_EVENTS  = {e for e in os.environ.get(
-    "WEBHOOK_EVENTS", "new_signal,bucket_shift,collapse").replace(" ", "").split(",") if e}
+    "WEBHOOK_EVENTS", "new_signal,bucket_shift,collapse,endgame").replace(" ", "").split(",") if e}
 STATE_DB      = os.environ.get("STATE_DB", "/data/monitor_state.db")
 _alert_cities = os.environ.get("ALERT_CITIES", "").strip()
 ALERT_CITIES  = [c.strip() for c in _alert_cities.split(",") if c.strip()] or list(pw.CITIES.keys())
@@ -773,6 +782,76 @@ def fmt_bucket_shift(p, prev_bucket, prev_prob, position=None) -> str:
         lines.append(f'🔗 {pm["url"]}')
     lines.append(_time_footer(p.get("city")))
     return "\n".join(lines)
+
+
+# ── Endgame / closing-market scanner ──────────────────────────────────────────
+def check_endgame(p):
+    """Spot a nearly-decided market with a small edge still left on the bot's pick.
+    Returns an opportunity dict, or None. Works off the live model distribution +
+    market prices already in `p` (independent of the main TRADE verdict, which
+    often SKIPs these once one bucket dominates)."""
+    pm = p.get("polymarket") or {}
+    buckets = pm.get("buckets") or {}
+    if len(buckets) < 3:
+        return None
+    alive = [(k, v.get("yes")) for k, v in buckets.items()
+             if v.get("yes") is not None and v.get("yes") >= ENDGAME_ALIVE_CENTS]
+    # "ending" = only a few buckets still alive AND one clear front-runner
+    if not (1 <= len(alive) <= ENDGAME_MAX_ALIVE):
+        return None
+    dom_k, dom_y = max(alive, key=lambda x: x[1])
+    if dom_y < ENDGAME_DOMINANT:
+        return None
+    top_b = p.get("top_bucket")
+    if top_b is None:
+        return None
+    pick = buckets.get(top_b)
+    if not pick or pick.get("yes") is None:
+        return None
+    price = pick["yes"]
+    if price >= 0.97:                 # already resolved — no room left to profit
+        return None
+    model = {b["value"]: b["probability"] for b in (p.get("distribution") or [])}
+    mp   = model.get(top_b, 0.0)
+    edge = mp - price                 # small positive edge is enough here
+    if edge < ENDGAME_EDGE_MIN:
+        return None
+    domb = buckets.get(dom_k) or {}
+    return {
+        "city": p["city"], "sym": p.get("temp_unit", "°"), "target_date": p.get("target_date"),
+        "pick": top_b, "price": price, "model_prob": mp, "edge": edge,
+        "lo": pick.get("lo"), "hi": pick.get("hi"),
+        "dom": dom_k, "dom_price": dom_y, "dom_lo": domb.get("lo"), "dom_hi": domb.get("hi"),
+        "agrees": top_b == dom_k, "alive": len(alive), "url": pm.get("url"),
+    }
+
+
+def fmt_endgame(o) -> str:
+    sym  = o["sym"]
+    city = city_display(o["city"])
+    pick_lbl = _range_label(o.get("lo"), o.get("hi"), sym) or f"{o['pick']}{sym}"
+    dom_lbl  = _range_label(o.get("dom_lo"), o.get("dom_hi"), sym) or f"{o['dom']}{sym}"
+    mult = (1.0 / o["price"]) if o["price"] > 0 else 0
+    L = [
+        "🔚 <b>ENDING MARKET — small-edge play</b>",
+        f"📍 <b>{esc(city)}</b>  ·  {esc(o['target_date'])}",
+        _DIV,
+        f"Market nearly decided — only <b>{o['alive']}</b> bucket(s) still alive "
+        f"(&gt;{ENDGAME_ALIVE_CENTS*100:.0f}¢).",
+        "",
+        f"🎯 Bot's pick: <b>{pick_lbl} @ {o['price']*100:.0f}¢</b>  "
+        f"(model {o['model_prob']*100:.0f}% · edge <b>{o['edge']*100:+.0f}%</b>)",
+    ]
+    if o["agrees"]:
+        L.append("✅ Bot agrees this is the likely winner — small edge before it closes to 100¢.")
+    else:
+        L.append(f"⚠️ Market favours <b>{dom_lbl} @ {o['dom_price']*100:.0f}¢</b> — bot disagrees. "
+                 f"Cheap contrarian bet; size small.")
+    L.append(f"💰 If it wins: ~{mult:.1f}× your stake ($1/share).")
+    if o.get("url"):
+        L.append(f'🔗 <a href="{esc(o["url"])}">Open on Polymarket</a>')
+    L.append(_time_footer(o["city"]))
+    return "\n".join(L)
 
 
 # ── Position update ───────────────────────────────────────────────────────────
@@ -1446,6 +1525,25 @@ def run_scan(conn):
             if prev:
                 upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=prev_alerted)
 
+        # ── ENDGAME scanner (separate feature) — only when the main signal did NOT
+        # fire for this city, so it catches near-closed markets the main logic
+        # skips (market-decided / sub-threshold small edges). Deduped per pick. ──
+        if ENABLE_ENDGAME and not crossed_up and not bucket_shifted:
+            try:
+                opp = check_endgame(p)
+            except Exception:
+                opp = None
+            if opp:
+                ekey  = f"endgame|{p['city']}|{tdate}|{opp['pick']}"
+                eprev = get_state(conn, ekey)
+                if not (eprev and eprev["alerted_high"]):
+                    alert_signal(fmt_endgame(opp))      # suppressed in OBSERVE
+                    fire_webhook(p, "endgame")
+                    upsert_state(conn, ekey, p["city"], tdate, opp["pick"], opp["price"], alerted_high=1)
+                    _log(f"🔚 {cdisp} ending: {opp['pick']}{psym}@{opp['price']*100:.0f}¢ edge{opp['edge']*100:+.0f}%")
+                    print(f"  🔚 ENDGAME {city} {opp['pick']}° @{opp['price']*100:.0f}¢ "
+                          f"edge{opp['edge']*100:+.0f}%{mode_tag}")
+
     # Learning: snapshot every prediction from this scan (1 disk write). The last
     # snapshot taken before each city's local day ends is what gets scored later.
     try:
@@ -1646,11 +1744,12 @@ def _main_menu_keyboard():
          {"text": "📡 Sources",       "callback_data": "cmd:/learn sources"}],
         [{"text": "🧪 No-bias check", "callback_data": "cmd:/learn nobias"},
          {"text": "💸 Missed",        "callback_data": "cmd:/missed"}],
-        [{"text": "🧵 Today's alerts","callback_data": "cmd:/alerts"},
-         {"text": "🔭 Price watches", "callback_data": "cmd:/watches"}],
-        [{"text": "🔕 Muted",         "callback_data": "cmd:/muted"},
-         {"text": "💾 Backup",        "callback_data": "cmd:/backup"}],
-        [{"text": "❓ Help",          "callback_data": "cmd:/help"}],
+        [{"text": "🔚 Ending markets","callback_data": "cmd:/endgame"},
+         {"text": "🧵 Today's alerts","callback_data": "cmd:/alerts"}],
+        [{"text": "🔭 Price watches", "callback_data": "cmd:/watches"},
+         {"text": "🔕 Muted",         "callback_data": "cmd:/muted"}],
+        [{"text": "💾 Backup",        "callback_data": "cmd:/backup"},
+         {"text": "❓ Help",          "callback_data": "cmd:/help"}],
     ]
 
 
@@ -1703,6 +1802,7 @@ def set_bot_commands():
     cmds = [
         {"command": "menu",      "description": "📋 Button menu of all actions"},
         {"command": "scan",      "description": "🔍 Scan all markets (or /scan <city>)"},
+        {"command": "endgame",   "description": "🔚 Ending markets with a small edge"},
         {"command": "positions", "description": "💼 Your positions + P&L"},
         {"command": "pnl",       "description": "💰 Realized P&L ledger"},
         {"command": "learn",     "description": "📊 Scoreboard (calib/sources/cities/nobias)"},
@@ -1888,6 +1988,7 @@ def handle_command(text, chat_id):
             "/scan — scan ALL markets now\n"
             "/scan europe — scan a region (asia/europe/americas)\n"
             "/scan munich — scan one city\n"
+            "/endgame — ending markets (nearly decided) with a small edge left\n"
             "/positions — show your positions now\n"
             "/pnl — realized P&L ledger from settled alerts\n"
             "/learn — prediction-vs-outcome scoreboard (also: all / calib / sources / cities / nobias)\n"
@@ -1939,6 +2040,32 @@ def handle_command(text, chat_id):
 
     if low.startswith("/pnl") or low.startswith("/ledger"):
         reply_telegram(chat_id, learn.report_pnl())
+        return
+
+    if low.startswith("/endgame") or low.startswith("/ending"):
+        reply_telegram(chat_id, "🔚 Scanning for ending markets (small-edge closing plays)…")
+        try:
+            pw.prefetch_metars([(pw.CITIES.get(c) or {}).get("icao") for c in ALERT_CITIES])
+        except Exception:
+            pass
+        found = []
+        for city in ALERT_CITIES:
+            try:
+                pp = pw.predict(city, fetch_prices=USE_PRICES)
+            except Exception:
+                continue
+            if "error" in pp:
+                continue
+            opp = check_endgame(pp)
+            if opp:
+                found.append(opp)
+        if not found:
+            reply_telegram(chat_id, "🔚 No ending markets with an edge right now.")
+            return
+        found.sort(key=lambda o: o["edge"], reverse=True)
+        reply_telegram(chat_id, f"🔚 <b>{len(found)} ending market(s) with an edge:</b>")
+        for o in found[:10]:
+            reply_telegram(chat_id, fmt_endgame(o))
         return
 
     if low.startswith("/webhook"):
@@ -2096,7 +2223,7 @@ def handle_command(text, chat_id):
         _CMD_WORDS = {"positions", "pnl", "ledger", "learn", "missed", "history",
                       "alerts", "today", "backup", "pick", "help", "start", "menu",
                       "mute", "muted", "unmute", "watch", "watches", "unwatch",
-                      "watchlist", "webhook", "send"}
+                      "watchlist", "webhook", "send", "endgame", "ending"}
         first = scope.split()[0] if scope else ""
         if first in _CMD_WORDS:
             handle_command("/" + scope, chat_id)
@@ -2338,6 +2465,8 @@ def main():
         print(f"  Position WATCH:    every {POS_WATCH_MIN} min (flips + stop-loss)")
         print(f"  Profit alert:      at +{PROFIT_TAKE_PCT:.0f}% per position")
     print(f"  Bankroll (sizing): ${BANKROLL:.0f}  (¼-Kelly stakes in alerts)")
+    if ENABLE_ENDGAME:
+        print(f"  Endgame scanner:   on  (≤{ENDGAME_MAX_ALIVE} alive, front-runner ≥{ENDGAME_DOMINANT*100:.0f}¢, edge ≥{ENDGAME_EDGE_MIN*100:.0f}%)")
     if WEBHOOK_URL:
         print(f"  Webhook → {WEBHOOK_URL[:48]}  events={','.join(sorted(WEBHOOK_EVENTS))}")
     if ENABLE_DIGEST and not OBSERVE_ONLY:

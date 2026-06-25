@@ -134,6 +134,20 @@ re-bins its per-degree model distribution onto the market's buckets (so the
 learning all use the correct range, and alerts show range labels (`68-69°F`,
 `80+°F`, `≤61°F`). Normal single-degree markets are unaffected.
 
+### 4e. Endgame / closing-market scanner
+A **separate** alert stream for markets that are *nearly decided* — only a few
+buckets still "alive" (priced above `ENDGAME_ALIVE_CENTS`) with one clear
+front-runner. When the bot's predicted bucket still has a small edge before the
+market closes, it fires a `🔚 ENDING MARKET` alert. Two flavours:
+- **Agrees** — the bot backs the front-runner that's still priced with room
+  (e.g. 30°C at 70¢, model 85% → +15% edge before it closes to 100¢).
+- **Contrarian** — the market favours one bucket at ~92¢, but the bot's pick is a
+  cheap-but-alive bucket (e.g. 28°C at 9¢) → a small-stake, high-payoff late bet.
+
+It uses a lower edge bar than the main signal and only fires when the main signal
+*didn't* (so it complements, never duplicates). Tune with `ENDGAME_*` vars; scan
+on demand with `/endgame`. (Highest-temperature markets only.)
+
 ### 5. Learning
 Every scan records the prediction; once a market settles, the bot fetches the
 actual high, scores the call, and feeds the result back into the bias learner.
@@ -175,6 +189,7 @@ Typing commands manually always works too.
 | `/menu` | Telegram button menu of every action |
 | `/scan` | scan all markets now |
 | `/scan london` / `/scan europe` | scan one city / region |
+| `/endgame` | ending markets (nearly decided) where the bot still sees a small edge |
 | `/positions` | your live Polymarket positions + P&L, **observed-max-vs-forecast** tracker, and payout if each wins |
 | `/pnl` | realized P&L ledger from settled alerts ($1 stake each), held vs missed, 7-day + lifetime |
 | `/learn` | yesterday's prediction-vs-outcome scoreboard |

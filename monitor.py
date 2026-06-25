@@ -136,13 +136,13 @@ THRESHOLD     = float(os.environ.get("PROB_THRESHOLD", "0.70"))
 USE_PRICES    = os.environ.get("USE_PRICES", "1") == "1"
 # ── ENDGAME / closing-market scanner (separate from the main signal) ──────────
 # Finds markets that are nearly decided — only a few buckets still "alive" (priced
-# above ENDGAME_ALIVE_CENTS) with one clear front-runner — and alerts when the
-# bot's predicted bucket still has a small positive edge before the market closes.
+# above ENDGAME_ALIVE_CENTS) with one clear front-runner — and just SHOWS the bot's
+# model pick for that market. No edge comparison/filtering: it's an informational
+# "this market is ending, here's what the model thinks" heads-up.
 ENABLE_ENDGAME      = os.environ.get("ENABLE_ENDGAME", "1") == "1"
 ENDGAME_MAX_ALIVE   = int(os.environ.get("ENDGAME_MAX_ALIVE", "3"))          # ≤ this many buckets alive
 ENDGAME_ALIVE_CENTS = float(os.environ.get("ENDGAME_ALIVE_CENTS", "2")) / 100.0  # >2¢ = alive
 ENDGAME_DOMINANT    = float(os.environ.get("ENDGAME_DOMINANT", "0.70"))      # front-runner ≥70¢ = ending
-ENDGAME_EDGE_MIN    = float(os.environ.get("ENDGAME_EDGE_MIN", "0.04"))      # small edge is enough (4%)
 # Outgoing webhook — POST every signal (with bias + no-bias values) to your other
 # bot's API. Set WEBHOOK_URL to enable. WEBHOOK_TOKEN (optional) is sent as a
 # Bearer auth header. WEBHOOK_EVENTS picks which events to forward.
@@ -786,10 +786,9 @@ def fmt_bucket_shift(p, prev_bucket, prev_prob, position=None) -> str:
 
 # ── Endgame / closing-market scanner ──────────────────────────────────────────
 def check_endgame(p):
-    """Spot a nearly-decided market with a small edge still left on the bot's pick.
-    Returns an opportunity dict, or None. Works off the live model distribution +
-    market prices already in `p` (independent of the main TRADE verdict, which
-    often SKIPs these once one bucket dominates)."""
+    """Spot a nearly-decided market (only a few buckets still alive, one clear
+    front-runner) and report the bot's model pick for it. NO edge comparison —
+    this just flags ending markets and shows what the model thinks; you decide."""
     pm = p.get("polymarket") or {}
     buckets = pm.get("buckets") or {}
     if len(buckets) < 3:
@@ -802,25 +801,16 @@ def check_endgame(p):
     dom_k, dom_y = max(alive, key=lambda x: x[1])
     if dom_y < ENDGAME_DOMINANT:
         return None
+    if dom_y >= 0.99:                 # already fully resolved — nothing to say
+        return None
     top_b = p.get("top_bucket")
-    if top_b is None:
-        return None
-    pick = buckets.get(top_b)
-    if not pick or pick.get("yes") is None:
-        return None
-    price = pick["yes"]
-    if price >= 0.97:                 # already resolved — no room left to profit
-        return None
     model = {b["value"]: b["probability"] for b in (p.get("distribution") or [])}
-    mp   = model.get(top_b, 0.0)
-    edge = mp - price                 # small positive edge is enough here
-    if edge < ENDGAME_EDGE_MIN:
-        return None
-    domb = buckets.get(dom_k) or {}
+    pick  = buckets.get(top_b) or {}
+    domb  = buckets.get(dom_k) or {}
     return {
         "city": p["city"], "sym": p.get("temp_unit", "°"), "target_date": p.get("target_date"),
-        "pick": top_b, "price": price, "model_prob": mp, "edge": edge,
-        "lo": pick.get("lo"), "hi": pick.get("hi"),
+        "pick": top_b, "pick_prob": model.get(top_b, 0.0) if top_b is not None else 0.0,
+        "pick_price": pick.get("yes"), "pick_lo": pick.get("lo"), "pick_hi": pick.get("hi"),
         "dom": dom_k, "dom_price": dom_y, "dom_lo": domb.get("lo"), "dom_hi": domb.get("hi"),
         "agrees": top_b == dom_k, "alive": len(alive), "url": pm.get("url"),
     }
@@ -829,25 +819,23 @@ def check_endgame(p):
 def fmt_endgame(o) -> str:
     sym  = o["sym"]
     city = city_display(o["city"])
-    pick_lbl = _range_label(o.get("lo"), o.get("hi"), sym) or f"{o['pick']}{sym}"
     dom_lbl  = _range_label(o.get("dom_lo"), o.get("dom_hi"), sym) or f"{o['dom']}{sym}"
-    mult = (1.0 / o["price"]) if o["price"] > 0 else 0
+    pick_lbl = ((_range_label(o.get("pick_lo"), o.get("pick_hi"), sym) or f"{o['pick']}{sym}")
+                if o.get("pick") is not None else "—")
     L = [
-        "🔚 <b>ENDING MARKET — small-edge play</b>",
+        "🔚 <b>ENDING MARKET</b>",
         f"📍 <b>{esc(city)}</b>  ·  {esc(o['target_date'])}",
         _DIV,
-        f"Market nearly decided — only <b>{o['alive']}</b> bucket(s) still alive "
+        f"Nearly decided — only <b>{o['alive']}</b> bucket(s) still alive "
         f"(&gt;{ENDGAME_ALIVE_CENTS*100:.0f}¢).",
-        "",
-        f"🎯 Bot's pick: <b>{pick_lbl} @ {o['price']*100:.0f}¢</b>  "
-        f"(model {o['model_prob']*100:.0f}% · edge <b>{o['edge']*100:+.0f}%</b>)",
+        f"🏛️ Market front-runner: <b>{dom_lbl} @ {o['dom_price']*100:.0f}¢</b>",
+        f"🎯 <b>Bot's pick: {pick_lbl}</b> ({o['pick_prob']*100:.0f}% model)",
     ]
     if o["agrees"]:
-        L.append("✅ Bot agrees this is the likely winner — small edge before it closes to 100¢.")
+        L.append("✅ Bot agrees with the market's front-runner.")
     else:
-        L.append(f"⚠️ Market favours <b>{dom_lbl} @ {o['dom_price']*100:.0f}¢</b> — bot disagrees. "
-                 f"Cheap contrarian bet; size small.")
-    L.append(f"💰 If it wins: ~{mult:.1f}× your stake ($1/share).")
+        pp = f" — trades at {o['pick_price']*100:.0f}¢" if o.get("pick_price") is not None else ""
+        L.append(f"⚠️ Bot disagrees — it favours a different bucket{pp}.")
     if o.get("url"):
         L.append(f'🔗 <a href="{esc(o["url"])}">Open on Polymarket</a>')
     L.append(_time_footer(o["city"]))
@@ -1534,15 +1522,15 @@ def run_scan(conn):
             except Exception:
                 opp = None
             if opp:
-                ekey  = f"endgame|{p['city']}|{tdate}|{opp['pick']}"
+                ekey  = f"endgame|{p['city']}|{tdate}"     # once per ending market
                 eprev = get_state(conn, ekey)
                 if not (eprev and eprev["alerted_high"]):
                     alert_signal(fmt_endgame(opp))      # suppressed in OBSERVE
                     fire_webhook(p, "endgame")
-                    upsert_state(conn, ekey, p["city"], tdate, opp["pick"], opp["price"], alerted_high=1)
-                    _log(f"🔚 {cdisp} ending: {opp['pick']}{psym}@{opp['price']*100:.0f}¢ edge{opp['edge']*100:+.0f}%")
-                    print(f"  🔚 ENDGAME {city} {opp['pick']}° @{opp['price']*100:.0f}¢ "
-                          f"edge{opp['edge']*100:+.0f}%{mode_tag}")
+                    upsert_state(conn, ekey, p["city"], tdate, opp["dom"], opp["dom_price"], alerted_high=1)
+                    _log(f"🔚 {cdisp} ending · front {opp['dom']}{psym}@{opp['dom_price']*100:.0f}¢ · bot {opp['pick']}{psym}")
+                    print(f"  🔚 ENDGAME {city} front {opp['dom']}°@{opp['dom_price']*100:.0f}¢ "
+                          f"bot {opp['pick']}°{mode_tag}")
 
     # Learning: snapshot every prediction from this scan (1 disk write). The last
     # snapshot taken before each city's local day ends is what gets scored later.
@@ -2466,7 +2454,7 @@ def main():
         print(f"  Profit alert:      at +{PROFIT_TAKE_PCT:.0f}% per position")
     print(f"  Bankroll (sizing): ${BANKROLL:.0f}  (¼-Kelly stakes in alerts)")
     if ENABLE_ENDGAME:
-        print(f"  Endgame scanner:   on  (≤{ENDGAME_MAX_ALIVE} alive, front-runner ≥{ENDGAME_DOMINANT*100:.0f}¢, edge ≥{ENDGAME_EDGE_MIN*100:.0f}%)")
+        print(f"  Endgame scanner:   on  (≤{ENDGAME_MAX_ALIVE} alive, front-runner ≥{ENDGAME_DOMINANT*100:.0f}¢) — shows model pick")
     if WEBHOOK_URL:
         print(f"  Webhook → {WEBHOOK_URL[:48]}  events={','.join(sorted(WEBHOOK_EVENTS))}")
     if ENABLE_DIGEST and not OBSERVE_ONLY:

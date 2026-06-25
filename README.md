@@ -137,16 +137,21 @@ learning all use the correct range, and alerts show range labels (`68-69°F`,
 ### 4e. Endgame / closing-market scanner
 A **separate** alert stream for markets that are *nearly decided* — only a few
 buckets still "alive" (priced above `ENDGAME_ALIVE_CENTS`) with one clear
-front-runner. When the bot's predicted bucket still has a small edge before the
-market closes, it fires a `🔚 ENDING MARKET` alert. Two flavours:
-- **Agrees** — the bot backs the front-runner that's still priced with room
-  (e.g. 30°C at 70¢, model 85% → +15% edge before it closes to 100¢).
-- **Contrarian** — the market favours one bucket at ~92¢, but the bot's pick is a
-  cheap-but-alive bucket (e.g. 28°C at 9¢) → a small-stake, high-payoff late bet.
+front-runner. It fires a `🔚 ENDING MARKET` alert that simply **shows the bot's
+model pick** for that market alongside the market's front-runner — no edge
+comparison or filtering, just an informational heads-up so you can decide:
 
-It uses a lower edge bar than the main signal and only fires when the main signal
-*didn't* (so it complements, never duplicates). Tune with `ENDGAME_*` vars; scan
-on demand with `/endgame`. (Highest-temperature markets only.)
+```
+🔚 ENDING MARKET — Chengdu · 2026-06-25
+Nearly decided — only 3 bucket(s) still alive (>2¢).
+🏛️ Market front-runner: 25°C @ 81¢
+🎯 Bot's pick: 25°C (48% model)
+✅ Bot agrees with the market's front-runner.
+```
+
+It fires once per ending market, and only when the main signal *didn't* (so it
+complements, never duplicates). Tune with `ENDGAME_*` vars; scan on demand with
+`/endgame`. (Highest-temperature markets only.)
 
 ### 5. Learning
 Every scan records the prediction; once a market settles, the bot fetches the

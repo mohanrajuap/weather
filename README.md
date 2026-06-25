@@ -32,7 +32,7 @@ their API key:
 
 | Source | Key needed? | Notes |
 |---|---|---|
-| Open-Meteo (ECMWF, GFS, ICON, GEM + its own) | no | 5 models in 1 call |
+| Open-Meteo (ECMWF, GFS, ICON, GEM, Météo-France, UKMO + its own) | no | 7 models in 1 call |
 | MET Norway (Yr) | no | independent ECMWF-based |
 | US NWS (weather.gov) | no | US cities only, very accurate |
 | 7Timer | no | global, coarse |

@@ -718,10 +718,12 @@ def fetch_multi_model(lat: float, lon: float,
     """
     unit = "fahrenheit" if use_fahrenheit else "celsius"
     model_names = {
-        "ecmwf_ifs025": "ECMWF",
-        "gfs_seamless":  "GFS",
-        "icon_seamless": "ICON",
-        "gem_seamless":  "GEM",
+        "ecmwf_ifs025":         "ECMWF",
+        "gfs_seamless":         "GFS",
+        "icon_seamless":        "ICON",
+        "gem_seamless":         "GEM",
+        "meteofrance_seamless": "MeteoFrance",   # often best on hot continental days
+        "ukmo_seamless":        "UKMO",
     }
     d = _get(OPEN_METEO_URL, {
         "latitude": lat, "longitude": lon,
@@ -2205,7 +2207,15 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         else:
             mu = deb
             if max_so_far > mu:
-                mu = max_so_far + (0.3 if trend != "falling" else 0.0)
+                # Live obs has already exceeded the forecast → the forecast ran low.
+                # If the peak is still forming and the temp is RISING, more climb is
+                # coming before it tops out — anticipate it instead of trailing by
+                # 0.3° (this is the "airport already at 33 climbing to 34, but the
+                # model said 32" failure). Past peak / not rising → just track live.
+                if peak_status == "in_window" and trend == "rising":
+                    mu = max_so_far + 1.0
+                else:
+                    mu = max_so_far + (0.3 if trend != "falling" else 0.0)
     else:
         mu = deb or ens_med or om_target
 

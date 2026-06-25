@@ -2600,6 +2600,14 @@ def main():
                     send_telegram(rep)
             except Exception as e:
                 print(f"[loop] learn report error: {e}")
+            # also push the bias-vs-no-bias scoreboard so you can watch which is
+            # more accurate over time (the thing we're monitoring from today)
+            try:
+                nb = learn.report_bias_free()
+                if nb and "No settled" not in nb:
+                    send_telegram(nb)
+            except Exception as e:
+                print(f"[loop] nobias report error: {e}")
             last_learn_report = time.time()
 
         # tight position WATCH timer (alerts on model flipping against held bucket)

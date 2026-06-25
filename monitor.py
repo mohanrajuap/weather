@@ -582,19 +582,25 @@ def fmt_new_signal(p) -> str:
         ae = {"strong":"✅","moderate":"⚠️","weak":"❌"}.get(agr,"•")
         L.append(f"{ae} Agreement: {esc(agr)}")
     if live.get("current_temp") is not None:
-        if live.get("source") == "wunderground":
+        _srcname = live.get("source")
+        if _srcname == "hko":
+            src = "🏛️ HKO Observatory (settlement)"
+        elif _srcname == "wunderground":
             src = "🎯 Wunderground"
         else:
             src = f"🛩️ airport {esc(live.get('airport_icao','METAR'))} METAR"
         L.append(f"🌡️ Live: {live['current_temp']}{sym} (max {live.get('max_so_far')}{sym}, {esc(live.get('trend'))}) · {src}")
-    # raw airport METAR — the exact station the market settles on (= metar-taf.com)
-    if live.get("airport_max") is not None and live.get("source") == "wunderground":
+    # raw airport METAR alongside — for settlement-station cities (HKO) it's NOT
+    # the settlement source, just a cross-check.
+    if live.get("airport_max") is not None and live.get("source") in ("wunderground", "hko"):
         icao = live.get("airport_icao", "?")
         L.append(f"🛩️ Airport {esc(icao)} METAR: now {live.get('airport_temp')}{sym} · "
                  f"max today {live.get('airport_max')}{sym}")
         if p.get("live_source_disagree"):
-            L.append(f"   ⚠️ Wunderground says {live.get('max_so_far')}{sym} but the airport "
-                     f"reports {live.get('airport_max')}{sym} — settlement follows the airport.")
+            primary = "HKO" if live.get("source") == "hko" else "Wunderground"
+            settles = "HKO" if live.get("source") == "hko" else "the airport"
+            L.append(f"   ⚠️ {primary} says {live.get('max_so_far')}{sym} but the airport "
+                     f"reports {live.get('airport_max')}{sym} — settlement follows {settles}.")
 
     # peak countdown + source-disagreement context (data-quality at a glance)
     cd = _peak_countdown(p)
@@ -2360,7 +2366,8 @@ def github_backup() -> int:
         ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
         files = [(learn._LEARN_FILE, "data/learn_history.json"),
                  (pw._HISTORY_FILE,  "data/deb_history.json"),
-                 (learn.ALERTS_FILE, "data/alerts_log.json")]
+                 (learn.ALERTS_FILE, "data/alerts_log.json"),
+                 (pw._OBSMAX_FILE,   "data/obs_max.json")]
         n = sum(1 for local, repo_path in files
                 if _gh_put_file(repo_path, local, f"learning backup {ts}"))
         print(f"[backup] pushed {n} file(s) to {GITHUB_REPO}@{GITHUB_BACKUP_BRANCH}")
@@ -2404,7 +2411,8 @@ def github_restore():
     try:
         files = [(learn._LEARN_FILE, "data/learn_history.json"),
                  (pw._HISTORY_FILE,  "data/deb_history.json"),
-                 (learn.ALERTS_FILE, "data/alerts_log.json")]
+                 (learn.ALERTS_FILE, "data/alerts_log.json"),
+                 (pw._OBSMAX_FILE,   "data/obs_max.json")]
         restored = 0
         for local, repo_path in files:
             if not _local_is_empty(local):

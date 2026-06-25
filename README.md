@@ -87,6 +87,25 @@ Beyond entry alerts, the bot actively manages what you hold:
 - **Morning digest** — once a day (`DIGEST_HOUR_UTC`) a single message lists the
   best edges across all cities. Mute noisy cities with `/mute <city>`.
 
+### 4b-i. Per-city settlement station (non-airport)
+Most cities settle on (or near) their airport, but a few use a **specific
+station**. Hong Kong settles on the **Hong Kong Observatory (HKO HQ, urban)** —
+~35 km from the airport, which can read **1–3° warmer at the airport** during the
+afternoon peak. This caused a real miss: the bot read the airport at **33°C** and
+predicted **33°C @ 96%**, but the HKO observatory peaked at **32°C** — and the
+market settled **32°C**.
+
+The bot now pulls live obs + settlement for these cities from the **correct
+station** (`"obs"` provider in the city config). HKO's open-data feed publishes
+only the *current* temperature, so the bot **tracks the running daily max across
+scans** (persisted to `/data/obs_max.json` and backed up) to recover the day's
+peak. Alerts show the divergence — e.g. `HKO says 32°C but the airport reports
+33°C — settlement follows HKO`.
+
+It's **pluggable**: to fix another market the same way, write `fetch_<x>_obs` /
+`fetch_<x>_actual`, register them in `_OBS_PROVIDERS`, and set `"obs": "<x>"` on
+that city's config. (HKO is wired in via its free open-data API.)
+
 ### 4b. Live & settlement source (airport METAR)
 Polymarket settles each temperature market on a specific **airport weather
 station**. The bot reads that station's live observations every scan — both via

@@ -176,7 +176,7 @@ CITIES = {
     "jeddah":        {"lat": 21.6796, "lon": 39.1565,   "icao": "OEJN",  "tz": 10800,  "f": False, "settlement": "metar", "peak_end": 15},
     "seoul":         {"lat": 37.4602, "lon": 126.4407,  "icao": "RKSI",  "tz": 32400,  "f": False, "settlement": "metar", "peak_end": 16},
     "busan":         {"lat": 35.1796, "lon": 128.9380,  "icao": "RKPK",  "tz": 32400,  "f": False, "settlement": "metar", "peak_end": 16},
-    "hong kong":     {"lat": 22.3080, "lon": 113.9185,  "icao": "VHHH",  "tz": 28800,  "f": False, "settlement": "hko",   "peak_end": 15},
+    "hong kong":     {"lat": 22.3019, "lon": 114.1742,  "icao": "VHHH",  "tz": 28800,  "f": False, "settlement": "hko", "obs": "hko", "peak_end": 15},
     "taipei":        {"lat": 25.0777, "lon": 121.5737,  "icao": "RCSS",  "tz": 28800,  "f": False, "settlement": "cwa",   "peak_end": 15},
     "shanghai":      {"lat": 31.1443, "lon": 121.8083,  "icao": "ZSPD",  "tz": 28800,  "f": False, "settlement": "metar", "peak_end": 15},
     "beijing":       {"lat": 40.0799, "lon": 116.5847,  "icao": "ZBAA",  "tz": 28800,  "f": False, "settlement": "metar", "peak_end": 15},
@@ -1080,16 +1080,126 @@ def _om_past_max(lat: float, lon: float, date: str,
             return round(float(highs[i]), 1)
     return None
 
+# ══════════════════════════════════════════════════════════════════════════════
+# OBSERVATION PROVIDERS — per-city settlement-station overrides
+# ══════════════════════════════════════════════════════════════════════════════
+# Most cities settle on (or near) their airport, so the default METAR/Wunderground
+# obs are correct. A few settle on a SPECIFIC non-airport station — e.g. Hong Kong
+# settles on the Hong Kong Observatory (HKO HQ, urban), ~35 km from the airport,
+# which can read 1°+ cooler at the afternoon peak. Set "obs": "<provider>" on such
+# a city and the bot pulls live obs + settlement from that station instead.
+#
+# To fix another market the same way: write fetch_<x>_obs / fetch_<x>_actual,
+# register them in _OBS_PROVIDERS, and add "obs": "<x>" to that city's config.
+HKO_URL = _env("HKO_URL", "https://data.weather.gov.hk/weatherAPI/opendata/weather.php")
+
+# Persistent running daily-max per (city, local-date). Some stations (HKO) publish
+# only the CURRENT temperature, so we track the day's max ourselves across scans.
+def _resolve_obsmax_file() -> str:
+    env = os.environ.get("OBS_MAX_FILE")
+    if env:
+        return env
+    if os.path.isdir("/data"):
+        return "/data/obs_max.json"
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "obs_max.json")
+
+_OBSMAX_FILE = _resolve_obsmax_file()
+_OBSMAX_LOCK = threading.Lock()
+
+def _obsmax_load() -> dict:
+    try:
+        if os.path.exists(_OBSMAX_FILE):
+            with open(_OBSMAX_FILE) as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+def _obsmax_update(city_key: str, date: str, temp: Optional[float]) -> Optional[float]:
+    """Fold `temp` into the running daily max for (city, date); return the max."""
+    if temp is None:
+        return None
+    with _OBSMAX_LOCK:
+        d = _obsmax_load()
+        key = f"{city_key}|{date}"
+        prev = d.get(key)
+        mx = temp if prev is None else max(prev, temp)
+        if mx != prev:
+            d[key] = mx
+            for old in sorted(d.keys())[:-300]:    # keep the file small
+                d.pop(old, None)
+            try:
+                with open(_OBSMAX_FILE, "w") as f:
+                    json.dump(d, f)
+            except Exception:
+                pass
+        return mx
+
+def _obsmax_get(city_key: str, date: str) -> Optional[float]:
+    return _obsmax_load().get(f"{city_key}|{date}")
+
+
+# ── Hong Kong Observatory (HKO open data) provider ────────────────────────────
+def _hko_current(station: str = "Hong Kong Observatory") -> Optional[float]:
+    """Current temperature (°C) at an HKO station from the open-data feed."""
+    d = _get(HKO_URL, {"dataType": "rhrread", "lang": "en"}, timeout=10.0, cache_ttl=300)
+    if not isinstance(d, dict):
+        return None
+    for t in (d.get("temperature") or {}).get("data", []):
+        if t.get("place") == station:
+            return _sf(t.get("value"))
+    return None
+
+def fetch_hko_obs(city_key, tz, use_f, local_date=None) -> Optional[Dict]:
+    """Live obs for an HKO-settled city from the Hong Kong Observatory station (the
+    actual settlement source), with a tracked running daily max."""
+    cur = _hko_current("Hong Kong Observatory")
+    if cur is None:
+        return None
+    local_now = _now_utc() + timedelta(seconds=tz)
+    today = local_now.strftime("%Y-%m-%d")
+    mx = _obsmax_update(city_key, today, cur)
+    return {
+        "current_temp": cur,
+        "max_so_far":   mx if mx is not None else cur,
+        "obs_time":     local_now.strftime("%H:%M"),
+        "recent_temps": [(local_now.strftime("%H:%M"), cur)],
+        "trend":        "unknown",
+        "obs_count":    1,
+        "source":       "hko",
+    }
+
+def fetch_hko_actual(city_key, date) -> Optional[float]:
+    """Settled HKO daily max for a past date: the tracked running max if we have
+    it, else Open-Meteo reanalysis at the city's (HKO HQ) coordinates."""
+    mx = _obsmax_get(city_key, date)
+    if mx is not None:
+        return round(float(mx), 1)
+    meta = CITIES.get(city_key) or {}
+    return _om_past_max(meta.get("lat"), meta.get("lon"), date, meta.get("f", False))
+
+
+# Registry: city config "obs" -> {live, actual}. Add new stations here to fix more.
+_OBS_PROVIDERS = {
+    "hko": {"live": fetch_hko_obs, "actual": fetch_hko_actual},
+}
+
+
 def fetch_actual_high(city_key: str, date: str) -> Optional[float]:
     """
     The SETTLED daily high for a completed past date, used to teach the model
-    its per-city bias (see deb_blend / _signed_bias). Prefers Wunderground —
-    Polymarket's settlement source — and falls back to Open-Meteo's analysis.
-    `date` is the city-local date "YYYY-MM-DD". Returns °C/°F per city, or None.
+    its per-city bias (see deb_blend / _signed_bias). Uses the city's configured
+    observation provider (e.g. HKO) when set, else Wunderground/airport, falling
+    back to Open-Meteo's analysis. `date` is the local date "YYYY-MM-DD".
     """
     meta = CITIES.get(city_key)
     if not meta:
         return None
+    prov = _OBS_PROVIDERS.get(meta.get("obs"))
+    if prov:
+        v = prov["actual"](city_key, date)
+        if v is not None:
+            return round(float(v), 1)
     icao  = meta["icao"]
     tz    = meta["tz"]
     use_f = meta.get("f", False)
@@ -1864,9 +1974,16 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     def _mn():  res["mn"]    = fetch_metno(lat, lon, tz, use_f, target_date)
     def _nws(): res["nws"]   = fetch_nws(lat, lon, use_f, target_date)
     def _7t():  res["t7"]    = fetch_7timer(lat, lon, tz, use_f, target_date)
+    _provider = _OBS_PROVIDERS.get(meta.get("obs"))
     def _met():
-        # Primary live source: Wunderground (Polymarket's settlement source),
-        # falling back to METAR if WU returns nothing.
+        # If the city settles on a specific non-airport station (e.g. Hong Kong →
+        # HKO Observatory), pull live obs from THAT station — it's the settlement
+        # source. Otherwise: Wunderground first, METAR fallback.
+        if _provider:
+            obs = _provider["live"](city_key, tz, use_f, local_date)
+            if obs:
+                res["metar"] = obs
+                return
         wu = fetch_wunderground(icao, tz, use_f, local_date)
         res["metar"] = wu if wu else fetch_metar(icao, tz, local_date, use_f)
 
@@ -1998,12 +2115,12 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     trend      = metar.get("trend", "unknown")
     recent     = metar.get("recent_temps", [])
 
-    # raw airport METAR reading (the station Polymarket settles on). Surfaced
-    # alongside the primary source so divergence is visible.
+    # raw airport METAR reading, surfaced alongside the primary source so a
+    # divergence (e.g. HKO observatory vs the airport ~35 km away) is visible.
     air_temp = _sf(airport.get("current_temp"))
     air_max  = _sf(airport.get("max_so_far"))
     live_source_disagree = (
-        metar.get("source") == "wunderground"
+        metar.get("source") in ("wunderground", "hko")
         and max_so_far is not None and air_max is not None
         and abs(max_so_far - air_max) >= 1.0
     )

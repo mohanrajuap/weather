@@ -193,23 +193,23 @@ CITIES = {
     "manila":        {"lat": 14.5086, "lon": 121.0194,  "icao": "RPLL",  "tz": 28800,  "f": False, "settlement": "metar", "peak_end": 15},
     "wellington":    {"lat": -41.3272,"lon": 174.8051,  "icao": "NZWN",  "tz": 46800,  "f": False, "settlement": "metar", "peak_end": 17},
     "toronto":       {"lat": 43.6777, "lon": -79.6248,  "icao": "CYYZ",  "tz": -18000, "f": False, "settlement": "metar", "peak_end": 16},
-    "new york":      {"lat": 40.6413, "lon": -73.7781,  "icao": "KJFK",  "tz": -18000, "f": True,  "settlement": "metar", "peak_end": 16},
+    "new york":      {"lat": 40.7769, "lon": -73.8740,  "icao": "KLGA",  "tz": -18000, "f": True,  "settlement": "metar", "peak_end": 16},  # Polymarket settles on LaGuardia, not JFK
     "los angeles":   {"lat": 33.9425, "lon": -118.4081, "icao": "KLAX",  "tz": -28800, "f": True,  "settlement": "metar", "peak_end": 16},
     "san francisco": {"lat": 37.6213, "lon": -122.3790, "icao": "KSFO",  "tz": -28800, "f": True,  "settlement": "metar", "peak_end": 16},
     "aurora":        {"lat": 39.8561, "lon": -104.6737, "icao": "KBKF",  "tz": -25200, "f": True,  "settlement": "metar", "peak_end": 17},
     "austin":        {"lat": 30.1975, "lon": -97.6664,  "icao": "KAUS",  "tz": -21600, "f": True,  "settlement": "metar", "peak_end": 17},
-    "houston":       {"lat": 29.9902, "lon": -95.3368,  "icao": "KIAH",  "tz": -21600, "f": True,  "settlement": "metar", "peak_end": 17},
+    "houston":       {"lat": 29.6454, "lon": -95.2789,  "icao": "KHOU",  "tz": -21600, "f": True,  "settlement": "metar", "peak_end": 17},  # Polymarket settles on Hobby, not Bush/IAH
     "chicago":       {"lat": 41.9742, "lon": -87.9073,  "icao": "KORD",  "tz": -21600, "f": True,  "settlement": "metar", "peak_end": 16},
-    "dallas":        {"lat": 32.8998, "lon": -97.0403,  "icao": "KDFW",  "tz": -21600, "f": True,  "settlement": "metar", "peak_end": 17},
+    "dallas":        {"lat": 32.8481, "lon": -96.8512,  "icao": "KDAL",  "tz": -21600, "f": True,  "settlement": "metar", "peak_end": 17},  # Polymarket settles on Love Field, not DFW
     "miami":         {"lat": 25.7959, "lon": -80.2870,  "icao": "KMIA",  "tz": -18000, "f": True,  "settlement": "metar", "peak_end": 16},
     "atlanta":       {"lat": 33.6407, "lon": -84.4277,  "icao": "KATL",  "tz": -18000, "f": True,  "settlement": "metar", "peak_end": 16},
     "seattle":       {"lat": 47.4502, "lon": -122.3088, "icao": "KSEA",  "tz": -28800, "f": True,  "settlement": "metar", "peak_end": 17},
     "mexico city":   {"lat": 19.4361, "lon": -99.0719,  "icao": "MMMX",  "tz": -21600, "f": False, "settlement": "metar", "peak_end": 15},
     "buenos aires":  {"lat": -34.8222,"lon": -58.5358,  "icao": "SAEZ",  "tz": -10800, "f": False, "settlement": "metar", "peak_end": 16},
     "sao paulo":     {"lat": -23.4356,"lon": -46.4731,  "icao": "SBGR",  "tz": -10800, "f": False, "settlement": "metar", "peak_end": 15},
-    "panama city":   {"lat": 9.0714,  "lon": -79.3835,  "icao": "MPTO",  "tz": -18000, "f": False, "settlement": "metar", "peak_end": 15},
+    "panama city":   {"lat": 8.9733,  "lon": -79.5556,  "icao": "MPMG",  "tz": -18000, "f": False, "settlement": "metar", "peak_end": 15},  # Polymarket settles on Albrook/Marcos Gelabert, not Tocumen
     "lucknow":       {"lat": 26.7606, "lon": 80.8893,   "icao": "VILK",  "tz": 19800,  "f": False, "settlement": "metar", "peak_end": 16},
-    "karachi":       {"lat": 24.9008, "lon": 67.1681,   "icao": "OPKC",  "tz": 18000,  "f": False, "settlement": "metar", "peak_end": 16},
+    "karachi":       {"lat": 24.9008, "lon": 67.1681,   "icao": "OPKC",  "tz": 18000,  "f": False, "settlement": "metar", "wu_station": "OPMR", "peak_end": 16},  # PM settles on Masroor (WU); OPKC kept for METAR/forecast fallback (Masroor has no METAR)
 }
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1234,8 +1234,8 @@ def fetch_actual_high(city_key: str, date: str) -> Optional[float]:
     icao  = meta["icao"]
     tz    = meta["tz"]
     use_f = meta.get("f", False)
-    # 1) Wunderground historical for that exact local day → settled max
-    wu = fetch_wunderground(icao, tz, use_f, local_date=date)
+    # 1) Wunderground historical at the settlement station (wu_station override) → max
+    wu = fetch_wunderground(meta.get("wu_station") or icao, tz, use_f, local_date=date)
     if wu and wu.get("max_so_far") is not None:
         return round(float(wu["max_so_far"]), 1)
     # 2) Open-Meteo analysed max as fallback
@@ -2015,7 +2015,9 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
             if obs:
                 res["metar"] = obs
                 return
-        wu = fetch_wunderground(icao, tz, use_f, local_date)
+        # Wunderground at the settlement station (wu_station overrides the airport
+        # ICAO when Polymarket settles on a different WU station), METAR fallback.
+        wu = fetch_wunderground(meta.get("wu_station") or icao, tz, use_f, local_date)
         res["metar"] = wu if wu else fetch_metar(icao, tz, local_date, use_f)
 
     def _air():

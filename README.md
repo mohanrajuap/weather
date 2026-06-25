@@ -113,6 +113,24 @@ It's **pluggable**: to fix another market the same way, write `fetch_<x>_obs` /
 `fetch_<x>_actual`, register them in `_OBS_PROVIDERS`, and set `"obs": "<x>"` on
 that city's config.
 
+**Settlement-station audit.** All 51 cities were checked against their Polymarket
+resolution rules. Most settle on Wunderground/NOAA at the **airport** the bot
+already uses (Tokyo→Haneda, Seoul→Incheon, London→London City, Paris→Le Bourget,
+Taipei→Songshan, Moscow→Vnukovo, etc.). The mismatches found and fixed — the bot
+was reading the wrong airport:
+
+| City | Was | Polymarket settles on |
+|---|---|---|
+| New York | JFK | **LaGuardia** (KLGA) |
+| Dallas | DFW | **Love Field** (KDAL) |
+| Houston | Bush/IAH | **Hobby** (KHOU) |
+| Panama City | Tocumen | **Albrook / Marcos Gelabert** (MPMG) |
+| Karachi | Jinnah | **Masroor** (`wu_station` override; Masroor has no METAR so the airport ICAO stays for fallback) |
+| Hong Kong | airport | **HKO Observatory** (see above) |
+
+A city can also set `"wu_station"` to use a different Wunderground station for
+settlement than its METAR/forecast airport.
+
 ### 4b. Live & settlement source (airport METAR)
 Polymarket settles each temperature market on a specific **airport weather
 station**. The bot reads that station's live observations every scan — both via

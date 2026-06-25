@@ -2216,6 +2216,19 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
                     mu = max_so_far + 1.0
                 else:
                     mu = max_so_far + (0.3 if trend != "falling" else 0.0)
+            elif (max_so_far < mu and peak_status in ("in_window", "past")
+                  and trend in ("stagnant", "falling")):
+                # Live obs is BELOW the forecast and has STALLED (or is falling)
+                # during/after the peak → the forecast overshot. Pull the centre
+                # toward the live level and widen σ so the call isn't over-confident
+                # on the forecast bucket (Milan: forecast 34.9, live stuck at 34 →
+                # market correctly leaning 34, not 35).
+                gap = mu - max_so_far
+                if peak_status == "past" or trend == "falling":
+                    mu = max_so_far + 0.2            # peak essentially in
+                else:
+                    mu = max_so_far + gap * 0.45     # hedge live↔forecast
+                sigma = max(sigma, gap * 0.7)        # genuinely uncertain
     else:
         mu = deb or ens_med or om_target
 

@@ -130,6 +130,10 @@ DATA  = _env("POLYMARKET_DATA_URL",  "https://data-api.polymarket.com")
 
 # ── Per-source on/off (free no-key sources default ON; keyed ones turn on when
 #    their API key is set). Flip any to 0 in Railway to drop that source. ──────
+# Trade on the RAW (no-bias) blend — ignore the peak/learned/CITY bias for the
+# actual decision (verdict, edges, best trade). The bias values are still shown
+# for reference. Set USE_NOBIAS=1 if you trust the raw model over the bias.
+USE_NOBIAS        = _env_bool("USE_NOBIAS", False)
 ENABLE_OPEN_METEO = _env_bool("ENABLE_OPEN_METEO", True)
 ENABLE_ENSEMBLE   = _env_bool("ENABLE_ENSEMBLE",   True)
 ENABLE_MULTIMODEL = _env_bool("ENABLE_MULTIMODEL", True)
@@ -2107,6 +2111,10 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     deb, deb_weights, peak_bias = deb_blend(city_key, forecasts, target_date=target_date)
     # Raw blend BEFORE any bias was applied — so we can show both numbers.
     deb_raw = round(deb - peak_bias, 1) if deb is not None else None
+    # USE_NOBIAS: decide on the RAW blend (drop the bias from the trading center).
+    if USE_NOBIAS and deb is not None:
+        deb = deb_raw
+        peak_bias = 0.0
 
     # ── ensemble spread ───────────────────────────────────────────────────────
     p10     = _sf(ens.get("p10"))
@@ -2140,8 +2148,9 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         deb = ens_med if ens_med is not None else _sf(om.get("_target_max"))
         if deb is not None:
             deb_raw = round(deb, 1)                    # the fallback center, no bias
-            deb = round(deb + DEFAULT_PEAK_BIAS, 1)
-            peak_bias = DEFAULT_PEAK_BIAS
+            if not USE_NOBIAS:
+                deb = round(deb + DEFAULT_PEAK_BIAS, 1)
+                peak_bias = DEFAULT_PEAK_BIAS
             deb_weights = "ensemble-median fallback (multi-model fetch empty)"
 
     # ── live METAR (always today's observations) ──────────────────────────────
@@ -2467,6 +2476,7 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
         "deb":            deb,
         "deb_raw":        deb_raw,          # blend WITHOUT peak bias
         "peak_bias":      round(peak_bias, 2),
+        "no_bias_mode":   USE_NOBIAS,
         "deb_weights":    deb_weights,
         "ensemble":       {"p10": p10, "median": ens_med, "p90": p90,
                            "members": ens.get("members", 0)},

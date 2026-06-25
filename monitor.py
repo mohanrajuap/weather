@@ -629,7 +629,8 @@ def fmt_new_signal(p) -> str:
 
     if dist:
         L.append("")
-        L.append("🎲 <b>Probabilities</b> (with bias · vs market price)")
+        _plabel = "no-bias model" if p.get("no_bias_mode") else "with bias"
+        L.append(f"🎲 <b>Probabilities</b> ({_plabel} · vs market price)")
         for b in dist[:4]:
             bar = "▰" * max(1, round(b['probability'] * 10))
             lbl = _range_label(b.get('lo'), b.get('hi'), sym) or f"{b['value']}{sym}"
@@ -2462,6 +2463,8 @@ def main():
         print(f"  Position WATCH:    every {POS_WATCH_MIN} min (flips + stop-loss)")
         print(f"  Profit alert:      at +{PROFIT_TAKE_PCT:.0f}% per position")
     print(f"  Bankroll (sizing): ${BANKROLL:.0f}  (¼-Kelly stakes in alerts)")
+    if getattr(pw, "USE_NOBIAS", False):
+        print(f"  Bias mode:         NO-BIAS (trading on the raw model blend)")
     print(f"  Endgame alerts:    {'AUTO on' if ENABLE_ENDGAME else 'off'} (/endgame works on demand)")
     if WEBHOOK_URL:
         print(f"  Webhook → {WEBHOOK_URL[:48]}  events={','.join(sorted(WEBHOOK_EVENTS))}")

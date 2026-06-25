@@ -89,22 +89,29 @@ Beyond entry alerts, the bot actively manages what you hold:
 
 ### 4b-i. Per-city settlement station (non-airport)
 Most cities settle on (or near) their airport, but a few use a **specific
-station**. Hong Kong settles on the **Hong Kong Observatory (HKO HQ, urban)** —
-~35 km from the airport, which can read **1–3° warmer at the airport** during the
-afternoon peak. This caused a real miss: the bot read the airport at **33°C** and
-predicted **33°C @ 96%**, but the HKO observatory peaked at **32°C** — and the
-market settled **32°C**.
+station**. **Hong Kong** is the clearest case — per Polymarket's own market rules,
+it resolves on the **Hong Kong Observatory** *"Absolute Daily Maximum Temperature"*
+from the official **Daily Extract**, to **0.1°C**, and *"can not resolve until
+data for this date has been published."* The HKO HQ (urban) is ~35 km from the
+airport and can read **1°+ cooler at the afternoon peak** — which caused a real
+miss: the bot read the airport at **33°C** and predicted **33°C @ 96%**, but HKO
+settled **32°C**.
 
-The bot now pulls live obs + settlement for these cities from the **correct
-station** (`"obs"` provider in the city config). HKO's open-data feed publishes
-only the *current* temperature, so the bot **tracks the running daily max across
-scans** (persisted to `/data/obs_max.json` and backed up) to recover the day's
-peak. Alerts show the divergence — e.g. `HKO says 32°C but the airport reports
-33°C — settlement follows HKO`.
+The bot now uses the **exact same source** Polymarket does:
+- **Settlement** (scoring/learning) → HKO's `CLMMAXT` "Absolute Daily Max" from the
+  Daily Extract (to 0.1°C). Like Polymarket, it waits until HKO publishes that day,
+  so the bot's settled value matches the market's resolution exactly.
+- **Live prediction during the day** → before the Daily Extract is published (no one
+  can know the final value yet), the bot uses HKO's live `rhrread` current temp,
+  accumulating the **running daily max** across scans (`/data/obs_max.json`, backed
+  up) as a real-time proxy. Open-Meteo at HKO HQ is the last-resort estimate.
+
+Alerts label the source (`🏛️ HKO Observatory`) and flag airport divergence
+(`HKO says 32°C but the airport reports 33°C — settlement follows HKO`).
 
 It's **pluggable**: to fix another market the same way, write `fetch_<x>_obs` /
 `fetch_<x>_actual`, register them in `_OBS_PROVIDERS`, and set `"obs": "<x>"` on
-that city's config. (HKO is wired in via its free open-data API.)
+that city's config.
 
 ### 4b. Live & settlement source (airport METAR)
 Polymarket settles each temperature market on a specific **airport weather

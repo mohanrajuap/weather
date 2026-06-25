@@ -1169,13 +1169,44 @@ def fetch_hko_obs(city_key, tz, use_f, local_date=None) -> Optional[Dict]:
         "source":       "hko",
     }
 
+def _hko_daily_max(date: str) -> Optional[float]:
+    """HKO 'Absolute Daily Maximum Temperature' from the official Daily Extract
+    (CLMMAXT) — the EXACT source Polymarket uses to resolve HK markets, to 0.1°C.
+    Returns None until HKO publishes that day (same delay Polymarket waits on)."""
+    try:
+        y, m, dd = date.split("-")
+        dd = int(dd)
+    except Exception:
+        return None
+    d = _get("https://data.weather.gov.hk/weatherAPI/opendata/opendata.php",
+             {"dataType": "CLMMAXT", "lang": "en", "rformat": "json",
+              "station": "HKO", "year": int(y), "month": int(m)},
+             timeout=15.0, cache_ttl=3600)
+    if not isinstance(d, dict):
+        return None
+    for row in (d.get("data") or []):
+        # row = [year, month, day, value, completeness]
+        try:
+            if int(row[2]) == dd:
+                v = _sf(row[3])
+                return round(v, 1) if v is not None else None
+        except Exception:
+            continue
+    return None
+
 def fetch_hko_actual(city_key, date) -> Optional[float]:
-    """Settled HKO daily max for a past date: the tracked running max if we have
-    it, else Open-Meteo reanalysis at the city's (HKO HQ) coordinates."""
-    mx = _obsmax_get(city_key, date)
+    """Settled HKO daily max for a past date. Order of trust:
+    1) CLMMAXT — the EXACT 'Absolute Daily Max' Polymarket resolves on (once HKO
+       publishes it). This makes the bot's settled value match Polymarket exactly.
+    2) our tracked running max from live HKO readings (real-time proxy before #1).
+    3) Open-Meteo reanalysis at HKO HQ (last-resort estimate)."""
+    v = _hko_daily_max(date)              # 1) exact Polymarket source
+    if v is not None:
+        return v
+    mx = _obsmax_get(city_key, date)      # 2) live running-max proxy
     if mx is not None:
         return round(float(mx), 1)
-    meta = CITIES.get(city_key) or {}
+    meta = CITIES.get(city_key) or {}     # 3) estimate
     return _om_past_max(meta.get("lat"), meta.get("lon"), date, meta.get("f", False))
 
 

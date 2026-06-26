@@ -140,6 +140,11 @@ USE_PRICES    = os.environ.get("USE_PRICES", "1") == "1"
 # model pick for that market. No edge comparison/filtering.
 # ENABLE_ENDGAME controls the AUTOMATIC alerts during scans (default OFF). The
 # /endgame command for an on-demand scan works regardless.
+# Auto "HIGH LOCKED" alerts for markets you HOLD: when the day's peak passes and
+# the temperature isn't still rising, the winning bucket is set → the bot tells
+# you (and again, with timing, if a later spike sets a NEW high). On by default;
+# /locked scans all cities on demand.
+ENABLE_LOCKED       = os.environ.get("ENABLE_LOCKED", "1") == "1"
 ENABLE_ENDGAME      = os.environ.get("ENABLE_ENDGAME", "0") == "1"
 ENDGAME_MAX_ALIVE   = int(os.environ.get("ENDGAME_MAX_ALIVE", "3"))          # ≤ this many buckets alive
 ENDGAME_ALIVE_CENTS = float(os.environ.get("ENDGAME_ALIVE_CENTS", "2")) / 100.0  # >2¢ = alive
@@ -877,17 +882,28 @@ def check_locked(city, p):
     }
 
 
-def fmt_locked(o, pm_price=None, pm_url=None, held=None) -> str:
+def fmt_locked(o, pm_price=None, pm_url=None, held=None, prev_max=None) -> str:
     sym  = o["sym"]
     city = city_display(o["city"])
-    L = [
-        "🔒 <b>HIGH LOCKED — market essentially decided</b>",
-        f"📍 <b>{esc(city)}</b>  ·  {esc(o['date'])}",
-        _DIV,
-        f"Peak passed (local {esc(o['local'])}) — today's high is in at "
-        f"<b>{o['max']:.0f}{sym}</b> ({esc(o['trend'])}).",
-        f"🏆 Winning bucket: <b>{o['bucket']}{sym}</b>",
-    ]
+    if prev_max is not None:
+        # a later spike pushed the high above the previously-locked level
+        L = [
+            "🔒 <b>NEW HIGH — locked level raised</b>",
+            f"📍 <b>{esc(city)}</b>  ·  {esc(o['date'])}",
+            _DIV,
+            f"📈 New high <b>{o['max']:.0f}{sym}</b> at local <b>{esc(o['local'])}</b> "
+            f"— was locked at {prev_max:.0f}{sym}.",
+            f"🏆 Winning bucket now: <b>{o['bucket']}{sym}</b>",
+        ]
+    else:
+        L = [
+            "🔒 <b>HIGH LOCKED — market essentially decided</b>",
+            f"📍 <b>{esc(city)}</b>  ·  {esc(o['date'])}",
+            _DIV,
+            f"Peak passed — today's high is in at <b>{o['max']:.0f}{sym}</b> "
+            f"({esc(o['trend'])}), confirmed local <b>{esc(o['local'])}</b>.",
+            f"🏆 Winning bucket: <b>{o['bucket']}{sym}</b>",
+        ]
     if pm_price is not None:
         if pm_price < 0.95:
             mult = (1.0 / pm_price) if pm_price > 0 else 0
@@ -1454,6 +1470,28 @@ def run_scan(conn):
         if city in MUTED or (pw.resolve_city(city) or city) in MUTED:
             health["muted"] += 1
             continue
+
+        # ── auto "HIGH LOCKED" for markets you HOLD — runs even if today's market
+        # has rolled to tomorrow, since it uses today's live obs. Alerts once when
+        # the high locks, and again (with timing) if a later spike sets a new high.
+        if ENABLE_LOCKED and p["city"] in held_cities:
+            try:
+                lo = check_locked(p["city"], p)
+            except Exception:
+                lo = None
+            if lo:
+                lkey   = f"locked|{p['city']}|{lo['date']}"
+                lprev  = get_state(conn, lkey)
+                prevmax = lprev["prob"] if lprev else None
+                held_b = (held_positions.get(p["city"]) or {}).get("bucket")
+                if prevmax is None:
+                    send_telegram(fmt_locked(lo, held=held_b))
+                    upsert_state(conn, lkey, p["city"], lo["date"], lo["bucket"], lo["max"], alerted_high=1)
+                    print(f"  🔒 LOCKED {city} {lo['bucket']}{lo['sym']} (max {lo['max']})")
+                elif lo["max"] > (prevmax or 0) + 0.01:
+                    send_telegram(fmt_locked(lo, held=held_b, prev_max=prevmax))
+                    upsert_state(conn, lkey, p["city"], lo["date"], lo["bucket"], lo["max"], alerted_high=1)
+                    print(f"  🔒 NEW HIGH {city} {lo['max']}° (was {prevmax})")
 
         # No live Polymarket market today (weekend/holiday/not listed) — nothing to
         # trade. We still recorded the forecast for learning above; skip alert logic.
@@ -2574,6 +2612,7 @@ def main():
     if getattr(pw, "USE_NOBIAS", False):
         print(f"  Bias mode:         NO-BIAS (trading on the raw model blend)")
     print(f"  Endgame alerts:    {'AUTO on' if ENABLE_ENDGAME else 'off'} (/endgame works on demand)")
+    print(f"  Locked alerts:     {'on (held positions)' if ENABLE_LOCKED else 'off'} (/locked on demand)")
     if WEBHOOK_URL:
         print(f"  Webhook → {WEBHOOK_URL[:48]}  events={','.join(sorted(WEBHOOK_EVENTS))}")
     if ENABLE_DIGEST and not OBSERVE_ONLY:

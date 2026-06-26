@@ -2039,7 +2039,7 @@ def handle_command(text, chat_id):
         return
 
     if low.startswith("/endgame") or low.startswith("/ending"):
-        reply_telegram(chat_id, "🔚 Scanning for ending markets (small-edge closing plays)…")
+        reply_telegram(chat_id, "🔚 Scanning for ending markets (nearly decided)…")
         try:
             pw.prefetch_metars([(pw.CITIES.get(c) or {}).get("icao") for c in ALERT_CITIES])
         except Exception:
@@ -2056,10 +2056,11 @@ def handle_command(text, chat_id):
             if opp:
                 found.append(opp)
         if not found:
-            reply_telegram(chat_id, "🔚 No ending markets with an edge right now.")
+            reply_telegram(chat_id, "🔚 No ending markets right now.")
             return
-        found.sort(key=lambda o: o["edge"], reverse=True)
-        reply_telegram(chat_id, f"🔚 <b>{len(found)} ending market(s) with an edge:</b>")
+        # most-decided first (highest front-runner price), then bot-disagrees first
+        found.sort(key=lambda o: (not o.get("agrees"), o.get("dom_price", 0)), reverse=True)
+        reply_telegram(chat_id, f"🔚 <b>{len(found)} ending market(s):</b>")
         for o in found[:10]:
             reply_telegram(chat_id, fmt_endgame(o))
         return

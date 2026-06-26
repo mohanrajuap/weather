@@ -850,6 +850,62 @@ def fmt_endgame(o) -> str:
     return "\n".join(L)
 
 
+# ── "HIGH LOCKED" — today's peak is in, the winning bucket is decided ──────────
+def check_locked(city, p):
+    """When TODAY's peak has passed and the temperature isn't still rising, the
+    daily high is essentially locked → the settling bucket is decided. Returns the
+    'locked' result, or None. Uses today's live obs (which predict() always
+    fetches, even after it rolls forward to tomorrow's market)."""
+    meta = pw.CITIES.get(city) or {}
+    live = p.get("live") or {}
+    msf  = live.get("max_so_far")
+    if msf is None:
+        return None
+    tz       = meta.get("tz", 0)
+    peak_end = meta.get("peak_end", 17)
+    local    = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=tz)
+    if local.hour < peak_end:            # today's peak window not over yet
+        return None
+    if live.get("trend") == "rising":    # could still climb — not locked
+        return None
+    sym    = p.get("temp_unit", _city_sym(city))
+    bucket = pw.settlement_round(city, msf)
+    return {
+        "city": city, "sym": sym, "max": msf, "trend": live.get("trend", "?"),
+        "bucket": bucket, "date": local.strftime("%Y-%m-%d"),
+        "local": local.strftime("%H:%M"),
+    }
+
+
+def fmt_locked(o, pm_price=None, pm_url=None, held=None) -> str:
+    sym  = o["sym"]
+    city = city_display(o["city"])
+    L = [
+        "🔒 <b>HIGH LOCKED — market essentially decided</b>",
+        f"📍 <b>{esc(city)}</b>  ·  {esc(o['date'])}",
+        _DIV,
+        f"Peak passed (local {esc(o['local'])}) — today's high is in at "
+        f"<b>{o['max']:.0f}{sym}</b> ({esc(o['trend'])}).",
+        f"🏆 Winning bucket: <b>{o['bucket']}{sym}</b>",
+    ]
+    if pm_price is not None:
+        if pm_price < 0.95:
+            mult = (1.0 / pm_price) if pm_price > 0 else 0
+            L.append(f"💰 Market still has {o['bucket']}{sym} at <b>{pm_price*100:.0f}¢</b> — "
+                     f"near-certain buy (~{mult:.1f}× if it holds).")
+        else:
+            L.append(f"⚪ Market already at {pm_price*100:.0f}¢ — priced in, little value left.")
+    if held is not None:
+        if held == o["bucket"]:
+            L.append(f"✅ You hold {held}{sym} — that's the winner. 🎉")
+        else:
+            L.append(f"❌ You hold {held}{sym} — it lost (high came in at {o['bucket']}{sym}).")
+    if pm_url:
+        L.append(f'🔗 <a href="{esc(pm_url)}">Open on Polymarket</a>')
+    L.append(_time_footer(o["city"]))
+    return "\n".join(L)
+
+
 # ── Position update ───────────────────────────────────────────────────────────
 def _match_city_from_title(title: str):
     """Find which registered city a Polymarket position title refers to."""
@@ -1741,11 +1797,12 @@ def _main_menu_keyboard():
         [{"text": "🧪 No-bias check", "callback_data": "cmd:/learn nobias"},
          {"text": "💸 Missed",        "callback_data": "cmd:/missed"}],
         [{"text": "🔚 Ending markets","callback_data": "cmd:/endgame"},
-         {"text": "🧵 Today's alerts","callback_data": "cmd:/alerts"}],
-        [{"text": "🔭 Price watches", "callback_data": "cmd:/watches"},
-         {"text": "🔕 Muted",         "callback_data": "cmd:/muted"}],
-        [{"text": "💾 Backup",        "callback_data": "cmd:/backup"},
-         {"text": "❓ Help",          "callback_data": "cmd:/help"}],
+         {"text": "🔒 Locked highs",  "callback_data": "cmd:/locked"}],
+        [{"text": "🧵 Today's alerts","callback_data": "cmd:/alerts"},
+         {"text": "🔭 Price watches", "callback_data": "cmd:/watches"}],
+        [{"text": "🔕 Muted",         "callback_data": "cmd:/muted"},
+         {"text": "💾 Backup",        "callback_data": "cmd:/backup"}],
+        [{"text": "❓ Help",          "callback_data": "cmd:/help"}],
     ]
 
 
@@ -1799,6 +1856,7 @@ def set_bot_commands():
         {"command": "menu",      "description": "📋 Button menu of all actions"},
         {"command": "scan",      "description": "🔍 Scan all markets (or /scan <city>)"},
         {"command": "endgame",   "description": "🔚 Ending markets with a small edge"},
+        {"command": "locked",    "description": "🔒 Markets whose high is locked (winner decided)"},
         {"command": "positions", "description": "💼 Your positions + P&L"},
         {"command": "pnl",       "description": "💰 Realized P&L ledger"},
         {"command": "learn",     "description": "📊 Scoreboard (calib/sources/cities/nobias)"},
@@ -1985,6 +2043,7 @@ def handle_command(text, chat_id):
             "/scan europe — scan a region (asia/europe/americas)\n"
             "/scan munich — scan one city\n"
             "/endgame — ending markets (nearly decided) with a small edge left\n"
+            "/locked — markets whose daily high is locked in (winning bucket decided)\n"
             "/positions — show your positions now\n"
             "/pnl — realized P&L ledger from settled alerts\n"
             "/learn — prediction-vs-outcome scoreboard (also: all / calib / sources / cities / nobias)\n"
@@ -2063,6 +2122,53 @@ def handle_command(text, chat_id):
         reply_telegram(chat_id, f"🔚 <b>{len(found)} ending market(s):</b>")
         for o in found[:10]:
             reply_telegram(chat_id, fmt_endgame(o))
+        return
+
+    if low.startswith("/locked") or low.startswith("/decided") or low.startswith("/results"):
+        reply_telegram(chat_id, "🔒 Checking which markets' highs are locked in for today…")
+        try:
+            pw.prefetch_metars([(pw.CITIES.get(c) or {}).get("icao") for c in ALERT_CITIES])
+        except Exception:
+            pass
+        # held buckets per city, to flag win/loss on what you own
+        held = {}
+        if WALLET:
+            try:
+                for pos in (pw.fetch_positions(WALLET, weather_only=True) or []):
+                    ck = _match_city_from_title(pos.get("title", ""))
+                    if ck:
+                        held[ck] = _extract_pos_bucket(pos.get("title", ""))
+            except Exception:
+                pass
+        found = []
+        for city in ALERT_CITIES:
+            try:
+                pp = pw.predict(city, fetch_prices=False)
+            except Exception:
+                continue
+            if "error" in pp:
+                continue
+            o = check_locked(city, pp)
+            if o:
+                found.append(o)
+        if not found:
+            reply_telegram(chat_id, "🔒 No markets locked yet — today's peaks are still forming "
+                           "(or it's early in the day for most cities).")
+            return
+        # show the cities you hold first
+        found.sort(key=lambda o: (o["city"] not in held, o["city"]))
+        reply_telegram(chat_id, f"🔒 <b>{len(found)} market(s) with today's high locked:</b>")
+        for o in found[:15]:
+            price, url = None, None
+            try:
+                pm = pw.fetch_polymarket_market(o["city"], o["date"], cache_ttl=300)
+                if pm:
+                    url = pm.get("url")
+                    b = (pm.get("buckets") or {}).get(o["bucket"]) or {}
+                    price = b.get("yes")
+            except Exception:
+                pass
+            reply_telegram(chat_id, fmt_locked(o, pm_price=price, pm_url=url, held=held.get(o["city"])))
         return
 
     if low.startswith("/webhook"):
@@ -2220,7 +2326,8 @@ def handle_command(text, chat_id):
         _CMD_WORDS = {"positions", "pnl", "ledger", "learn", "missed", "history",
                       "alerts", "today", "backup", "pick", "help", "start", "menu",
                       "mute", "muted", "unmute", "watch", "watches", "unwatch",
-                      "watchlist", "webhook", "send", "endgame", "ending"}
+                      "watchlist", "webhook", "send", "endgame", "ending",
+                      "locked", "decided", "results"}
         first = scope.split()[0] if scope else ""
         if first in _CMD_WORDS:
             handle_command("/" + scope, chat_id)

@@ -1227,6 +1227,33 @@
       "t": "8:03 PM",
       "city": "amsterdam",
       "line": "\ud83d\udd34 Amsterdam 29\u00b0C weakened to 49%"
+    },
+    {
+      "t": "9:35 PM",
+      "city": "tel aviv",
+      "line": "\ud83d\udfe2 Tel Aviv 30\u00b0C@70% \u00b7 BUY YES 30\u00b0C@47\u00a2 +23%"
+    }
+  ],
+  "2026-06-26": [
+    {
+      "t": "2:43 AM",
+      "city": "toronto",
+      "line": "\ud83d\udfe2 Toronto 24\u00b0C@72% \u00b7 BUY YES 24\u00b0C@28\u00a2 +43%"
+    },
+    {
+      "t": "3:45 AM",
+      "city": "mexico city",
+      "line": "\ud83d\udfe2 Mexico City 24\u00b0C@76% \u00b7 BUY YES 24\u00b0C@20\u00a2 +56%"
+    },
+    {
+      "t": "4:46 AM",
+      "city": "toronto",
+      "line": "\ud83d\udd34 Toronto 24\u00b0C weakened to 67%"
+    },
+    {
+      "t": "4:46 AM",
+      "city": "mexico city",
+      "line": "\ud83d\udd34 Mexico City 24\u00b0C weakened to 74%"
     }
   ]
 }

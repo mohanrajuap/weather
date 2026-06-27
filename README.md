@@ -198,6 +198,27 @@ during scans (they fire once per ending market, only when the main signal
 *didn't*). The **`/endgame` command works on demand regardless.** Tune with
 `ENDGAME_*` vars. (Highest-temperature markets only.)
 
+### 4f. Trade advisor (degree-distribution sizing)
+Built from 361 settled markets: the bot's headline σ (0.3–0.5°) is far tighter than
+the real prediction error (**±1.45°**), so a "71% on one bucket" call is over-confident
+— the truth is spread across ~3 degrees. The advisor ([`trade_advisor.py`](trade_advisor.py))
+rebuilds an honest distribution from the **bias + no-bias** values (empirical σ,
+widened when they disagree) and appends a concrete sizing line to every signal,
+`/scan` and `/endgame`:
+
+```
+🎓 Cover ($4): 36°C $1.71 + 37°C $0.85 + 35°C $1.17 + 38°C $0.27 → $4.57 back on any
+```
+
+It spreads `COVER_BUDGET` across the likely degrees (market favourite + bot pick +
+backups) for **equal payout** — whichever covered degree settles, you get the same
+money back; you only lose if it lands outside. Backtested on the 361 markets this
+"full cover" was **49% hit / +2.7% ROI** (capital-preservation, ≈break-even+). The
+module also computes an aggressive **value bet** (under-priced wings: 8% hit but
++34% ROI — high-variance lottery). Honest caveat: against an efficient market
+neither is a certain edge; the cover holds your money while you wait for real
+mis-pricings. Tune with `COVER_BUDGET`; `ENABLE_ADVICE=0` to hide it.
+
 ### 5. Learning
 Every scan records the prediction; once a market settles, the bot fetches the
 actual high, scores the call, and feeds the result back into the bias learner.

@@ -44,6 +44,8 @@ import httpx
 import polyweather_predict as pw
 # daily prediction-vs-outcome learning tracker (same folder)
 import learn
+# degree-distribution trade advisor (coverage / capital-preservation sizing)
+import trade_advisor
 
 import html as _html
 
@@ -168,6 +170,10 @@ if not os.path.isdir(os.path.dirname(STATE_DB) or "."):
 # Your bankroll in USD — used to turn a Kelly fraction into a concrete suggested
 # stake in the alert ("bet $X"). Quarter-Kelly is applied for safety.
 BANKROLL       = float(os.environ.get("BANKROLL", "100"))
+# Trade advisor: append a coverage/spread sizing suggestion to signals, /scan and
+# /endgame. COVER_BUDGET = $ to spread across degrees per city.
+ENABLE_ADVICE  = os.environ.get("ENABLE_ADVICE", "1") == "1"
+COVER_BUDGET   = float(os.environ.get("COVER_BUDGET", "4"))
 # Hour (UTC) to send the once-a-day morning digest of the day's best edges.
 DIGEST_HOUR_UTC = int(os.environ.get("DIGEST_HOUR_UTC", "6"))
 # Send the morning digest at all? (needs LIVE mode to be useful)
@@ -504,6 +510,18 @@ def _bucket_label(p, value, sym):
     return _range_label(b.get("lo"), b.get("hi"), sym) or f"{value}{sym}"
 
 
+def advice_line(p):
+    """Coverage/spread sizing suggestion from the trade advisor, or None."""
+    if not ENABLE_ADVICE or not (p.get("polymarket") or {}).get("buckets"):
+        return None
+    try:
+        a = trade_advisor.advise_from_prediction(p, budget=COVER_BUDGET)
+        line = trade_advisor.one_liner(a, p.get("temp_unit", "°C"))
+        return line or None
+    except Exception:
+        return None
+
+
 def _market_prices(p) -> dict:
     """{bucket_value:int -> yes_price:float} from the live Polymarket book."""
     pm  = p.get("polymarket") or {}
@@ -715,6 +733,12 @@ def fmt_new_signal(p) -> str:
             for e in actionable:
                 ys = f"{e['yes_price']*100:.0f}¢" if e.get("yes_price") is not None else "—"
                 L.append(f"   {esc(e['action'])} {e['temp']}{sym} @ {ys} → {e['best_edge']*100:+.0f}%")
+
+    # trade-advisor coverage/spread sizing (how to distribute money across degrees)
+    adv = advice_line(p)
+    if adv:
+        L.append("")
+        L.append(adv)
 
     pm = p.get("polymarket")
     if pm and pm.get("url"):
@@ -2151,6 +2175,7 @@ def handle_command(text, chat_id):
                 continue
             opp = check_endgame(pp)
             if opp:
+                opp["_adv"] = advice_line(pp)        # carry the sizing suggestion
                 found.append(opp)
         if not found:
             reply_telegram(chat_id, "🔚 No ending markets right now.")
@@ -2159,7 +2184,10 @@ def handle_command(text, chat_id):
         found.sort(key=lambda o: (not o.get("agrees"), o.get("dom_price", 0)), reverse=True)
         reply_telegram(chat_id, f"🔚 <b>{len(found)} ending market(s):</b>")
         for o in found[:10]:
-            reply_telegram(chat_id, fmt_endgame(o))
+            card = fmt_endgame(o)
+            if o.get("_adv"):
+                card += "\n\n" + o["_adv"]
+            reply_telegram(chat_id, card)
         return
 
     if low.startswith("/locked") or low.startswith("/decided") or low.startswith("/results"):

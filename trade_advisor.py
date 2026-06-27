@@ -17,9 +17,10 @@ It gives TWO sizings for a city and recommends one:
                   favourite is paying to lose slowly. Reported honestly with its EV.
 
 VALIDATION — backtested on the 361 settled markets (budget $4 each):
-  FULL COVER : 49% hit · +2.7% ROI · per-bet std ~$18  → effectively CAPITAL
-               PRESERVATION (≈ break-even with a slight edge, win ~half the time).
-               This is the "don't lose" play and the default recommendation.
+  FULL COVER : ~54% hit · ~+6% ROI · per-bet std ~$18  → CAPITAL PRESERVATION
+               (win more than half the time, small edge). The "don't lose" play
+               and the default recommendation. (High variance → treat the ROI as
+               "≈break-even-to-slightly-positive", not a guaranteed edge.)
   VALUE BET  : 8% hit · +34% ROI but driven by a few rare big wins (high variance)
                → a lottery, NOT reliable for a small bankroll. Aggressive only.
 Neither is a statistically-certain edge on 361 markets — the market is fairly
@@ -56,9 +57,12 @@ SIGMA_FLOOR   = 1.30
 MIN_PRICE     = 0.01
 MAX_PRICE     = 0.97
 MIN_EDGE      = 0.04     # a degree counts as "under-priced" if honest prob - price >= this
-MAX_SUM_PRICE = 0.92     # stop adding cover degrees once their prices sum past this
+MIN_COVER_PROB = 0.05    # a degree must be at least this likely to be worth covering
+                         # (so we cover the meaningful adjacent, not a near-zero bucket)
+MAX_SUM_PRICE = 0.96     # stop adding cover degrees once their prices sum past this
+                         # (kept under $1 so the equal payout still beats the stake;
+                         # 0.96 backtested best AND lets the meaningful adjacent fit)
 MAX_LEGS      = 4
-MIN_STAKE     = 0.25     # round legs below this away
 
 
 def _phi(z):
@@ -134,12 +138,16 @@ def advise(deb, deb_raw, market, budget=4.0):
         vbuckets.append(v); vp += priced[v]
     value_bet = _equal_payout(vbuckets, priced, dist, budget) if vbuckets else None
 
-    # ── FULL COVER: bot pick + market favourite + most-likely neighbours ─────────
+    # ── FULL COVER: bot pick + market favourite + most-likely MEANINGFUL neighbours.
+    # Only degrees with a non-trivial honest probability are eligible — never fill a
+    # slot with a near-zero-probability cheap bucket (e.g. cover 37° not 36° when the
+    # cluster is 38/39). Anchors (bot pick, market favourite) are always included.
+    eligible = {bot_pick, market_fav} | {v for v in priced if dist.get(v, 0.0) >= MIN_COVER_PROB}
     order, seen = [], set()
     for v in (bot_pick, market_fav):
         if v not in seen:
             order.append(v); seen.add(v)
-    for v in sorted(priced, key=lambda v: -dist.get(v, 0.0)):
+    for v in sorted(eligible, key=lambda v: -dist.get(v, 0.0)):
         if v not in seen:
             order.append(v); seen.add(v)
     cbuckets, cp = [], 0.0

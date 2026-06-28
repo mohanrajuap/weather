@@ -177,6 +177,9 @@ COVER_BUDGET   = float(os.environ.get("COVER_BUDGET", "4"))
 # Budgets shown automatically in every cover suggestion (custom via /cover <city> <amt>)
 COVER_BUDGETS  = tuple(float(x) for x in
                        os.environ.get("COVER_BUDGETS", "4,5,6").replace(" ", "").split(",") if x) or (4.0, 5.0, 6.0)
+# Cover EVERY live degree by default (don't-lose / full coverage). Set 0 for the
+# tighter, edge-keeping cover. /cover <city> wide|tight overrides per-call.
+COVER_WIDE     = os.environ.get("COVER_WIDE", "1") == "1"
 # Hour (UTC) to send the once-a-day morning digest of the day's best edges.
 DIGEST_HOUR_UTC = int(os.environ.get("DIGEST_HOUR_UTC", "6"))
 # Send the morning digest at all? (needs LIVE mode to be useful)
@@ -521,7 +524,7 @@ def advice_line(p):
     if not ENABLE_ADVICE or not (p.get("polymarket") or {}).get("buckets"):
         return None
     try:
-        res = trade_advisor.advise_budgets_from_prediction(p, budgets=COVER_BUDGETS)
+        res = trade_advisor.advise_budgets_from_prediction(p, budgets=COVER_BUDGETS, wide=COVER_WIDE)
         return trade_advisor.format_budgets(res, p.get("temp_unit", "°C")) or None
     except Exception:
         return None
@@ -1952,8 +1955,10 @@ def _send_city_signal(city, chat_id, fresh=False):
     reply_telegram(chat_id, fmt_new_signal(p) + (_fresh_tag() if fresh else ""),
                    keyboard=_refresh_kbd(f"rf:sig:{p.get('city', city)}"))
 
-def _send_cover(city, amount, chat_id, fresh=False, wide=False):
+def _send_cover(city, amount, chat_id, fresh=False, wide=None):
     """Cover card — auto $4/5/6 (amount=None) or a custom amount; wide=full safety."""
+    if wide is None:
+        wide = COVER_WIDE
     try:
         pp = pw.predict(city, fetch_prices=True, fresh_prices=fresh)
     except Exception:
@@ -1962,18 +1967,19 @@ def _send_cover(city, amount, chat_id, fresh=False, wide=False):
         reply_telegram(chat_id, f"No live Polymarket data for {city_display(city)} right now.")
         return
     sym = pp.get("temp_unit", "°C")
-    wtok = ":w" if wide else ""
-    wtag = " (wide)" if wide else ""
+    when = f"  ·  {esc(pp.get('target_date',''))} ({esc(pp.get('predicting',''))})"
+    wtok = ":w" if wide else ":t"
+    wtag = " · cover ALL live degrees" if wide else " · tight cover"
     if amount:
         res = trade_advisor.advise_budgets_from_prediction(pp, budgets=(amount,), wide=wide)
         body = trade_advisor.format_budgets(res, sym) or "No buyable cover at that size."
-        head = f"🎓 <b>{city_display(city)}</b> — cover at ${amount:g}{wtag}:"
+        head = f"🎓 <b>{city_display(city)}</b>{when} — cover at ${amount:g}{wtag}:"
         token = f"rf:cov:{city}:{amount:g}{wtok}"
     else:
         res  = trade_advisor.advise_budgets_from_prediction(pp, budgets=COVER_BUDGETS, wide=wide)
         body = trade_advisor.format_budgets(res, sym) or "No buyable cover right now (market too tight/decided)."
-        head = f"🎓 <b>{city_display(city)}</b>{wtag}"
-        token = f"rf:cov:{city}::w" if wide else f"rf:cov:{city}"
+        head = f"🎓 <b>{city_display(city)}</b>{when}{wtag}"
+        token = f"rf:cov:{city}:{wtok}"
     reply_telegram(chat_id, f"{head}\n{body}" + (_fresh_tag() if fresh else ""),
                    keyboard=_refresh_kbd(token))
 
@@ -2328,22 +2334,27 @@ def handle_command(text, chat_id):
 
     if low.startswith("/cover"):
         toks = text.split()[1:]
-        wide = any(t.lower() in ("wide", "full", "all") for t in toks)
-        toks = [t for t in toks if t.lower() not in ("wide", "full", "all")]
+        force_wide  = any(t.lower() in ("wide", "full", "all") for t in toks)
+        force_tight = any(t.lower() in ("tight", "narrow", "core", "edge") for t in toks)
+        toks = [t for t in toks if t.lower() not in
+                ("wide", "full", "all", "tight", "narrow", "core", "edge")]
         amount = None
         if toks and toks[-1].replace(".", "", 1).isdigit():
             amount = float(toks[-1]); toks = toks[:-1]
         city = pw.resolve_city(" ".join(toks)) if toks else None
         if not city:
+            dflt = "covers EVERY live degree" if COVER_WIDE else "tight (edge-keeping) cover"
             reply_telegram(chat_id,
                 "🎓 <b>Cover</b> — how to spread $ across degrees so whichever covered one "
-                "settles, you win (capital-preservation).\n"
-                "Usage: <code>/cover &lt;city&gt; [amount] [wide]</code>\n"
-                "• <code>/cover warsaw</code> → auto $4 / $5 / $6 comparison\n"
+                "settles, you win.\n"
+                "Usage: <code>/cover &lt;city&gt; [amount] [wide|tight]</code>\n"
+                "• <code>/cover warsaw</code> → auto $4 / $5 / $6\n"
                 "• <code>/cover warsaw 8</code> → a custom amount\n"
-                "• <code>/cover warsaw wide</code> → cover EVERY live degree "
-                "(full safety, ≈break-even)")
+                "• <code>/cover warsaw tight</code> → only the core degrees (keeps an edge)\n"
+                "• <code>/cover warsaw wide</code> → cover every live degree\n"
+                f"<i>Default: {dflt} (set COVER_WIDE).</i>")
             return
+        wide = True if force_wide else (False if force_tight else COVER_WIDE)
         _send_cover(city, amount, chat_id, wide=wide)
         return
 

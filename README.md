@@ -209,11 +209,10 @@ showing the exact per-degree dollars and shares for **equal payout** (same money
 back whichever covered degree settles):
 
 ```
-🎓 Cover options (spread $ so whichever covered degree settles, you win):
-   $4 → 29°C @ 18¢ → $1.00 (5.6 sh) + 30°C @ 54¢ → $3.00 (5.6 sh) → $5.56 back · 72% covered · profit +1.56
-   $5 → 29°C @ 18¢ → $1.25 (6.9 sh) + 30°C @ 54¢ → $3.75 (6.9 sh) → $6.94 back · 72% covered · profit +1.94
-   $6 → 29°C @ 18¢ → $1.50 (8.3 sh) + 30°C @ 54¢ → $4.50 (8.3 sh) → $8.33 back · 72% covered · profit +2.33
-   ⚠️ 31°C priced live but left out — covering every live degree runs ≈-4%; add `wide` to include it.
+🎓 Wide cover (every live degree — full safety):
+   $4 → 29°C @ 18¢ → $1.00 (5.6 sh) + 30°C @ 54¢ → $3.00 (5.6 sh) → $5.56 back · 72% covered · profit +1.56 💰  [+31° needs more $]
+   $5 → 29°C @ 18¢ → $0.91 + 30°C @ 54¢ → $2.73 + 31°C @ 27¢ → $1.36 → $5.05 back · 99% covered · profit +0.05 🛡️
+   $6 → 29°C @ 18¢ → $1.09 + 30°C @ 54¢ → $3.27 + 31°C @ 27¢ → $1.64 → $6.06 back · 99% covered · profit +0.06
 ```
 
 "% covered" is **market-implied** (Σ of the covered YES prices = the market's odds
@@ -221,15 +220,16 @@ you land in your set). A bigger budget buys more backup degrees **only once each
 clears Polymarket's $1 / 5-share minimum**.
 
 **Honest finding (452 settled markets).** Equal-payout covering does **not** beat an
-efficient market. The **tight cover** (default) runs ≈break-even (−0.4%); covering
-**every** live degree (`wide`) runs ≈−4% — you pay the spread for near-certain
-coverage. So the default leaves a live degree out *on purpose* and tells you, and
-when budgets differ it marks **💰 most profit if covered** vs **🛡️ most degrees
-covered**. A cover ≈ parks your money; it isn't an edge.
+efficient market. Covering **every** live degree (`wide`, the default — your
+don't-lose preference) runs ≈−4%; the **tight** edge-keeping cover runs ≈break-even
+(−0.4%) but can miss. You pay the spread for near-certain coverage. When budgets
+cover different sets the block marks **💰 most profit if covered** vs **🛡️ most
+degrees covered**. A cover ≈ parks your money; it isn't an edge.
 
 `/cover <city>` = auto $4/$5/$6 · `/cover <city> <amount>` = custom budget ·
-`/cover <city> wide` = cover every live degree (full safety, ≈break-even). Set the
-budgets with `COVER_BUDGETS=4,5,6`; `ENABLE_ADVICE=0` hides the block.
+`/cover <city> tight` = only the core degrees (keeps an edge) · `/cover <city> wide`
+= every live degree. Default mode is set by `COVER_WIDE` (1 = wide). Set the budgets
+with `COVER_BUDGETS=4,5,6`; `ENABLE_ADVICE=0` hides the block.
 
 **🔄 Refresh button.** Every signal / cover / endgame / locked card carries a
 *Refresh prices* button. Tapping it recomputes that city on the **live order book**

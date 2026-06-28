@@ -152,7 +152,8 @@ def advise(deb, deb_raw, market, budget=4.0, wide=False):
     tighter, near-break-even cover that keeps the small edge."""
     if deb is None or not market:
         return {"ok": False, "reason": "no prediction / market"}
-    max_sum = WIDE_SUM_PRICE if wide else MAX_SUM_PRICE
+    max_sum  = WIDE_SUM_PRICE if wide else MAX_SUM_PRICE
+    max_legs = 99 if wide else MAX_LEGS        # wide = cover EVERY live degree, no leg cap
     buckets = {v: (b.get("lo", v), b.get("hi", v)) for v, b in market.items()}
     dist, center, sigma = realistic_distribution(deb, deb_raw, buckets)
     priced = {v: b["yes"] for v, b in market.items()
@@ -192,7 +193,7 @@ def advise(deb, deb_raw, market, budget=4.0, wide=False):
             order.append(v); seen.add(v)
     cbuckets, cp = [], 0.0
     for v in order:
-        if len(cbuckets) >= MAX_LEGS:
+        if len(cbuckets) >= max_legs:
             break
         if cbuckets and cp + priced[v] > max_sum:
             continue

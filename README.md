@@ -204,30 +204,32 @@ the real prediction error (**±1.45°**), so a "71% on one bucket" call is over-
 — the truth is spread across ~3 degrees. The advisor ([`trade_advisor.py`](trade_advisor.py))
 rebuilds an honest distribution from the **bias + no-bias** values (empirical σ,
 widened when they disagree) and appends a concrete sizing block to every signal,
-`/scan`, `/endgame` and the `/cover` command. It **auto-compares $4 / $5 / $6**
-and stars the budget with the best chance of a covered win, showing the exact
-per-degree dollars and shares:
+`/scan`, `/endgame` and the `/cover` command. It **auto-compares $4 / $5 / $6**,
+showing the exact per-degree dollars and shares for **equal payout** (same money
+back whichever covered degree settles):
 
 ```
 🎓 Cover options (spread $ so whichever covered degree settles, you win):
-   $4 → 29°C $1.00 (5.6 sh) + 30°C $3.00 (5.6 sh) → $5.56 back · 49% covered · +1.56 ⭐
-   $5 → 29°C $1.25 (6.9 sh) + 30°C $3.75 (6.9 sh) → $6.94 back · 49% covered · +1.94
-   $6 → 29°C $1.50 (8.3 sh) + 30°C $4.50 (8.3 sh) → $8.33 back · 49% covered · +2.33
+   $4 → 29°C $1.00 (5.6 sh) + 30°C $3.00 (5.6 sh) → $5.56 back · 72% covered · profit +1.56
+   $5 → 29°C $1.25 (6.9 sh) + 30°C $3.75 (6.9 sh) → $6.94 back · 72% covered · profit +1.94
+   $6 → 29°C $1.50 (8.3 sh) + 30°C $4.50 (8.3 sh) → $8.33 back · 72% covered · profit +2.33
+   ⚠️ 31°C priced live but left out — covering every live degree runs ≈-4%; add `wide` to include it.
 ```
 
-Each budget spreads across the likely degrees (market favourite + bot pick +
-backups) for **equal payout** — whichever covered degree settles, you get the same
-money back; you only lose if it lands outside. A bigger budget can buy more
-coverage **only once each leg clears Polymarket's $1 / 5-share minimum**, which is
-why $4 → $5 sometimes unlocks cheap backup degrees (that jump is the whole point of
-the comparison). Backtested on 423 settled markets: **$4 56% hit / +2.3% ROI**,
-**$5–$6 58% hit / +2.1% ROI** — all capital-preserving, no un-buyable legs.
+"% covered" is **market-implied** (Σ of the covered YES prices = the market's odds
+you land in your set). A bigger budget buys more backup degrees **only once each leg
+clears Polymarket's $1 / 5-share minimum**.
 
-`/cover <city>` shows the auto $4/$5/$6; `/cover <city> <amount>` sizes a **custom**
-budget. Set the displayed budgets with `COVER_BUDGETS=4,5,6`; `ENABLE_ADVICE=0`
-hides the block. The module also computes an aggressive **value bet** (under-priced
-wings — high-variance lottery). Honest caveat: against an efficient market neither
-is a certain edge; the cover holds your money while you wait for real mis-pricings.
+**Honest finding (452 settled markets).** Equal-payout covering does **not** beat an
+efficient market. The **tight cover** (default) runs ≈break-even (−0.4%); covering
+**every** live degree (`wide`) runs ≈−4% — you pay the spread for near-certain
+coverage. So the default leaves a live degree out *on purpose* and tells you, and
+when budgets differ it marks **💰 most profit if covered** vs **🛡️ most degrees
+covered**. A cover ≈ parks your money; it isn't an edge.
+
+`/cover <city>` = auto $4/$5/$6 · `/cover <city> <amount>` = custom budget ·
+`/cover <city> wide` = cover every live degree (full safety, ≈break-even). Set the
+budgets with `COVER_BUDGETS=4,5,6`; `ENABLE_ADVICE=0` hides the block.
 
 **🔄 Refresh button.** Every signal / cover / endgame / locked card carries a
 *Refresh prices* button. Tapping it recomputes that city on the **live order book**

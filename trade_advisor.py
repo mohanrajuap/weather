@@ -57,11 +57,17 @@ SIGMA_FLOOR   = 1.30
 MIN_PRICE     = 0.01
 MAX_PRICE     = 0.97
 MIN_EDGE      = 0.04     # a degree counts as "under-priced" if honest prob - price >= this
-MIN_COVER_PROB = 0.05    # a degree must be at least this likely to be worth covering
-                         # (so we cover the meaningful adjacent, not a near-zero bucket)
-MAX_SUM_PRICE = 0.96     # stop adding cover degrees once their prices sum past this
-                         # (kept under $1 so the equal payout still beats the stake;
-                         # 0.96 backtested best AND lets the meaningful adjacent fit)
+MIN_COVER_PROB = 0.05    # a degree is worth covering if the MODEL gives it >= this prob
+MARKET_ALIVE   = 0.05    # ...OR the MARKET prices it >= this (5¢). A degree the market
+                         # treats as live (e.g. 31° @ 27¢) is covered even if our wide-σ
+                         # model under-weights it — the market is the better odds here.
+MAX_SUM_PRICE = 0.96     # default: stop adding cover degrees once their prices sum past
+                         # this. Backtest on 452 settled markets: the tight cover (0.96)
+                         # runs ≈break-even, while covering EVERY live degree (~0.99) runs
+                         # ≈-4% — you pay the spread for the extra safety. So 0.96 is the
+                         # default; "wide" mode (WIDE_SUM_PRICE) is an explicit opt-in.
+WIDE_SUM_PRICE = 0.995   # "wide" / full-safety cover: include all live degrees even though
+                         # it's ≈break-even-to-slightly-negative (the user's don't-lose play).
 MAX_LEGS      = 4
 # Polymarket order minimum: a leg must be at least $1 OR at least 5 shares.
 MIN_ORDER_USD = 1.0
@@ -89,11 +95,15 @@ def realistic_distribution(deb, deb_raw, buckets):
     return dist, center, sigma
 
 
-def _equal_payout(bucket_list, priced, dist, budget):
+def _equal_payout(bucket_list, priced, dist, budget, anchors=frozenset()):
     """Size a set of degrees for EQUAL payout (same money back whichever wins):
     every leg buys S = budget/Σprice shares, so stakeᵢ = S·priceᵢ. Legs that can't
-    meet Polymarket's order minimum ($1 OR 5 shares) are DROPPED (cheapest first)
-    and the rest re-sized — so you never get an un-buyable $0.09 leg."""
+    meet Polymarket's order minimum ($1 OR 5 shares) are DROPPED and the rest
+    re-sized — so you never get an un-buyable $0.09 leg. We drop the EXTRA degrees
+    first (cheapest non-anchor), protecting the two anchors (bot pick + market
+    favourite); only if no extras remain do we drop an anchor. So a small budget
+    keeps your core two and a bigger budget ADDS the extra degrees — never the
+    other way round."""
     bl = list(bucket_list)
     dropped = []
     while len(bl) > 1:
@@ -105,7 +115,10 @@ def _equal_payout(bucket_list, priced, dist, budget):
         bad = [v for v in bl if (S * priced[v] < MIN_ORDER_USD - 1e-9) and (S < MIN_SHARES)]
         if not bad:
             break
-        drop = min(bad, key=lambda v: priced[v])       # cheapest un-buyable leg
+        # prefer to drop an EXTRA (non-anchor) degree; among those the cheapest =
+        # the one the market thinks least likely. Drop an anchor only as a last resort.
+        droppable = [v for v in bl if v not in anchors] or bl
+        drop = min(droppable, key=lambda v: priced[v])
         bl.remove(drop); dropped.append(drop)
     sump = sum(priced[v] for v in bl)
     if sump <= 0:
@@ -123,18 +136,23 @@ def _equal_payout(bucket_list, priced, dist, budget):
                      "edge": round(dist.get(v, 0.0) - p, 3),
                      "stake": round(stake, 2), "shares": round(stake / p, 1)})
     total    = round(sum(l["stake"] for l in legs), 2)
-    coverage = round(sum(l["prob"] for l in legs), 3)
+    coverage = round(sum(l["prob"] for l in legs), 3)   # MODEL prob mass covered (for EV)
+    mkt_cov  = round(min(sump, 1.0), 3)                  # MARKET-implied P(covered) = Σ price
     payout   = round(budget / sump, 2)
     return {"legs": legs, "total": total, "payout": payout, "sum_price": round(sump, 3),
-            "coverage": coverage, "profit_if_covered": round(payout - total, 2),
+            "coverage": coverage, "mkt_coverage": mkt_cov,
+            "profit_if_covered": round(payout - total, 2),
             "loss_if_miss": round(-total, 2),
             "ev": round(coverage * payout - total, 2), "dropped": dropped}
 
 
-def advise(deb, deb_raw, market, budget=4.0):
-    """market: {value: {"yes": price, "lo": lo, "hi": hi}} (lo/hi optional)."""
+def advise(deb, deb_raw, market, budget=4.0, wide=False):
+    """market: {value: {"yes": price, "lo": lo, "hi": hi}} (lo/hi optional).
+    wide=True covers ALL live degrees (full-safety, ≈break-even); default is the
+    tighter, near-break-even cover that keeps the small edge."""
     if deb is None or not market:
         return {"ok": False, "reason": "no prediction / market"}
+    max_sum = WIDE_SUM_PRICE if wide else MAX_SUM_PRICE
     buckets = {v: (b.get("lo", v), b.get("hi", v)) for v, b in market.items()}
     dist, center, sigma = realistic_distribution(deb, deb_raw, buckets)
     priced = {v: b["yes"] for v, b in market.items()
@@ -154,7 +172,7 @@ def advise(deb, deb_raw, market, budget=4.0):
     for v in value_order:
         if len(vbuckets) >= MAX_LEGS:
             break
-        if vbuckets and vp + priced[v] > MAX_SUM_PRICE:
+        if vbuckets and vp + priced[v] > max_sum:
             continue
         vbuckets.append(v); vp += priced[v]
     value_bet = _equal_payout(vbuckets, priced, dist, budget) if vbuckets else None
@@ -163,7 +181,8 @@ def advise(deb, deb_raw, market, budget=4.0):
     # Only degrees with a non-trivial honest probability are eligible — never fill a
     # slot with a near-zero-probability cheap bucket (e.g. cover 37° not 36° when the
     # cluster is 38/39). Anchors (bot pick, market favourite) are always included.
-    eligible = {bot_pick, market_fav} | {v for v in priced if dist.get(v, 0.0) >= MIN_COVER_PROB}
+    eligible = {bot_pick, market_fav} | {v for v in priced
+                if dist.get(v, 0.0) >= MIN_COVER_PROB or priced[v] >= MARKET_ALIVE}
     order, seen = [], set()
     for v in (bot_pick, market_fav):
         if v not in seen:
@@ -175,18 +194,26 @@ def advise(deb, deb_raw, market, budget=4.0):
     for v in order:
         if len(cbuckets) >= MAX_LEGS:
             break
-        if cbuckets and cp + priced[v] > MAX_SUM_PRICE:
+        if cbuckets and cp + priced[v] > max_sum:
             continue
         cbuckets.append(v); cp += priced[v]
-    full_cover = _equal_payout(cbuckets, priced, dist, budget)
+    full_cover = _equal_payout(cbuckets, priced, dist, budget,
+                               anchors=frozenset({bot_pick, market_fav}))
+
+    # Live degrees (the market prices >= MARKET_ALIVE) that the tight cover left out —
+    # so the alert can say "31° is live but excluded; go 'wide' to include it".
+    covered_set  = {l["bucket"] for l in (full_cover["legs"] if full_cover else [])}
+    live_skipped = sorted(v for v in priced
+                          if priced[v] >= MARKET_ALIVE and v not in covered_set)
 
     # ── recommendation ───────────────────────────────────────────────────────
-    # Backtest on 361 settled markets (budget $4 each):
-    #   FULL COVER : 49% hit · +2.7% ROI · ~capital-preservation (≈break-even+,
-    #                the "don't lose" play that matches your goal).
-    #   VALUE BET  : 8% hit · +34% ROI but driven by rare big wins → high-variance
-    #                lottery, NOT reliable for a small bankroll.
-    # So default to the cover; surface the value bet only as an aggressive option.
+    # Backtest on 452 settled markets (budget $4 each):
+    #   TIGHT COVER (default, cap 0.96): ~55% hit · ≈break-even (−0.4%) — the least-bad
+    #                play; against an efficient market a cover ≈ parks money.
+    #   WIDE COVER  (cap ~0.99, all live degrees): ~60% hit but ≈−4% — you pay the
+    #                spread for the extra safety. Opt-in only.
+    #   VALUE BET   : rare-big-win lottery, high variance — aggressive option only.
+    # So default to the tight cover; surface value/wide as explicit choices.
     if full_cover and full_cover["legs"]:
         rec = "cover"
     elif value_bet:
@@ -200,26 +227,37 @@ def advise(deb, deb_raw, market, budget=4.0):
         "market_fav": market_fav, "bot_pick": bot_pick,
         "value_bet": value_bet, "full_cover": full_cover,
         "recommendation": rec, "budget": budget,
+        "wide": wide, "live_skipped": live_skipped,
     }
 
 
-def advise_budgets(deb, deb_raw, market, budgets=(4.0, 5.0, 6.0)):
-    """Compute the cover at several budgets and flag which gives the best CHANCE of
-    being covered (= not losing) while still profitable. More budget affords more
-    degrees → higher coverage but a thinner margin per win."""
-    base = advise(deb, deb_raw, market, budget=budgets[0])
-    rows = []
+def advise_budgets(deb, deb_raw, market, budgets=(4.0, 5.0, 6.0), wide=False):
+    """Compute the cover at several budgets. Default = the tight, near-break-even
+    cover; wide=True covers every live degree (full-safety, ≈break-even-to--4%).
+    Bigger budget affords more backup degrees (once each clears the order minimum)."""
+    base = advise(deb, deb_raw, market, budget=budgets[0], wide=wide)
+    rows, hi_skipped = [], base.get("live_skipped") or []
     for b in budgets:
-        a = advise(deb, deb_raw, market, budget=b)
+        a = advise(deb, deb_raw, market, budget=b, wide=wide)
         rows.append({"budget": b, "cover": (a.get("full_cover") if a.get("ok") else None)})
+        if b == max(budgets):                 # what's left out even at the biggest budget
+            hi_skipped = a.get("live_skipped") or []
     valid = [r for r in rows if r["cover"] and r["cover"]["legs"]
              and r["cover"]["profit_if_covered"] > 0]
-    # best chance of not losing = highest coverage; tie-break the smaller budget.
-    best = max(valid, key=lambda r: (r["cover"]["coverage"], -r["budget"]), default=None)
+    # There is no single "best" — it's a tradeoff:
+    #   💰 keep the edge: most profit IF it lands in your covered set (fewer degrees).
+    #   🛡️ safest:        most degrees covered (least chance of a miss), thinner margin.
+    most_profit = max(valid, key=lambda r: (r["cover"]["profit_if_covered"], -r["budget"]),
+                      default=None)
+    most_cover  = max(valid, key=lambda r: (r["cover"]["mkt_coverage"], -r["budget"]),
+                      default=None)
     return {"ok": base.get("ok"), "center": base.get("center"), "sigma": base.get("sigma"),
-            "distribution": base.get("distribution"),
+            "distribution": base.get("distribution"), "wide": wide,
+            "live_skipped": hi_skipped,
             "market_fav": base.get("market_fav"), "bot_pick": base.get("bot_pick"),
-            "rows": rows, "best": (best["budget"] if best else None)}
+            "rows": rows,
+            "profit_budget": (most_profit["budget"] if most_profit else None),
+            "cover_budget":  (most_cover["budget"] if most_cover else None)}
 
 
 def format_budgets(res, sym="°C"):
@@ -228,8 +266,17 @@ def format_budgets(res, sym="°C"):
     if not res.get("ok"):
         return ""
     short = sym.replace(chr(176), "")
-    L = ["🎓 <b>Cover options</b> (spread $ so whichever covered degree settles, you win):"]
+    wide  = res.get("wide")
+    title = ("🎓 <b>Wide cover</b> (every live degree — full safety):" if wide
+             else "🎓 <b>Cover options</b> (spread $ so whichever covered degree settles, you win):")
+    L = [title]
     any_row = False
+    pb, cb = res.get("profit_budget"), res.get("cover_budget")
+    # only differentiate budgets when they actually cover DIFFERENT degree sets;
+    # if every budget covers the same set, the markers would just mean "more $".
+    covs = {round(r["cover"]["mkt_coverage"], 3)
+            for r in res["rows"] if r["cover"] and r["cover"]["legs"]}
+    differ = len(covs) > 1
     for r in res["rows"]:
         s, b = r["cover"], r["budget"]
         if not s or not s["legs"]:
@@ -238,20 +285,38 @@ def format_budgets(res, sym="°C"):
         any_row = True
         legs = " + ".join(f"{l['bucket']}{short} ${l['stake']:.2f} ({l['shares']:g} sh)"
                           for l in s["legs"])
-        star = " ⭐" if b == res["best"] else ""
-        drp = (f"  [skips {'/'.join(str(d) + short for d in s.get('dropped') or [])} "
-               f"— under $1/5-share min]" if s.get("dropped") else "")
+        mark = ""
+        if differ and pb != cb:
+            if b == cb:
+                mark = " 🛡️"
+            elif b == pb:
+                mark = " 💰"
+        drp = (f"  [+{'/'.join(str(d) + short for d in s.get('dropped') or [])} needs more $]"
+               if s.get("dropped") else "")
         L.append(f"   <b>${b:g}</b> → {legs} → <b>${s['payout']:.2f}</b> back · "
-                 f"{s['coverage']*100:.0f}% covered · profit {s['profit_if_covered']:+.2f}{star}{drp}")
+                 f"{s['mkt_coverage']*100:.0f}% covered · profit {s['profit_if_covered']:+.2f}{mark}{drp}")
     if not any_row:
         return ""
-    if res["best"]:
-        L.append(f"   👉 best chance of a covered win: <b>${res['best']:g}</b> "
-                 f"(more $ = higher % covered, thinner profit)")
+    if differ and pb and cb and pb != cb:
+        L.append(f"   💰 <b>${pb:g}</b> = most profit if covered (keeps an edge, but can miss) · "
+                 f"🛡️ <b>${cb:g}</b> = most degrees covered (safest, ≈break-even)")
+    elif not differ:
+        L.append("   <i>(same degrees at each budget — a bigger budget just scales the "
+                 "stake &amp; payout, not the coverage.)</i>")
+    skipped = res.get("live_skipped") or []
+    if skipped and not wide:
+        degs = "/".join(f"{d}{short}" for d in skipped)
+        L.append(f"   ⚠️ <b>{degs}</b> priced live but left out — covering it would push the "
+                 f"spread to ~$1 (≈break-even). It's excluded on purpose: backtest says "
+                 f"covering every live degree runs ≈-4%. Add <code>wide</code> "
+                 f"(e.g. <code>/cover &lt;city&gt; wide</code>) to include it anyway.")
+    else:
+        L.append("   <i>ℹ️ a cover ≈ parks money — against an efficient market it's roughly "
+                 "break-even; the tight cover keeps a small edge.</i>")
     return "\n".join(L)
 
 
-def advise_budgets_from_prediction(p, budgets=(4.0, 5.0, 6.0)):
+def _market_from_pred(p):
     pm = (p.get("polymarket") or {}).get("buckets") or {}
     market = {}
     for v, b in pm.items():
@@ -259,18 +324,17 @@ def advise_budgets_from_prediction(p, budgets=(4.0, 5.0, 6.0)):
             market[int(v)] = {"yes": b.get("yes"), "lo": b.get("lo", int(v)), "hi": b.get("hi", int(v))}
         except (TypeError, ValueError):
             continue
-    return advise_budgets(p.get("deb"), p.get("deb_raw"), market, budgets=budgets)
+    return market
 
 
-def advise_from_prediction(p, budget=4.0):
-    pm = (p.get("polymarket") or {}).get("buckets") or {}
-    market = {}
-    for v, b in pm.items():
-        try:
-            market[int(v)] = {"yes": b.get("yes"), "lo": b.get("lo", int(v)), "hi": b.get("hi", int(v))}
-        except (TypeError, ValueError):
-            continue
-    return advise(p.get("deb"), p.get("deb_raw"), market, budget=budget)
+def advise_budgets_from_prediction(p, budgets=(4.0, 5.0, 6.0), wide=False):
+    return advise_budgets(p.get("deb"), p.get("deb_raw"), _market_from_pred(p),
+                          budgets=budgets, wide=wide)
+
+
+def advise_from_prediction(p, budget=4.0, wide=False):
+    return advise(p.get("deb"), p.get("deb_raw"), _market_from_pred(p),
+                  budget=budget, wide=wide)
 
 
 # ── formatting ────────────────────────────────────────────────────────────────
@@ -326,7 +390,7 @@ def format_advice(a, sym="°C"):
             sh = f", {l['shares']:g} sh" if l["stake"] < MIN_ORDER_USD else ""
             L.append(f"   • {l['bucket']}{sym} @ {l['price']*100:.0f}¢ → ${l['stake']:.2f}{sh} "
                      f"(edge {l['edge']*100:+.0f}% {note})")
-        L.append(f"   → win any → ${fc['payout']:.2f}  ({fc['coverage']*100:.0f}% covered, "
+        L.append(f"   → win any → ${fc['payout']:.2f}  ({fc['mkt_coverage']*100:.0f}% covered, "
                  f"EV {fc['ev']:+.2f}, lose {fc['loss_if_miss']:.2f} if outside)")
         L.append("")
     rec = {"value": "👉 Take the VALUE BET — it's the +EV play.",

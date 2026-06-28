@@ -1945,8 +1945,8 @@ def _send_city_signal(city, chat_id, fresh=False):
     reply_telegram(chat_id, fmt_new_signal(p) + (_fresh_tag() if fresh else ""),
                    keyboard=_refresh_kbd(f"rf:sig:{p.get('city', city)}"))
 
-def _send_cover(city, amount, chat_id, fresh=False):
-    """Cover card — auto $4/5/6 (amount=None) or a custom amount."""
+def _send_cover(city, amount, chat_id, fresh=False, wide=False):
+    """Cover card — auto $4/5/6 (amount=None) or a custom amount; wide=full safety."""
     try:
         pp = pw.predict(city, fetch_prices=True, fresh_prices=fresh)
     except Exception:
@@ -1955,14 +1955,18 @@ def _send_cover(city, amount, chat_id, fresh=False):
         reply_telegram(chat_id, f"No live Polymarket data for {city_display(city)} right now.")
         return
     sym = pp.get("temp_unit", "°C")
+    wtok = ":w" if wide else ""
+    wtag = " (wide)" if wide else ""
     if amount:
-        a = trade_advisor.advise_from_prediction(pp, budget=amount)
+        a = trade_advisor.advise_from_prediction(pp, budget=amount, wide=wide)
         body = trade_advisor.format_advice(a, sym) or "No buyable cover at that size."
-        head, token = f"🎓 <b>{city_display(city)}</b> — cover at ${amount:g}:", f"rf:cov:{city}:{amount:g}"
+        head = f"🎓 <b>{city_display(city)}</b> — cover at ${amount:g}{wtag}:"
+        token = f"rf:cov:{city}:{amount:g}{wtok}"
     else:
-        res  = trade_advisor.advise_budgets_from_prediction(pp, budgets=COVER_BUDGETS)
+        res  = trade_advisor.advise_budgets_from_prediction(pp, budgets=COVER_BUDGETS, wide=wide)
         body = trade_advisor.format_budgets(res, sym) or "No buyable cover right now (market too tight/decided)."
-        head, token = f"🎓 <b>{city_display(city)}</b>", f"rf:cov:{city}"
+        head = f"🎓 <b>{city_display(city)}</b>{wtag}"
+        token = f"rf:cov:{city}::w" if wide else f"rf:cov:{city}"
     reply_telegram(chat_id, f"{head}\n{body}" + (_fresh_tag() if fresh else ""),
                    keyboard=_refresh_kbd(token))
 
@@ -2020,8 +2024,9 @@ def _handle_refresh(data, chat_id):
     if kind == "sig":
         _send_city_signal(city, chat_id, fresh=True)
     elif kind == "cov":
-        amt = float(parts[3]) if len(parts) > 3 and parts[3] else None
-        _send_cover(city, amt, chat_id, fresh=True)
+        amt  = float(parts[3]) if len(parts) > 3 and parts[3] else None
+        wide = len(parts) > 4 and parts[4] == "w"
+        _send_cover(city, amt, chat_id, fresh=True, wide=wide)
     elif kind == "eg":
         _send_endgame_city(city, chat_id, fresh=True)
     elif kind == "lk":
@@ -2226,8 +2231,8 @@ def handle_command(text, chat_id):
             "/scan munich — scan one city\n"
             "/endgame — ending markets (nearly decided) with a small edge left\n"
             "/locked — markets whose daily high is locked in (winning bucket decided)\n"
-            "/cover <city> [amount] — how to spread $ across degrees so any covered one wins "
-            "(auto $4/$5/$6, or a custom amount)\n"
+            "/cover <city> [amount] [wide] — spread $ across degrees so any covered one wins "
+            "(auto $4/$5/$6, a custom amount, or 'wide' to cover every live degree)\n"
             "/positions — show your positions now\n"
             "/pnl — realized P&L ledger from settled alerts\n"
             "/learn — prediction-vs-outcome scoreboard (also: all / calib / sources / cities / nobias)\n"
@@ -2316,6 +2321,8 @@ def handle_command(text, chat_id):
 
     if low.startswith("/cover"):
         toks = text.split()[1:]
+        wide = any(t.lower() in ("wide", "full", "all") for t in toks)
+        toks = [t for t in toks if t.lower() not in ("wide", "full", "all")]
         amount = None
         if toks and toks[-1].replace(".", "", 1).isdigit():
             amount = float(toks[-1]); toks = toks[:-1]
@@ -2324,11 +2331,13 @@ def handle_command(text, chat_id):
             reply_telegram(chat_id,
                 "🎓 <b>Cover</b> — how to spread $ across degrees so whichever covered one "
                 "settles, you win (capital-preservation).\n"
-                "Usage: <code>/cover &lt;city&gt; [amount]</code>\n"
+                "Usage: <code>/cover &lt;city&gt; [amount] [wide]</code>\n"
                 "• <code>/cover warsaw</code> → auto $4 / $5 / $6 comparison\n"
-                "• <code>/cover warsaw 8</code> → a custom amount")
+                "• <code>/cover warsaw 8</code> → a custom amount\n"
+                "• <code>/cover warsaw wide</code> → cover EVERY live degree "
+                "(full safety, ≈break-even)")
             return
-        _send_cover(city, amount, chat_id)
+        _send_cover(city, amount, chat_id, wide=wide)
         return
 
     if low.startswith("/locked") or low.startswith("/decided") or low.startswith("/results"):

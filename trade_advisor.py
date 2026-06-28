@@ -63,6 +63,9 @@ MAX_SUM_PRICE = 0.96     # stop adding cover degrees once their prices sum past 
                          # (kept under $1 so the equal payout still beats the stake;
                          # 0.96 backtested best AND lets the meaningful adjacent fit)
 MAX_LEGS      = 4
+# Polymarket order minimum: a leg must be at least $1 OR at least 5 shares.
+MIN_ORDER_USD = 1.0
+MIN_SHARES    = 5
 
 
 def _phi(z):
@@ -87,27 +90,45 @@ def realistic_distribution(deb, deb_raw, buckets):
 
 
 def _equal_payout(bucket_list, priced, dist, budget):
-    """Size a set of degrees for EQUAL payout (same money back whichever wins).
-    stakeᵢ = payout·priceᵢ where payout = budget / Σ price over the SET. All buckets
-    in the set are kept so the math is consistent (Σ stake == budget exactly)."""
-    sump = sum(priced[v] for v in bucket_list)
+    """Size a set of degrees for EQUAL payout (same money back whichever wins):
+    every leg buys S = budget/Σprice shares, so stakeᵢ = S·priceᵢ. Legs that can't
+    meet Polymarket's order minimum ($1 OR 5 shares) are DROPPED (cheapest first)
+    and the rest re-sized — so you never get an un-buyable $0.09 leg."""
+    bl = list(bucket_list)
+    dropped = []
+    while len(bl) > 1:
+        sump = sum(priced[v] for v in bl)
+        if sump <= 0:
+            return None
+        S = budget / sump                              # shares per leg (equal payout)
+        # a leg is valid if its stake >= $1 OR it buys >= 5 shares
+        bad = [v for v in bl if (S * priced[v] < MIN_ORDER_USD - 1e-9) and (S < MIN_SHARES)]
+        if not bad:
+            break
+        drop = min(bad, key=lambda v: priced[v])       # cheapest un-buyable leg
+        bl.remove(drop); dropped.append(drop)
+    sump = sum(priced[v] for v in bl)
     if sump <= 0:
         return None
-    payout = budget / sump                       # same money back on any covered leg
+    S = budget / sump
+    if len(bl) == 1:                                    # last leg must still be valid
+        v = bl[0]
+        if S * priced[v] < MIN_ORDER_USD - 1e-9 and S < MIN_SHARES:
+            return None
     legs = []
-    for v in bucket_list:
+    for v in bl:
         p = priced[v]
-        stake = payout * p                       # NOT dropped — keeps Σ stake == budget
+        stake = S * p
         legs.append({"bucket": v, "price": round(p, 3), "prob": round(dist.get(v, 0.0), 3),
                      "edge": round(dist.get(v, 0.0) - p, 3),
                      "stake": round(stake, 2), "shares": round(stake / p, 1)})
     total    = round(sum(l["stake"] for l in legs), 2)
     coverage = round(sum(l["prob"] for l in legs), 3)
-    payout   = round(payout, 2)
+    payout   = round(budget / sump, 2)
     return {"legs": legs, "total": total, "payout": payout, "sum_price": round(sump, 3),
             "coverage": coverage, "profit_if_covered": round(payout - total, 2),
             "loss_if_miss": round(-total, 2),
-            "ev": round(coverage * payout - total, 2)}
+            "ev": round(coverage * payout - total, 2), "dropped": dropped}
 
 
 def advise(deb, deb_raw, market, budget=4.0):
@@ -208,9 +229,14 @@ def one_liner(a, sym="°C"):
             return (f"🎓 <b>Spread</b> (${a['budget']:.0f}): {_legs_str(vb, sym)} "
                     f"→ ${vb['payout']:.2f} if any hits (aggressive)")
         return "🎓 Advisor: nothing cleanly under-priced — sit out."
+    short = sym.replace(chr(176), "")
     line = (f"🎓 <b>Cover</b> (${a['budget']:.0f}): {_legs_str(s, sym)} → "
             f"<b>${s['payout']:.2f}</b> back on any · win if it's "
-            + "/".join(f"{l['bucket']}{sym.replace(chr(176),'')}" for l in s['legs']))
+            + "/".join(f"{l['bucket']}{short}" for l in s['legs']))
+    drp = s.get("dropped")
+    if drp:
+        line += (f"\n   (skipped {'/'.join(str(d)+short for d in drp)} — under Polymarket's "
+                 f"$1/5-share minimum; raise the budget to include them)")
     return line
 
 def format_advice(a, sym="°C"):

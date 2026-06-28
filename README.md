@@ -210,9 +210,9 @@ back whichever covered degree settles):
 
 ```
 🎓 Cover options (spread $ so whichever covered degree settles, you win):
-   $4 → 29°C $1.00 (5.6 sh) + 30°C $3.00 (5.6 sh) → $5.56 back · 72% covered · profit +1.56
-   $5 → 29°C $1.25 (6.9 sh) + 30°C $3.75 (6.9 sh) → $6.94 back · 72% covered · profit +1.94
-   $6 → 29°C $1.50 (8.3 sh) + 30°C $4.50 (8.3 sh) → $8.33 back · 72% covered · profit +2.33
+   $4 → 29°C @ 18¢ → $1.00 (5.6 sh) + 30°C @ 54¢ → $3.00 (5.6 sh) → $5.56 back · 72% covered · profit +1.56
+   $5 → 29°C @ 18¢ → $1.25 (6.9 sh) + 30°C @ 54¢ → $3.75 (6.9 sh) → $6.94 back · 72% covered · profit +1.94
+   $6 → 29°C @ 18¢ → $1.50 (8.3 sh) + 30°C @ 54¢ → $4.50 (8.3 sh) → $8.33 back · 72% covered · profit +2.33
    ⚠️ 31°C priced live but left out — covering every live degree runs ≈-4%; add `wide` to include it.
 ```
 

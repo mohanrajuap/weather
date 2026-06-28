@@ -283,8 +283,8 @@ def format_budgets(res, sym="°C"):
             L.append(f"   <b>${b:g}</b>: — no buyable cover at this size")
             continue
         any_row = True
-        legs = " + ".join(f"{l['bucket']}{short} ${l['stake']:.2f} ({l['shares']:g} sh)"
-                          for l in s["legs"])
+        legs = " + ".join(f"{l['bucket']}{short} @ {l['price']*100:.0f}¢ → ${l['stake']:.2f} "
+                          f"({l['shares']:g} sh)" for l in s["legs"])
         mark = ""
         if differ and pb != cb:
             if b == cb:

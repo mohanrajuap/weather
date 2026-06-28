@@ -266,9 +266,14 @@ def format_budgets(res, sym="°C"):
     if not res.get("ok"):
         return ""
     short = sym.replace(chr(176), "")
-    wide  = res.get("wide")
-    title = ("🎓 <b>Wide cover</b> (every live degree — full safety):" if wide
-             else "🎓 <b>Cover options</b> (spread $ so whichever covered degree settles, you win):")
+    wide   = res.get("wide")
+    n_rows = len([r for r in res["rows"] if r["cover"] and r["cover"]["legs"]])
+    if wide:
+        title = "🎓 <b>Wide cover</b> (every live degree — full safety):"
+    elif n_rows <= 1:
+        title = "🎓 <b>Cover</b> (spread $ so whichever covered degree settles, you win):"
+    else:
+        title = "🎓 <b>Cover options</b> (spread $ so whichever covered degree settles, you win):"
     L = [title]
     any_row = False
     pb, cb = res.get("profit_budget"), res.get("cover_budget")
@@ -300,7 +305,7 @@ def format_budgets(res, sym="°C"):
     if differ and pb and cb and pb != cb:
         L.append(f"   💰 <b>${pb:g}</b> = most profit if covered (keeps an edge, but can miss) · "
                  f"🛡️ <b>${cb:g}</b> = most degrees covered (safest, ≈break-even)")
-    elif not differ:
+    elif not differ and len([r for r in res["rows"] if r["cover"] and r["cover"]["legs"]]) > 1:
         L.append("   <i>(same degrees at each budget — a bigger budget just scales the "
                  "stake &amp; payout, not the coverage.)</i>")
     skipped = res.get("live_skipped") or []

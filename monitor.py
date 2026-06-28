@@ -1965,8 +1965,8 @@ def _send_cover(city, amount, chat_id, fresh=False, wide=False):
     wtok = ":w" if wide else ""
     wtag = " (wide)" if wide else ""
     if amount:
-        a = trade_advisor.advise_from_prediction(pp, budget=amount, wide=wide)
-        body = trade_advisor.format_advice(a, sym) or "No buyable cover at that size."
+        res = trade_advisor.advise_budgets_from_prediction(pp, budgets=(amount,), wide=wide)
+        body = trade_advisor.format_budgets(res, sym) or "No buyable cover at that size."
         head = f"🎓 <b>{city_display(city)}</b> — cover at ${amount:g}{wtag}:"
         token = f"rf:cov:{city}:{amount:g}{wtok}"
     else:

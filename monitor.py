@@ -658,20 +658,25 @@ def fmt_new_signal(p) -> str:
     def _mp(v):
         return f"  · mkt {mkt[v]*100:.0f}¢" if v in mkt else ""
 
+    _pbias = p.get("peak_bias") or 0.0
     if dist:
         L.append("")
-        _plabel = "no-bias model" if p.get("no_bias_mode") else "with bias"
+        if p.get("no_bias_mode"):
+            _plabel = "no-bias model"
+        elif abs(_pbias) < 0.05:
+            _plabel = "no bias applied today — these ARE the no-bias values"
+        else:
+            _plabel = "with bias"
         L.append(f"🎲 <b>Probabilities</b> ({_plabel} · vs market price)")
         for b in dist[:4]:
             bar = "▰" * max(1, round(b['probability'] * 10))
             lbl = _range_label(b.get('lo'), b.get('hi'), sym) or f"{b['value']}{sym}"
             L.append(f"   {lbl}  {bar} {b['probability']*100:.0f}%{_mp(b['value'])}")
 
-    # probabilities WITHOUT the per-city bias — same bars, raw model centre.
-    # Always surface the no-bias view (you rely on it): show the full block when it
-    # differs, or a one-line note when it's identical, so it's never just "missing".
+    # probabilities WITHOUT the per-city bias — same bars, raw model centre. Only a
+    # SEPARATE block when a bias was actually applied (else the header above already
+    # says the shown values are the no-bias ones). If live obs drove the call, say so.
     dist_raw = p.get("distribution_raw") or []
-    _pbias = p.get("peak_bias") or 0.0
     if dist_raw and abs(_pbias) >= 0.05:
         L.append("")
         L.append(f"🎲 <b>Probabilities (no bias · raw {p.get('deb_raw')}{sym})</b>")
@@ -679,10 +684,6 @@ def fmt_new_signal(p) -> str:
             bar = "▱" * max(1, round(b['probability'] * 10))
             lbl = _range_label(b.get('lo'), b.get('hi'), sym) or f"{b['value']}{sym}"
             L.append(f"   {lbl}  {bar} {b['probability']*100:.0f}%{_mp(b['value'])}")
-    elif dist_raw:
-        L.append("")
-        L.append(f"🎲 <i>No-bias = with-bias today — no peak bias applied "
-                 f"(raw {p.get('deb_raw')}{sym} = blend {p.get('deb')}{sym}).</i>")
     elif p.get("nobias_note"):
         L.append("")
         L.append(f"🎲 <i>No-bias view n/a — {esc(p['nobias_note'])}</i>")

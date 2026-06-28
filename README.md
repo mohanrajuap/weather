@@ -203,21 +203,36 @@ Built from 361 settled markets: the bot's headline σ (0.3–0.5°) is far tight
 the real prediction error (**±1.45°**), so a "71% on one bucket" call is over-confident
 — the truth is spread across ~3 degrees. The advisor ([`trade_advisor.py`](trade_advisor.py))
 rebuilds an honest distribution from the **bias + no-bias** values (empirical σ,
-widened when they disagree) and appends a concrete sizing line to every signal,
-`/scan` and `/endgame`:
+widened when they disagree) and appends a concrete sizing block to every signal,
+`/scan`, `/endgame` and the `/cover` command. It **auto-compares $4 / $5 / $6**
+and stars the budget with the best chance of a covered win, showing the exact
+per-degree dollars and shares:
 
 ```
-🎓 Cover ($4): 36°C $1.71 + 37°C $0.85 + 35°C $1.17 + 38°C $0.27 → $4.57 back on any
+🎓 Cover options (spread $ so whichever covered degree settles, you win):
+   $4 → 29°C $1.00 (5.6 sh) + 30°C $3.00 (5.6 sh) → $5.56 back · 49% covered · +1.56 ⭐
+   $5 → 29°C $1.25 (6.9 sh) + 30°C $3.75 (6.9 sh) → $6.94 back · 49% covered · +1.94
+   $6 → 29°C $1.50 (8.3 sh) + 30°C $4.50 (8.3 sh) → $8.33 back · 49% covered · +2.33
 ```
 
-It spreads `COVER_BUDGET` across the likely degrees (market favourite + bot pick +
+Each budget spreads across the likely degrees (market favourite + bot pick +
 backups) for **equal payout** — whichever covered degree settles, you get the same
-money back; you only lose if it lands outside. Backtested on the 361 markets this
-"full cover" was **49% hit / +2.7% ROI** (capital-preservation, ≈break-even+). The
-module also computes an aggressive **value bet** (under-priced wings: 8% hit but
-+34% ROI — high-variance lottery). Honest caveat: against an efficient market
-neither is a certain edge; the cover holds your money while you wait for real
-mis-pricings. Tune with `COVER_BUDGET`; `ENABLE_ADVICE=0` to hide it.
+money back; you only lose if it lands outside. A bigger budget can buy more
+coverage **only once each leg clears Polymarket's $1 / 5-share minimum**, which is
+why $4 → $5 sometimes unlocks cheap backup degrees (that jump is the whole point of
+the comparison). Backtested on 423 settled markets: **$4 56% hit / +2.3% ROI**,
+**$5–$6 58% hit / +2.1% ROI** — all capital-preserving, no un-buyable legs.
+
+`/cover <city>` shows the auto $4/$5/$6; `/cover <city> <amount>` sizes a **custom**
+budget. Set the displayed budgets with `COVER_BUDGETS=4,5,6`; `ENABLE_ADVICE=0`
+hides the block. The module also computes an aggressive **value bet** (under-priced
+wings — high-variance lottery). Honest caveat: against an efficient market neither
+is a certain edge; the cover holds your money while you wait for real mis-pricings.
+
+**🔄 Refresh button.** Every signal / cover / endgame / locked card carries a
+*Refresh prices* button. Tapping it recomputes that city on the **live order book**
+(cache bypassed via `fresh_prices`), so a stale 30-min-old snapshot never drives the
+cover — useful right before you place an order.
 
 ### 5. Learning
 Every scan records the prediction; once a market settles, the bot fetches the

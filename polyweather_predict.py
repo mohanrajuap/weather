@@ -1976,7 +1976,8 @@ def is_dead_market_check(local_hour: int, peak_end: int,
 # ══════════════════════════════════════════════════════════════════════════════
 # MAIN PREDICT FUNCTION
 # ══════════════════════════════════════════════════════════════════════════════
-def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
+def predict(city_name: str, fetch_prices: bool = False,
+            fresh_prices: bool = False) -> Dict[str, Any]:
     city_key = resolve_city(city_name)
     meta     = CITIES.get(city_key) if city_key else None
     if not meta:
@@ -2300,7 +2301,10 @@ def predict(city_name: str, fetch_prices: bool = False) -> Dict[str, Any]:
     range_market = False
     if fetch_prices:
         try:
-            pm_data = fetch_polymarket_market(city_key, target_date)
+            # fresh_prices=True (e.g. a 🔄 Refresh tap) bypasses the price cache so
+            # the cover/edges are computed on the live order book, not a stale copy.
+            pm_data = fetch_polymarket_market(city_key, target_date,
+                                              cache_ttl=0 if fresh_prices else None)
         except Exception:
             pm_data = None
         if pm_data and _market_is_range(pm_data):

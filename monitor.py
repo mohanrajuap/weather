@@ -265,17 +265,20 @@ PRICE_WATCHES = load_watches()
 
 
 # ── Telegram ──────────────────────────────────────────────────────────────────
-def send_telegram(text: str) -> bool:
+def send_telegram(text: str, keyboard=None) -> bool:
     if not TG_TOKEN or not TG_CHAT_IDS:
         print(f"[telegram] not configured — would send:\n{text}\n")
         return False
     ok_any = False
     for chat_id in TG_CHAT_IDS:
         try:
+            payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML",
+                       "disable_web_page_preview": True}
+            if keyboard:
+                payload["reply_markup"] = {"inline_keyboard": keyboard}
             r = httpx.post(
                 f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage",
-                json={"chat_id": chat_id, "text": text, "parse_mode": "HTML",
-                      "disable_web_page_preview": True},
+                json=payload,
                 timeout=15.0,
             )
             if r.status_code != 200:
@@ -287,7 +290,7 @@ def send_telegram(text: str) -> bool:
     return ok_any
 
 
-def alert_signal(text: str) -> bool:
+def alert_signal(text: str, keyboard=None) -> bool:
     """Send a NEW-TRADE signal alert (buy / bucket-shift / collapse).
 
     In TRADE_MODE=OBSERVE these are suppressed — the bot still scans, learns and
@@ -296,7 +299,7 @@ def alert_signal(text: str) -> bool:
     """
     if OBSERVE_ONLY:
         return False
-    return send_telegram(text)
+    return send_telegram(text, keyboard=keyboard)
 
 
 # ── Outgoing webhook to your other bot ────────────────────────────────────────
@@ -1377,12 +1380,14 @@ def watch_active_signals(conn):
                           and prev_bucket is not None and bucket != prev_bucket)
 
         if bucket_shifted:
-            alert_signal(fmt_bucket_shift(p, prev_bucket, prev_prob))
+            alert_signal(fmt_bucket_shift(p, prev_bucket, prev_prob),
+                         keyboard=_refresh_kbd(f"rf:sig:{p['city']}"))
             fire_webhook(p, "bucket_shift")
             upsert_state(conn, key, city, tdate, bucket, prob, alerted_high=1)
             print(f"  ⚡🔄 FAST SHIFT {city} {prev_bucket}°→{bucket}°")
         elif collapsed:
-            alert_signal(fmt_collapse(p, prev_prob if prev_prob is not None else prob))
+            alert_signal(fmt_collapse(p, prev_prob if prev_prob is not None else prob),
+                         keyboard=_refresh_kbd(f"rf:sig:{p['city']}"))
             fire_webhook(p, "collapse")
             upsert_state(conn, key, city, tdate, bucket, prob, alerted_high=0)
             print(f"  ⚡🔴 FAST COLLAPSE {city} {prob*100:.0f}%")
@@ -1511,11 +1516,13 @@ def run_scan(conn):
                 prevmax = lprev["prob"] if lprev else None
                 held_b = (held_positions.get(p["city"]) or {}).get("bucket")
                 if prevmax is None:
-                    send_telegram(fmt_locked(lo, held=held_b))
+                    send_telegram(fmt_locked(lo, held=held_b),
+                                  keyboard=_refresh_kbd(f"rf:lk:{p['city']}"))
                     upsert_state(conn, lkey, p["city"], lo["date"], lo["bucket"], lo["max"], alerted_high=1)
                     print(f"  🔒 LOCKED {city} {lo['bucket']}{lo['sym']} (max {lo['max']})")
                 elif lo["max"] > (prevmax or 0) + 0.01:
-                    send_telegram(fmt_locked(lo, held=held_b, prev_max=prevmax))
+                    send_telegram(fmt_locked(lo, held=held_b, prev_max=prevmax),
+                                  keyboard=_refresh_kbd(f"rf:lk:{p['city']}"))
                     upsert_state(conn, lkey, p["city"], lo["date"], lo["bucket"], lo["max"], alerted_high=1)
                     print(f"  🔒 NEW HIGH {city} {lo['max']}° (was {prevmax})")
 
@@ -1601,7 +1608,8 @@ def run_scan(conn):
                 try: learn.log_alert_line(line, p["city"])
                 except Exception: pass
         if crossed_up:
-            alert_signal(fmt_new_signal(p))   # suppressed in OBSERVE mode
+            alert_signal(fmt_new_signal(p),   # suppressed in OBSERVE mode
+                         keyboard=_refresh_kbd(f"rf:sig:{p['city']}"))
             fire_webhook(p, "new_signal")     # forward to your other bot (if set)
             upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=1)
             new_alerts += 1
@@ -1622,7 +1630,8 @@ def run_scan(conn):
             print(f"  🟢 ALERT {city} {bucket}° {prob*100:.0f}%{mode_tag}")
         elif bucket_shifted:
             alert_signal(fmt_bucket_shift(p, prev_bucket, prev_prob if prev_prob is not None else prob,
-                                          position=held_positions.get(p["city"])))
+                                          position=held_positions.get(p["city"])),
+                         keyboard=_refresh_kbd(f"rf:sig:{p['city']}"))
             fire_webhook(p, "bucket_shift")
             # keep alerted_high=1 since it's still a high-conf signal, just a new bucket
             upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=1)
@@ -1630,7 +1639,8 @@ def run_scan(conn):
             _log(f"🔄 {cdisp} {prev_bucket}{psym}→{bucket}{psym} @{prob*100:.0f}%")
             print(f"  🔄 SHIFT {city} {prev_bucket}°→{bucket}° {prob*100:.0f}%{mode_tag}")
         elif collapsed:
-            alert_signal(fmt_collapse(p, prev_prob if prev_prob is not None else prob))
+            alert_signal(fmt_collapse(p, prev_prob if prev_prob is not None else prob),
+                         keyboard=_refresh_kbd(f"rf:sig:{p['city']}"))
             fire_webhook(p, "collapse")
             upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=0)
             collapses += 1
@@ -1653,7 +1663,8 @@ def run_scan(conn):
                 ekey  = f"endgame|{p['city']}|{tdate}"     # once per ending market
                 eprev = get_state(conn, ekey)
                 if not (eprev and eprev["alerted_high"]):
-                    alert_signal(fmt_endgame(opp))      # suppressed in OBSERVE
+                    alert_signal(fmt_endgame(opp),      # suppressed in OBSERVE
+                                 keyboard=_refresh_kbd(f"rf:eg:{opp['city']}"))
                     fire_webhook(p, "endgame")
                     upsert_state(conn, ekey, p["city"], tdate, opp["dom"], opp["dom_price"], alerted_high=1)
                     _log(f"🔚 {cdisp} ending · front {opp['dom']}{psym}@{opp['dom_price']*100:.0f}¢ · bot {opp['pick']}{psym}")
@@ -1812,7 +1823,8 @@ def scan_for_command(scope="all", reply_to=None):
     # ── Telegram replies ──
     if single_city:
         if single_pred:
-            reply_telegram(reply_to, fmt_new_signal(single_pred))
+            reply_telegram(reply_to, fmt_new_signal(single_pred),
+                           keyboard=_refresh_kbd(f"rf:sig:{single_pred['city']}"))
             # offer a one-tap forward when there's an actual trade to send
             if single_pred.get("best_trade"):
                 _forward_prompt(reply_to, [single_pred["city"]])
@@ -1830,7 +1842,8 @@ def scan_for_command(scope="all", reply_to=None):
     hits.sort(key=lambda x: x.get("top_prob", 0), reverse=True)
     reply_telegram(reply_to, f"{header}\n\n✅ {len(hits)} tradeable signal(s):")
     for p in hits[:10]:
-        reply_telegram(reply_to, fmt_new_signal(p))
+        reply_telegram(reply_to, fmt_new_signal(p),
+                       keyboard=_refresh_kbd(f"rf:sig:{p['city']}"))
     # offer to forward the found signals to the external bot (manual option)
     _forward_prompt(reply_to, [p["city"] for p in hits[:8]])
     print(f"[{ts}] /scan {scope} done — {len(hits)} tradeable")
@@ -1910,6 +1923,109 @@ def _manual_send(ck, reply_to):
         print(f"[send] {ck}: {e}")
     reply_telegram(reply_to, f"✅ Sent {city_display(ck)} (event=manual_signal)." if ok
                    else "❌ Send failed — run /webhook to test the connection.")
+
+
+# ── 🔄 Refresh — recompute a card on the LIVE order book ──────────────────────
+# Cards carry a Refresh button; tapping it re-pulls that city's prices with the
+# cache bypassed (fresh_prices=True) so a stale snapshot never drives the cover.
+def _refresh_kbd(token, label="🔄 Refresh prices"):
+    return [[{"text": label, "callback_data": token[:64]}]]
+
+def _fresh_tag():
+    return f"\n<i>↻ live prices @ {datetime.now(timezone.utc).strftime('%H:%M:%SZ')}</i>"
+
+def _send_city_signal(city, chat_id, fresh=False):
+    """Single-city signal card (used by /scan <city> and its Refresh button)."""
+    try:
+        p = pw.predict(city, fetch_prices=USE_PRICES, fresh_prices=fresh)
+    except Exception as e:
+        reply_telegram(chat_id, f"❌ {city_display(city)}: {esc(str(e))}"); return
+    if "error" in p:
+        reply_telegram(chat_id, f"❌ {city_display(city)}: {esc(p['error'])}"); return
+    reply_telegram(chat_id, fmt_new_signal(p) + (_fresh_tag() if fresh else ""),
+                   keyboard=_refresh_kbd(f"rf:sig:{p.get('city', city)}"))
+
+def _send_cover(city, amount, chat_id, fresh=False):
+    """Cover card — auto $4/5/6 (amount=None) or a custom amount."""
+    try:
+        pp = pw.predict(city, fetch_prices=True, fresh_prices=fresh)
+    except Exception:
+        pp = {"error": "predict failed"}
+    if "error" in pp or not (pp.get("polymarket") or {}).get("buckets"):
+        reply_telegram(chat_id, f"No live Polymarket data for {city_display(city)} right now.")
+        return
+    sym = pp.get("temp_unit", "°C")
+    if amount:
+        a = trade_advisor.advise_from_prediction(pp, budget=amount)
+        body = trade_advisor.format_advice(a, sym) or "No buyable cover at that size."
+        head, token = f"🎓 <b>{city_display(city)}</b> — cover at ${amount:g}:", f"rf:cov:{city}:{amount:g}"
+    else:
+        res  = trade_advisor.advise_budgets_from_prediction(pp, budgets=COVER_BUDGETS)
+        body = trade_advisor.format_budgets(res, sym) or "No buyable cover right now (market too tight/decided)."
+        head, token = f"🎓 <b>{city_display(city)}</b>", f"rf:cov:{city}"
+    reply_telegram(chat_id, f"{head}\n{body}" + (_fresh_tag() if fresh else ""),
+                   keyboard=_refresh_kbd(token))
+
+def _send_endgame_city(city, chat_id, fresh=False):
+    """One ending-market card (used by the Refresh button on /endgame cards)."""
+    try:
+        pp = pw.predict(city, fetch_prices=USE_PRICES, fresh_prices=fresh)
+    except Exception:
+        pp = {"error": 1}
+    if "error" in pp:
+        reply_telegram(chat_id, f"❌ {city_display(city)}"); return
+    opp = check_endgame(pp)
+    if not opp:
+        reply_telegram(chat_id, f"🔚 {city_display(city)} is no longer an ending market "
+                       "(buckets opened back up)." + (_fresh_tag() if fresh else ""))
+        return
+    card = fmt_endgame(opp)
+    adv  = advice_line(pp)
+    if adv:
+        card += "\n\n" + adv
+    reply_telegram(chat_id, card + (_fresh_tag() if fresh else ""),
+                   keyboard=_refresh_kbd(f"rf:eg:{opp['city']}"))
+
+def _send_locked_city(city, chat_id, fresh=False):
+    """One locked-high card (used by the Refresh button on /locked cards)."""
+    try:
+        pp = pw.predict(city, fetch_prices=False, fresh_prices=fresh)
+    except Exception:
+        pp = {"error": 1}
+    if "error" in pp:
+        reply_telegram(chat_id, f"❌ {city_display(city)}"); return
+    o = check_locked(city, pp)
+    if not o:
+        reply_telegram(chat_id, f"🔒 {city_display(city)} — today's high isn't locked yet."
+                       + (_fresh_tag() if fresh else ""))
+        return
+    price, url, pm = None, None, None
+    try:
+        pm = pw.fetch_polymarket_market(o["city"], o["date"], cache_ttl=0 if fresh else 300)
+        if pm:
+            url   = pm.get("url")
+            price = ((pm.get("buckets") or {}).get(o["bucket"]) or {}).get("yes")
+    except Exception:
+        pass
+    reply_telegram(chat_id, fmt_locked(o, pm_price=price, pm_url=url) + (_fresh_tag() if fresh else ""),
+                   keyboard=_refresh_kbd(f"rf:lk:{o['city']}"))
+
+def _handle_refresh(data, chat_id):
+    """Route a 'rf:<kind>:<city>[:amt]' button tap to a fresh recompute."""
+    parts = data.split(":")
+    kind  = parts[1] if len(parts) > 1 else ""
+    city  = parts[2] if len(parts) > 2 else None
+    if not city:
+        return
+    if kind == "sig":
+        _send_city_signal(city, chat_id, fresh=True)
+    elif kind == "cov":
+        amt = float(parts[3]) if len(parts) > 3 and parts[3] else None
+        _send_cover(city, amt, chat_id, fresh=True)
+    elif kind == "eg":
+        _send_endgame_city(city, chat_id, fresh=True)
+    elif kind == "lk":
+        _send_locked_city(city, chat_id, fresh=True)
 
 
 def set_bot_commands():
@@ -2124,7 +2240,9 @@ def handle_command(text, chat_id):
             "/send <city> — forward that city's signal to your other bot now\n"
             "/webhook — test the outgoing API webhook to your other bot\n"
             "/backup — back up learning data to GitHub\n"
-            "/help — this message")
+            "/help — this message\n\n"
+            "🔄 Every signal / cover / endgame / locked card has a <b>Refresh prices</b> "
+            "button — tap it to recompute on the live order book (bypasses the cache).")
         return
 
     if low.startswith("/learn"):
@@ -2193,7 +2311,7 @@ def handle_command(text, chat_id):
             card = fmt_endgame(o)
             if o.get("_adv"):
                 card += "\n\n" + o["_adv"]
-            reply_telegram(chat_id, card)
+            reply_telegram(chat_id, card, keyboard=_refresh_kbd(f"rf:eg:{o['city']}"))
         return
 
     if low.startswith("/cover"):
@@ -2210,23 +2328,7 @@ def handle_command(text, chat_id):
                 "• <code>/cover warsaw</code> → auto $4 / $5 / $6 comparison\n"
                 "• <code>/cover warsaw 8</code> → a custom amount")
             return
-        try:
-            pp = pw.predict(city, fetch_prices=True)
-        except Exception:
-            pp = {"error": "predict failed"}
-        if "error" in pp or not (pp.get("polymarket") or {}).get("buckets"):
-            reply_telegram(chat_id, f"No live Polymarket data for {city_display(city)} right now.")
-            return
-        sym = pp.get("temp_unit", "°C")
-        if amount:
-            a = trade_advisor.advise_from_prediction(pp, budget=amount)
-            reply_telegram(chat_id, f"🎓 <b>{city_display(city)}</b> — cover at ${amount:g}:\n"
-                           + (trade_advisor.format_advice(a, sym) or "No buyable cover at that size."))
-        else:
-            res = trade_advisor.advise_budgets_from_prediction(pp, budgets=COVER_BUDGETS)
-            block = trade_advisor.format_budgets(res, sym)
-            reply_telegram(chat_id, f"🎓 <b>{city_display(city)}</b>\n"
-                           + (block or "No buyable cover right now (market too tight/decided)."))
+        _send_cover(city, amount, chat_id)
         return
 
     if low.startswith("/locked") or low.startswith("/decided") or low.startswith("/results"):
@@ -2273,7 +2375,8 @@ def handle_command(text, chat_id):
                     price = b.get("yes")
             except Exception:
                 pass
-            reply_telegram(chat_id, fmt_locked(o, pm_price=price, pm_url=url, held=held.get(o["city"])))
+            reply_telegram(chat_id, fmt_locked(o, pm_price=price, pm_url=url, held=held.get(o["city"])),
+                           keyboard=_refresh_kbd(f"rf:lk:{o['city']}"))
         return
 
     if low.startswith("/webhook"):
@@ -2516,6 +2619,8 @@ def command_listener():
                         elif data == "menu:regions":
                             reply_telegram(cq_chat, "🌍 Pick a region to scan:",
                                            keyboard=_regions_keyboard())
+                        elif data.startswith("rf:"):                  # 🔄 refresh a card
+                            _handle_refresh(data, cq_chat)
                         elif data.startswith("send:"):                # forward to bot
                             _manual_send(data.split(":", 1)[1], cq_chat)
                         elif data.startswith("scan:"):                # legacy /pick

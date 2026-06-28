@@ -223,23 +223,26 @@ def advise_budgets(deb, deb_raw, market, budgets=(4.0, 5.0, 6.0)):
 
 
 def format_budgets(res, sym="°C"):
-    """Compact multi-budget cover block for an alert."""
+    """Multi-budget cover block — each budget shows the exact per-degree $ and
+    share allocation (equal-payout) and the guaranteed return if covered."""
     if not res.get("ok"):
         return ""
     short = sym.replace(chr(176), "")
-    L = ["🎓 <b>Cover options</b> (spread $ → win if ANY covered degree settles):"]
+    L = ["🎓 <b>Cover options</b> (spread $ so whichever covered degree settles, you win):"]
     any_row = False
     for r in res["rows"]:
         s, b = r["cover"], r["budget"]
         if not s or not s["legs"]:
-            L.append(f"   ${b:g}: — no buyable cover at this size")
+            L.append(f"   <b>${b:g}</b>: — no buyable cover at this size")
             continue
         any_row = True
-        legs = "/".join(f"{l['bucket']}{short}" for l in s["legs"])
+        legs = " + ".join(f"{l['bucket']}{short} ${l['stake']:.2f} ({l['shares']:g} sh)"
+                          for l in s["legs"])
         star = " ⭐" if b == res["best"] else ""
-        drp = f" (skips {'/'.join(str(d) for d in s.get('dropped') or [])})" if s.get("dropped") else ""
-        L.append(f"   <b>${b:g}</b> → {legs}{drp}  ·  {s['coverage']*100:.0f}% covered  ·  "
-                 f"+{s['profit_if_covered']:.2f}/-{s['total']:.2f}{star}")
+        drp = (f"  [skips {'/'.join(str(d) + short for d in s.get('dropped') or [])} "
+               f"— under $1/5-share min]" if s.get("dropped") else "")
+        L.append(f"   <b>${b:g}</b> → {legs} → <b>${s['payout']:.2f}</b> back · "
+                 f"{s['coverage']*100:.0f}% covered · profit {s['profit_if_covered']:+.2f}{star}{drp}")
     if not any_row:
         return ""
     if res["best"]:

@@ -174,6 +174,9 @@ BANKROLL       = float(os.environ.get("BANKROLL", "100"))
 # /endgame. COVER_BUDGET = $ to spread across degrees per city.
 ENABLE_ADVICE  = os.environ.get("ENABLE_ADVICE", "1") == "1"
 COVER_BUDGET   = float(os.environ.get("COVER_BUDGET", "4"))
+# Budgets shown automatically in every cover suggestion (custom via /cover <city> <amt>)
+COVER_BUDGETS  = tuple(float(x) for x in
+                       os.environ.get("COVER_BUDGETS", "4,5,6").replace(" ", "").split(",") if x) or (4.0, 5.0, 6.0)
 # Hour (UTC) to send the once-a-day morning digest of the day's best edges.
 DIGEST_HOUR_UTC = int(os.environ.get("DIGEST_HOUR_UTC", "6"))
 # Send the morning digest at all? (needs LIVE mode to be useful)
@@ -511,13 +514,12 @@ def _bucket_label(p, value, sym):
 
 
 def advice_line(p):
-    """Coverage/spread sizing suggestion from the trade advisor, or None."""
+    """Multi-budget ($4/$5/$6) coverage suggestion from the trade advisor, or None."""
     if not ENABLE_ADVICE or not (p.get("polymarket") or {}).get("buckets"):
         return None
     try:
-        a = trade_advisor.advise_from_prediction(p, budget=COVER_BUDGET)
-        line = trade_advisor.one_liner(a, p.get("temp_unit", "°C"))
-        return line or None
+        res = trade_advisor.advise_budgets_from_prediction(p, budgets=COVER_BUDGETS)
+        return trade_advisor.format_budgets(res, p.get("temp_unit", "°C")) or None
     except Exception:
         return None
 
@@ -1860,6 +1862,7 @@ def _main_menu_keyboard():
          {"text": "💸 Missed",        "callback_data": "cmd:/missed"}],
         [{"text": "🔚 Ending markets","callback_data": "cmd:/endgame"},
          {"text": "🔒 Locked highs",  "callback_data": "cmd:/locked"}],
+        [{"text": "🎓 Cover ($4/5/6)","callback_data": "cmd:/cover"}],
         [{"text": "🧵 Today's alerts","callback_data": "cmd:/alerts"},
          {"text": "🔭 Price watches", "callback_data": "cmd:/watches"}],
         [{"text": "🔕 Muted",         "callback_data": "cmd:/muted"},
@@ -1919,6 +1922,7 @@ def set_bot_commands():
         {"command": "scan",      "description": "🔍 Scan all markets (or /scan <city>)"},
         {"command": "endgame",   "description": "🔚 Ending markets with a small edge"},
         {"command": "locked",    "description": "🔒 Markets whose high is locked (winner decided)"},
+        {"command": "cover",     "description": "🎓 Cover-the-degrees sizing ($4/5/6 or /cover <city> <amt>)"},
         {"command": "positions", "description": "💼 Your positions + P&L"},
         {"command": "pnl",       "description": "💰 Realized P&L ledger"},
         {"command": "learn",     "description": "📊 Scoreboard (calib/sources/cities/nobias)"},
@@ -2106,6 +2110,8 @@ def handle_command(text, chat_id):
             "/scan munich — scan one city\n"
             "/endgame — ending markets (nearly decided) with a small edge left\n"
             "/locked — markets whose daily high is locked in (winning bucket decided)\n"
+            "/cover <city> [amount] — how to spread $ across degrees so any covered one wins "
+            "(auto $4/$5/$6, or a custom amount)\n"
             "/positions — show your positions now\n"
             "/pnl — realized P&L ledger from settled alerts\n"
             "/learn — prediction-vs-outcome scoreboard (also: all / calib / sources / cities / nobias)\n"
@@ -2188,6 +2194,39 @@ def handle_command(text, chat_id):
             if o.get("_adv"):
                 card += "\n\n" + o["_adv"]
             reply_telegram(chat_id, card)
+        return
+
+    if low.startswith("/cover"):
+        toks = text.split()[1:]
+        amount = None
+        if toks and toks[-1].replace(".", "", 1).isdigit():
+            amount = float(toks[-1]); toks = toks[:-1]
+        city = pw.resolve_city(" ".join(toks)) if toks else None
+        if not city:
+            reply_telegram(chat_id,
+                "🎓 <b>Cover</b> — how to spread $ across degrees so whichever covered one "
+                "settles, you win (capital-preservation).\n"
+                "Usage: <code>/cover &lt;city&gt; [amount]</code>\n"
+                "• <code>/cover warsaw</code> → auto $4 / $5 / $6 comparison\n"
+                "• <code>/cover warsaw 8</code> → a custom amount")
+            return
+        try:
+            pp = pw.predict(city, fetch_prices=True)
+        except Exception:
+            pp = {"error": "predict failed"}
+        if "error" in pp or not (pp.get("polymarket") or {}).get("buckets"):
+            reply_telegram(chat_id, f"No live Polymarket data for {city_display(city)} right now.")
+            return
+        sym = pp.get("temp_unit", "°C")
+        if amount:
+            a = trade_advisor.advise_from_prediction(pp, budget=amount)
+            reply_telegram(chat_id, f"🎓 <b>{city_display(city)}</b> — cover at ${amount:g}:\n"
+                           + (trade_advisor.format_advice(a, sym) or "No buyable cover at that size."))
+        else:
+            res = trade_advisor.advise_budgets_from_prediction(pp, budgets=COVER_BUDGETS)
+            block = trade_advisor.format_budgets(res, sym)
+            reply_telegram(chat_id, f"🎓 <b>{city_display(city)}</b>\n"
+                           + (block or "No buyable cover right now (market too tight/decided)."))
         return
 
     if low.startswith("/locked") or low.startswith("/decided") or low.startswith("/results"):

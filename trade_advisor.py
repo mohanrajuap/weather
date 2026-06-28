@@ -203,6 +203,62 @@ def advise(deb, deb_raw, market, budget=4.0):
     }
 
 
+def advise_budgets(deb, deb_raw, market, budgets=(4.0, 5.0, 6.0)):
+    """Compute the cover at several budgets and flag which gives the best CHANCE of
+    being covered (= not losing) while still profitable. More budget affords more
+    degrees → higher coverage but a thinner margin per win."""
+    base = advise(deb, deb_raw, market, budget=budgets[0])
+    rows = []
+    for b in budgets:
+        a = advise(deb, deb_raw, market, budget=b)
+        rows.append({"budget": b, "cover": (a.get("full_cover") if a.get("ok") else None)})
+    valid = [r for r in rows if r["cover"] and r["cover"]["legs"]
+             and r["cover"]["profit_if_covered"] > 0]
+    # best chance of not losing = highest coverage; tie-break the smaller budget.
+    best = max(valid, key=lambda r: (r["cover"]["coverage"], -r["budget"]), default=None)
+    return {"ok": base.get("ok"), "center": base.get("center"), "sigma": base.get("sigma"),
+            "distribution": base.get("distribution"),
+            "market_fav": base.get("market_fav"), "bot_pick": base.get("bot_pick"),
+            "rows": rows, "best": (best["budget"] if best else None)}
+
+
+def format_budgets(res, sym="°C"):
+    """Compact multi-budget cover block for an alert."""
+    if not res.get("ok"):
+        return ""
+    short = sym.replace(chr(176), "")
+    L = ["🎓 <b>Cover options</b> (spread $ → win if ANY covered degree settles):"]
+    any_row = False
+    for r in res["rows"]:
+        s, b = r["cover"], r["budget"]
+        if not s or not s["legs"]:
+            L.append(f"   ${b:g}: — no buyable cover at this size")
+            continue
+        any_row = True
+        legs = "/".join(f"{l['bucket']}{short}" for l in s["legs"])
+        star = " ⭐" if b == res["best"] else ""
+        drp = f" (skips {'/'.join(str(d) for d in s.get('dropped') or [])})" if s.get("dropped") else ""
+        L.append(f"   <b>${b:g}</b> → {legs}{drp}  ·  {s['coverage']*100:.0f}% covered  ·  "
+                 f"+{s['profit_if_covered']:.2f}/-{s['total']:.2f}{star}")
+    if not any_row:
+        return ""
+    if res["best"]:
+        L.append(f"   👉 best chance of a covered win: <b>${res['best']:g}</b> "
+                 f"(more $ = higher % covered, thinner profit)")
+    return "\n".join(L)
+
+
+def advise_budgets_from_prediction(p, budgets=(4.0, 5.0, 6.0)):
+    pm = (p.get("polymarket") or {}).get("buckets") or {}
+    market = {}
+    for v, b in pm.items():
+        try:
+            market[int(v)] = {"yes": b.get("yes"), "lo": b.get("lo", int(v)), "hi": b.get("hi", int(v))}
+        except (TypeError, ValueError):
+            continue
+    return advise_budgets(p.get("deb"), p.get("deb_raw"), market, budgets=budgets)
+
+
 def advise_from_prediction(p, budget=4.0):
     pm = (p.get("polymarket") or {}).get("buckets") or {}
     market = {}
@@ -252,7 +308,8 @@ def format_advice(a, sym="°C"):
         star = "⭐ " if a["recommendation"] == "value" else ""
         L.append(f"{star}💰 VALUE BET — under-priced degrees, +EV ({vb['ev']:+.2f}):")
         for l in vb["legs"]:
-            L.append(f"   • {l['bucket']}{sym} @ {l['price']*100:.0f}¢ → ${l['stake']:.2f} "
+            sh = f", {l['shares']:g} sh" if l["stake"] < MIN_ORDER_USD else ""
+            L.append(f"   • {l['bucket']}{sym} @ {l['price']*100:.0f}¢ → ${l['stake']:.2f}{sh} "
                      f"(edge {l['edge']*100:+.0f}%)")
         L.append(f"   → win any → ${vb['payout']:.2f}  (profit {vb['profit_if_covered']:+.2f}, "
                  f"{vb['coverage']*100:.0f}% hit, lose {vb['loss_if_miss']:.2f} if outside)")
@@ -263,7 +320,8 @@ def format_advice(a, sym="°C"):
         L.append(f"{star}🛡️ FULL COVER — market+bot+backups, {tag}:")
         for l in fc["legs"]:
             note = "✅" if l["edge"] > 0 else "💸"
-            L.append(f"   • {l['bucket']}{sym} @ {l['price']*100:.0f}¢ → ${l['stake']:.2f} "
+            sh = f", {l['shares']:g} sh" if l["stake"] < MIN_ORDER_USD else ""
+            L.append(f"   • {l['bucket']}{sym} @ {l['price']*100:.0f}¢ → ${l['stake']:.2f}{sh} "
                      f"(edge {l['edge']*100:+.0f}% {note})")
         L.append(f"   → win any → ${fc['payout']:.2f}  ({fc['coverage']*100:.0f}% covered, "
                  f"EV {fc['ev']:+.2f}, lose {fc['loss_if_miss']:.2f} if outside)")

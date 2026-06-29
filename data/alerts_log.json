@@ -1560,6 +1560,66 @@
       "t": "6:36 AM",
       "city": "wellington",
       "line": "\ud83d\udfe2 Wellington 12\u00b0C@73% \u00b7 BUY YES 12\u00b0C@30\u00a2 +43%"
+    },
+    {
+      "t": "9:45 AM",
+      "city": "hong kong",
+      "line": "\ud83d\udfe2 Hong Kong 31\u00b0C@81% \u00b7 BUY YES 31\u00b0C@50\u00a2 +31%"
+    },
+    {
+      "t": "10:33 AM",
+      "city": "busan",
+      "line": "\ud83d\udfe2 Busan 28\u00b0C@87% \u00b7 BUY YES 28\u00b0C@44\u00a2 +43%"
+    },
+    {
+      "t": "10:33 AM",
+      "city": "shenzhen",
+      "line": "\ud83d\udfe2 Shenzhen 33\u00b0C@90% \u00b7 BUY YES 33\u00b0C@24\u00a2 +66%"
+    },
+    {
+      "t": "11:36 AM",
+      "city": "hong kong",
+      "line": "\ud83d\udd34 Hong Kong 32\u00b0C weakened to 100%"
+    },
+    {
+      "t": "11:51 AM",
+      "city": "singapore",
+      "line": "\ud83d\udfe2 Singapore 32\u00b0C@89% \u00b7 BUY YES 32\u00b0C@37\u00a2 +53%"
+    },
+    {
+      "t": "12:07 PM",
+      "city": "seoul",
+      "line": "\ud83d\udfe2 Seoul 26\u00b0C@82% \u00b7 BUY YES 26\u00b0C@64\u00a2 +18%"
+    },
+    {
+      "t": "12:22 PM",
+      "city": "singapore",
+      "line": "\ud83d\udd34 Singapore 33\u00b0C weakened to 81%"
+    },
+    {
+      "t": "6:17 PM",
+      "city": "ankara",
+      "line": "\ud83d\udfe2 Ankara 29\u00b0C@73% \u00b7 BUY NO 30\u00b0C@50\u00a2 +23%"
+    },
+    {
+      "t": "8:01 PM",
+      "city": "madrid",
+      "line": "\ud83d\udfe2 Madrid 35\u00b0C@86% \u00b7 BUY YES 35\u00b0C@51\u00a2 +35%"
+    },
+    {
+      "t": "8:32 PM",
+      "city": "sao paulo",
+      "line": "\ud83d\udfe2 S\u00e3o Paulo 26\u00b0C@89% \u00b7 BUY NO 27\u00b0C@41\u00a2 +63%"
+    },
+    {
+      "t": "8:48 PM",
+      "city": "madrid",
+      "line": "\ud83d\udfe2 Madrid 35\u00b0C@86% \u00b7 BUY YES 35\u00b0C@71\u00a2 +15%"
+    },
+    {
+      "t": "9:03 PM",
+      "city": "cape town",
+      "line": "\ud83d\udfe2 Cape Town 15\u00b0C@83% \u00b7 BUY YES 15\u00b0C@40\u00a2 +43%"
     }
   ]
 }

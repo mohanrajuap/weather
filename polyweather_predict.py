@@ -1549,16 +1549,24 @@ def fetch_polymarket_market(city_key: str, target_date: str, debug: bool = False
                 # Fallback to the PROVEN single /price endpoint for live (non-dead)
                 # buckets the batch didn't cover — guarantees the fix works even if
                 # the batch response shape differs from what we expect.
-                if (lp is None or lp.get("mid") is None) and tok and (b.get("yes") or 0) >= 0.02:
+                if (lp is None or lp.get("buy") is None) and tok and (b.get("yes") or 0) >= 0.02:
                     ask = fetch_clob_price(tok, "buy",  cache_ttl=cache_ttl)
                     bid = fetch_clob_price(tok, "sell", cache_ttl=cache_ttl)
                     vals = [x for x in (ask, bid) if x is not None]
                     if vals:
                         lp = {"buy": ask, "sell": bid, "mid": round(sum(vals) / len(vals), 3)}
-                if lp and lp.get("mid") is not None:
-                    b["yes"]     = lp["mid"]
-                    b["yes_ask"] = lp.get("buy")              # what you actually pay
-                    b["no"]      = round(1 - lp["mid"], 3)
+                if not lp:
+                    continue
+                # Use the ASK ("Buy Yes") — what you ACTUALLY pay to enter, the number
+                # Polymarket shows on the buy button. (The midpoint is the % display,
+                # but you can't buy at the mid.) Keep the mid for reference.
+                ask, mid = lp.get("buy"), lp.get("mid")
+                price = ask if ask is not None else mid
+                if price is not None:
+                    b["yes"]     = round(price, 3)
+                    b["yes_mid"] = mid
+                    if lp.get("sell") is not None:
+                        b["no"] = round(1 - lp["sell"], 3)   # Buy No ask = 1 − Yes bid
         except Exception as e:
             if debug:
                 print(f"  [debug] CLOB live-price override failed: {e}")

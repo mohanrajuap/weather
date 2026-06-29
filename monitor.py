@@ -668,10 +668,22 @@ def fmt_new_signal(p) -> str:
         else:
             _plabel = "with bias"
         L.append(f"🎲 <b>Probabilities</b> ({_plabel} · vs market price)")
-        for b in dist[:4]:
-            bar = "▰" * max(1, round(b['probability'] * 10))
-            lbl = _range_label(b.get('lo'), b.get('hi'), sym) or f"{b['value']}{sym}"
-            L.append(f"   {lbl}  {bar} {b['probability']*100:.0f}%{_mp(b['value'])}")
+        # show the model's top buckets PLUS any degree the MARKET prices as live
+        # (≥5¢) that the model ranks low — so you always see the model's number on
+        # what the MARKET thinks is likely (e.g. model ~0% on 16°C while market 33¢),
+        # instead of those degrees silently dropping off the list.
+        by_val = {b["value"]: b for b in dist}
+        rows, shown_vals = list(dist[:4]), {b["value"] for b in dist[:4]}
+        for v, price in mkt.items():
+            if price >= 0.05 and v not in shown_vals:
+                rows.append(by_val.get(v) or {"value": v, "probability": 0.0, "lo": v, "hi": v})
+                shown_vals.add(v)
+        rows.sort(key=lambda b: -b.get("probability", 0.0))
+        for b in rows:
+            prob = b.get("probability", 0.0)
+            bar  = ("▰" * max(1, round(prob * 10))) if prob >= 0.05 else "·"
+            lbl  = _range_label(b.get('lo'), b.get('hi'), sym) or f"{b['value']}{sym}"
+            L.append(f"   {lbl}  {bar} {prob*100:.0f}%{_mp(b['value'])}")
 
     # probabilities WITHOUT the per-city bias — same bars, raw model centre. Only a
     # SEPARATE block when a bias was actually applied (else the header above already

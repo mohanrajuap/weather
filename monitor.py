@@ -1886,7 +1886,8 @@ def _main_menu_keyboard():
          {"text": "💸 Missed",        "callback_data": "cmd:/missed"}],
         [{"text": "🔚 Ending markets","callback_data": "cmd:/endgame"},
          {"text": "🔒 Locked highs",  "callback_data": "cmd:/locked"}],
-        [{"text": "🎓 Cover ($4/5/6)","callback_data": "cmd:/cover"}],
+        [{"text": "🎓 Cover ($4/5/6)","callback_data": "cmd:/cover"},
+         {"text": "🧮 Calculator",    "callback_data": "cmd:/calc"}],
         [{"text": "🧵 Today's alerts","callback_data": "cmd:/alerts"},
          {"text": "🔭 Price watches", "callback_data": "cmd:/watches"}],
         [{"text": "🔕 Muted",         "callback_data": "cmd:/muted"},
@@ -2058,6 +2059,7 @@ def set_bot_commands():
         {"command": "endgame",   "description": "🔚 Ending markets with a small edge"},
         {"command": "locked",    "description": "🔒 Markets whose high is locked (winner decided)"},
         {"command": "cover",     "description": "🎓 Cover-the-degrees sizing ($4/5/6 or /cover <city> <amt>)"},
+        {"command": "calc",      "description": "🧮 Share calculator (/calc <price¢> <$amount>)"},
         {"command": "positions", "description": "💼 Your positions + P&L"},
         {"command": "pnl",       "description": "💰 Realized P&L ledger"},
         {"command": "learn",     "description": "📊 Scoreboard (calib/sources/cities/nobias)"},
@@ -2247,6 +2249,8 @@ def handle_command(text, chat_id):
             "/locked — markets whose daily high is locked in (winning bucket decided)\n"
             "/cover <city> [amount] [wide] — spread $ across degrees so any covered one wins "
             "(auto $4/$5/$6, a custom amount, or 'wide' to cover every live degree)\n"
+            "/calc [degree] <price¢> <$amount> — share calculator: shares to buy + profit "
+            "(e.g. /calc 26 53 8)\n"
             "/positions — show your positions now\n"
             "/pnl — realized P&L ledger from settled alerts\n"
             "/learn — prediction-vs-outcome scoreboard (also: all / calib / sources / cities / nobias)\n"
@@ -2331,6 +2335,47 @@ def handle_command(text, chat_id):
             if o.get("_adv"):
                 card += "\n\n" + o["_adv"]
             reply_telegram(chat_id, card, keyboard=_refresh_kbd(f"rf:eg:{o['city']}"))
+        return
+
+    if low.startswith("/calc") or low.startswith("/shares") or low.startswith("/profit"):
+        # share / profit calculator: /calc [degree] <price¢> <$amount>
+        raw = text.replace("¢", " ").replace("$", " ").replace("/", " ")
+        nums = []
+        for t in raw.split()[1:]:
+            t = t.lower().rstrip("c").rstrip("°").strip()
+            try:
+                nums.append(float(t))
+            except ValueError:
+                pass
+        if len(nums) < 2:
+            reply_telegram(chat_id,
+                "🧮 <b>Share / profit calculator</b>\n"
+                "Tells you how many shares to buy and what you win.\n"
+                "Usage: <code>/calc [degree] &lt;price¢&gt; &lt;$amount&gt;</code>\n"
+                "• <code>/calc 53 8</code> → buy at 53¢ with $8\n"
+                "• <code>/calc 26 53 8</code> → 26° at 53¢ with $8\n"
+                "<i>Price under 1 is read as dollars (0.53 = 53¢).</i>")
+            return
+        degree = f"{nums[0]:g}°" if len(nums) >= 3 else None
+        price_raw, amount = (nums[1], nums[2]) if len(nums) >= 3 else (nums[0], nums[1])
+        price = price_raw / 100 if price_raw >= 1 else price_raw   # 53→53¢, 0.53→53¢
+        if not (0 < price < 1) or amount <= 0:
+            reply_telegram(chat_id, "🧮 Price must be 1–99¢ (or 0–1 as dollars) and amount &gt; 0.")
+            return
+        shares = amount / price
+        payout = shares                       # $1 per winning share
+        profit = payout - amount
+        roi    = profit / amount * 100
+        ok_min = (amount >= 1.0) or (shares >= 5)
+        head   = f"🧮 <b>Calculator</b> — {degree + ' @ ' if degree else 'buy @ '}{price*100:.0f}¢, invest ${amount:g}"
+        L = [head,
+             f"   • Buy <b>{shares:.1f} shares</b> for ${amount:.2f} (at {price*100:.0f}¢ each)",
+             f"   • If it WINS → <b>${payout:.2f}</b>  (profit <b>+${profit:.2f}</b>, +{roi:.0f}%)",
+             f"   • If it loses → −${amount:.2f}",
+             ("   ✅ Meets Polymarket minimum ($1 or 5 shares)" if ok_min else
+              f"   ⚠️ Below Polymarket minimum — need ≥$1 <i>or</i> ≥5 shares "
+              f"(you'd get {shares:.1f} sh for ${amount:g}); raise the amount.")]
+        reply_telegram(chat_id, "\n".join(L))
         return
 
     if low.startswith("/cover"):

@@ -2310,53 +2310,46 @@ def predict(city_name: str, fetch_prices: bool = False,
         # For tomorrow: use DEB or ensemble median — ignore today's live temp
         mu = deb or ens_med or om_target
     elif max_so_far is not None and deb is not None:
-        if peak_status in ("past", "in_window") and max_so_far < (deb or 0) - 2.0:
-            mu = max_so_far if (trend == "falling" or peak_status == "past") else max_so_far + 0.5
-        elif live_model_conflict:
-            # Live reading suspiciously high vs models → DON'T blindly trust it.
+        if live_model_conflict:
+            # Live reading suspiciously HIGH vs models → DON'T blindly trust it.
             # Blend halfway between models and live, and widen uncertainty.
             mu = (deb + max_so_far) / 2.0
             sigma = max(sigma, abs(conflict_gap) / 2.0)  # widen σ to reflect doubt
+        elif max_so_far > deb:
+            # Live obs has already EXCEEDED the forecast → the forecast ran low. If the
+            # peak is still forming and RISING, more climb is coming — anticipate it;
+            # past peak / not rising → just track live.
+            if peak_status == "in_window" and trend == "rising":
+                mu = max_so_far + 1.0
+            else:
+                mu = max_so_far + (0.3 if trend != "falling" else 0.0)
+        elif max_so_far < deb and peak_status in ("in_window", "past"):
+            # Live obs is BELOW the forecast during/after the peak. The temp can STILL
+            # climb to the forecast until the window closes, so pull toward the
+            # (stalled) obs ONLY in proportion to how much of the peak window has
+            # ELAPSED. Early in the window a low/flat reading just means the day's heat
+            # hasn't arrived yet (Madrid 15:11: obs 32° but 10 models AND the market
+            # say 34-35°). Rising → trust the forecast; past/falling → snap to the obs
+            # (no climb time left). [This replaces a hard "obs+0.5 if gap>2°" snap and
+            # an in-window "obs+0.45·gap" hedge that both ignored timing and dumped a
+            # 34.8° call onto 32-33° the instant the window opened.]
+            gap = deb - max_so_far
+            if trend == "rising":
+                mu = deb
+            elif peak_status == "past" or trend == "falling":
+                mu = max_so_far + 0.2
+                sigma = max(sigma, gap * 0.7)
+            else:
+                span = max(1.0, lp - fp)
+                try:
+                    hour_f = local_now.hour + local_now.minute / 60.0
+                except Exception:
+                    hour_f = float(local_hour)
+                elapsed = min(1.0, max(0.0, (hour_f - fp) / span))
+                mu = deb - gap * 0.55 * elapsed
+                sigma = max(sigma, gap * 0.7 * (0.4 + 0.6 * elapsed))
         else:
             mu = deb
-            if max_so_far > mu:
-                # Live obs has already exceeded the forecast → the forecast ran low.
-                # If the peak is still forming and the temp is RISING, more climb is
-                # coming before it tops out — anticipate it instead of trailing by
-                # 0.3° (this is the "airport already at 33 climbing to 34, but the
-                # model said 32" failure). Past peak / not rising → just track live.
-                if peak_status == "in_window" and trend == "rising":
-                    mu = max_so_far + 1.0
-                else:
-                    mu = max_so_far + (0.3 if trend != "falling" else 0.0)
-            elif (max_so_far < mu and peak_status in ("in_window", "past")
-                  and trend in ("stagnant", "falling")):
-                # Live obs is BELOW the forecast and has STALLED (or is falling)
-                # during/after the peak → the forecast overshot. Pull the centre
-                # toward the live level and widen σ so the call isn't over-confident
-                # on the forecast bucket (Milan: forecast 34.9, live stuck at 34 →
-                # market correctly leaning 34, not 35).
-                gap = mu - max_so_far
-                if peak_status == "past" or trend == "falling":
-                    mu = max_so_far + 0.2            # peak essentially in
-                    sigma = max(sigma, gap * 0.7)    # genuinely uncertain
-                else:
-                    # in_window + stagnant: the temp can STILL climb to the forecast
-                    # before the window closes, so only pull toward the stalled obs in
-                    # proportion to how much of the peak window has ELAPSED. Early in
-                    # the window a flat reading just means the day's heat hasn't arrived
-                    # yet (Madrid 14:53: obs stuck at 32° but 10 models AND the market
-                    # say 34-35°) — keep mu near the forecast and pull harder only as
-                    # the window runs out. Previously this hedged to obs+0.45·gap the
-                    # instant the window opened, dumping a 34.8° call onto 32-33°.
-                    span    = max(1.0, lp - fp)
-                    try:
-                        hour_f = local_now.hour + local_now.minute / 60.0
-                    except Exception:
-                        hour_f = float(local_hour)
-                    elapsed = min(1.0, max(0.0, (hour_f - fp) / span))
-                    mu      = mu - gap * 0.45 * elapsed
-                    sigma   = max(sigma, gap * 0.7 * (0.4 + 0.6 * elapsed))
     else:
         mu = deb or ens_med or om_target
 

@@ -2339,9 +2339,24 @@ def predict(city_name: str, fetch_prices: bool = False,
                 gap = mu - max_so_far
                 if peak_status == "past" or trend == "falling":
                     mu = max_so_far + 0.2            # peak essentially in
+                    sigma = max(sigma, gap * 0.7)    # genuinely uncertain
                 else:
-                    mu = max_so_far + gap * 0.45     # hedge live↔forecast
-                sigma = max(sigma, gap * 0.7)        # genuinely uncertain
+                    # in_window + stagnant: the temp can STILL climb to the forecast
+                    # before the window closes, so only pull toward the stalled obs in
+                    # proportion to how much of the peak window has ELAPSED. Early in
+                    # the window a flat reading just means the day's heat hasn't arrived
+                    # yet (Madrid 14:53: obs stuck at 32° but 10 models AND the market
+                    # say 34-35°) — keep mu near the forecast and pull harder only as
+                    # the window runs out. Previously this hedged to obs+0.45·gap the
+                    # instant the window opened, dumping a 34.8° call onto 32-33°.
+                    span    = max(1.0, lp - fp)
+                    try:
+                        hour_f = local_now.hour + local_now.minute / 60.0
+                    except Exception:
+                        hour_f = float(local_hour)
+                    elapsed = min(1.0, max(0.0, (hour_f - fp) / span))
+                    mu      = mu - gap * 0.45 * elapsed
+                    sigma   = max(sigma, gap * 0.7 * (0.4 + 0.6 * elapsed))
     else:
         mu = deb or ens_med or om_target
 

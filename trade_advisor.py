@@ -310,8 +310,15 @@ def format_budgets(res, sym="°C"):
         L.append("   <i>(same degrees at each budget — a bigger budget just scales the "
                  "stake &amp; payout, not the coverage.)</i>")
     skipped = res.get("live_skipped") or []
-    if skipped and not wide:
-        degs = "/".join(f"{d}{short}" for d in skipped)
+    degs = "/".join(f"{d}{short}" for d in skipped)
+    if skipped and wide:
+        # Even in WIDE mode a live degree can be excluded: it would push the covered
+        # prices over $1, i.e. you'd pay more than the $1 you can win. Say so — don't
+        # claim "every live degree" while silently dropping one.
+        L.append(f"   ⚠️ <b>{degs}</b> can't be added — the covered prices already sum to "
+                 f"~$1, so including it would cost more than you could win (a guaranteed "
+                 f"loss). Covering the rest only; the market sees those as near-certain.")
+    elif skipped:
         L.append(f"   ⚠️ <b>{degs}</b> priced live but left out — covering it would push the "
                  f"spread to ~$1 (≈break-even). It's excluded on purpose: backtest says "
                  f"covering every live degree runs ≈-4%. Add <code>wide</code> "

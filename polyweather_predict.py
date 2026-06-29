@@ -2273,6 +2273,21 @@ def predict(city_name: str, fetch_prices: bool = False,
         and abs(max_so_far - air_max) >= 1.0
     )
 
+    # ── obs source must MATCH the settlement source ──────────────────────────
+    # For cities that settle on the AIRPORT METAR ("metar"), that station's reading
+    # IS the settlement record. We fetch live obs from Wunderground (more granular),
+    # but when WU disagrees with the airport METAR the prediction must track what
+    # will actually settle — defer max/cur to the METAR. Narrow on purpose: only
+    # airport-METAR-settling cities (no HKO/CWA provider, no wu_station override),
+    # only when the two diverge. Madrid: WU 32° vs METAR 33° → use 33°.
+    if (settlement == "metar" and not _provider and not meta.get("wu_station")
+            and metar.get("source") == "wunderground" and air_max is not None
+            and (max_so_far is None or abs(max_so_far - air_max) >= 0.5)):
+        max_so_far = air_max
+        if air_temp is not None:
+            cur_temp = air_temp
+        live_source_disagree = False        # we're now ON the settlement source
+
     # ── peak window ───────────────────────────────────────────────────────────
     fp, lp      = estimate_peak_window(lat)
     peak_end    = meta.get("peak_end", 17)

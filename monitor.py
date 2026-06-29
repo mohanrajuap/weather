@@ -673,11 +673,16 @@ def fmt_new_signal(p) -> str:
         # what the MARKET thinks is likely (e.g. model ~0% on 16°C while market 33¢),
         # instead of those degrees silently dropping off the list.
         by_val = {b["value"]: b for b in dist}
+        pm_buckets = (p.get("polymarket") or {}).get("buckets") or {}
         rows, shown_vals = list(dist[:4]), {b["value"] for b in dist[:4]}
         for v, price in mkt.items():
             if price >= 0.05 and v not in shown_vals:
-                rows.append(by_val.get(v) or {"value": v, "probability": 0.0, "lo": v, "hi": v})
-                shown_vals.add(v)
+                b = by_val.get(v)
+                if not b:                      # carry the market bucket's range bounds
+                    pb = pm_buckets.get(v) or {}
+                    b = {"value": v, "probability": 0.0,
+                         "lo": pb.get("lo", v), "hi": pb.get("hi", v)}
+                rows.append(b); shown_vals.add(v)
         rows.sort(key=lambda b: -b.get("probability", 0.0))
         for b in rows:
             prob = b.get("probability", 0.0)

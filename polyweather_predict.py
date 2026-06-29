@@ -127,6 +127,9 @@ WUNDERGROUND_URL        = _env("WUNDERGROUND_URL",        "https://api.weather.c
 GAMMA = _env("POLYMARKET_GAMMA_URL", "https://gamma-api.polymarket.com")
 CLOB  = _env("POLYMARKET_CLOB_URL",  "https://clob.polymarket.com")
 DATA  = _env("POLYMARKET_DATA_URL",  "https://data-api.polymarket.com")
+# Override Gamma's stale last-trade prices with the LIVE CLOB order book (one batch
+# call per market). Set 0 to fall back to Gamma's outcomePrices.
+LIVE_CLOB_PRICES = _env("LIVE_CLOB_PRICES", "1") == "1"
 
 # ── Per-source on/off (free no-key sources default ON; keyed ones turn on when
 #    their API key is set). Flip any to 0 in Railway to drop that source. ──────
@@ -381,6 +384,39 @@ def _get(url: str, params: dict = None, timeout: float = 10.0,
         if not _cb_fail(host, now, "timeouts"):
             print(f"[http] timeout/conn error from {host}")
         return hit[1] if hit else None
+    except Exception:
+        return hit[1] if hit else None
+
+def _post(url: str, json_body, timeout: float = 10.0,
+          cache_ttl: float = None) -> Optional[Any]:
+    """POST with the same cache + circuit-breaker behaviour as _get (used for the
+    CLOB batch price endpoint)."""
+    key  = _cache_key(url, {"__body__": json.dumps(json_body, sort_keys=True)[:500]})
+    host = httpx.URL(url).host
+    now  = _time.time()
+    ttl  = _CACHE_TTL if cache_ttl is None else cache_ttl
+    with _CACHE_LOCK:
+        hit = _CACHE.get(key)
+    if hit and (now - hit[0]) < ttl:
+        return hit[1]
+    with _CB_LOCK:
+        blocked = now < _CB_UNTIL.get(host, 0.0)
+    if blocked:
+        return hit[1] if hit else None
+    try:
+        r = _SESSION.post(url, json=json_body, timeout=timeout)
+        if r.status_code == 429:
+            _cb_fail(host, now, "rate-limits"); return hit[1] if hit else None
+        if r.status_code >= 500:
+            _cb_fail(host, now, "server errors"); return hit[1] if hit else None
+        r.raise_for_status()
+        data = r.json()
+        with _CACHE_LOCK:
+            _CACHE[key] = (now, data)
+        _cb_ok(host)
+        return data
+    except (httpx.TimeoutException, httpx.ConnectError, httpx.ReadError):
+        _cb_fail(host, now, "timeouts"); return hit[1] if hit else None
     except Exception:
         return hit[1] if hit else None
 
@@ -1498,6 +1534,35 @@ def fetch_polymarket_market(city_key: str, target_date: str, debug: bool = False
     if not buckets:
         return None
 
+    # ── Override Gamma's stale last-trade prices with the LIVE order book ──
+    # Gamma `outcomePrices` lags badly on thin markets (saw 12°C @ 28¢ while live was
+    # 56¢ → fake edge). One batch CLOB call gives the real bid/ask; use the midpoint
+    # (matches the % Polymarket shows). Falls back to the Gamma price per bucket if
+    # the CLOB call fails, so there is never a regression.
+    if LIVE_CLOB_PRICES:
+        try:
+            live = fetch_clob_prices([b.get("token_yes") for b in buckets.values()],
+                                     cache_ttl=cache_ttl)
+            for b in buckets.values():
+                tok = b.get("token_yes")
+                lp  = live.get(tok)
+                # Fallback to the PROVEN single /price endpoint for live (non-dead)
+                # buckets the batch didn't cover — guarantees the fix works even if
+                # the batch response shape differs from what we expect.
+                if (lp is None or lp.get("mid") is None) and tok and (b.get("yes") or 0) >= 0.02:
+                    ask = fetch_clob_price(tok, "buy",  cache_ttl=cache_ttl)
+                    bid = fetch_clob_price(tok, "sell", cache_ttl=cache_ttl)
+                    vals = [x for x in (ask, bid) if x is not None]
+                    if vals:
+                        lp = {"buy": ask, "sell": bid, "mid": round(sum(vals) / len(vals), 3)}
+                if lp and lp.get("mid") is not None:
+                    b["yes"]     = lp["mid"]
+                    b["yes_ask"] = lp.get("buy")              # what you actually pay
+                    b["no"]      = round(1 - lp["mid"], 3)
+        except Exception as e:
+            if debug:
+                print(f"  [debug] CLOB live-price override failed: {e}")
+
     slug = event.get("slug") or ""
     return {
         "title":   event.get("title"),
@@ -1588,6 +1653,36 @@ def fetch_clob_price(token_id: str, side: str = "buy",
     if isinstance(d, dict):
         return _sf(d.get("price"))
     return None
+
+def fetch_clob_prices(token_ids, cache_ttl: float = None) -> Dict[str, Dict]:
+    """Batch LIVE order-book prices for many YES tokens in ONE call. Gamma's
+    `outcomePrices` is the last-trade / cached value and lags the live book badly on
+    thin temperature buckets (it once showed 12°C @ 28¢ while the live book was 56¢),
+    which manufactures phantom edges. The CLOB /prices endpoint returns the real
+    best bid/ask per token. Returns {token_id: {"buy": ask, "sell": bid, "mid": m}}."""
+    toks = [t for t in dict.fromkeys(token_ids) if t]
+    if not toks:
+        return {}
+    body = []
+    for t in toks:
+        body.append({"token_id": t, "side": "BUY"})
+        body.append({"token_id": t, "side": "SELL"})
+    d = _post(f"{CLOB}/prices", body, timeout=10.0, cache_ttl=cache_ttl)
+    out: Dict[str, Dict] = {}
+
+    def _side(row, s):                      # tolerate BUY/buy/Buy key casing
+        if not isinstance(row, dict):
+            return None
+        return _sf(row.get(s) or row.get(s.lower()) or row.get(s.capitalize()))
+
+    if isinstance(d, dict):
+        for t in toks:
+            row = d.get(t) or {}
+            ask, bid = _side(row, "BUY"), _side(row, "SELL")
+            vals = [x for x in (ask, bid) if x is not None]
+            if vals:
+                out[t] = {"buy": ask, "sell": bid, "mid": round(sum(vals) / len(vals), 3)}
+    return out
 
 # ══════════════════════════════════════════════════════════════════════════════
 # YOUR POLYMARKET POSITIONS  (public on-chain data — needs only wallet ADDRESS)

@@ -2249,8 +2249,8 @@ def handle_command(text, chat_id):
             "/locked — markets whose daily high is locked in (winning bucket decided)\n"
             "/cover <city> [amount] [wide] — spread $ across degrees so any covered one wins "
             "(auto $4/$5/$6, a custom amount, or 'wide' to cover every live degree)\n"
-            "/calc [degree] <price¢> <$amount> — share calculator: shares to buy + profit "
-            "(e.g. /calc 26 53 8)\n"
+            "/calc — share/profit calculator. One degree: <code>/calc 26 53 8</code>. "
+            "Several (cover): <code>/calc 26 - 56c, 27 - 50c, amount 4</code>\n"
             "/positions — show your positions now\n"
             "/pnl — realized P&L ledger from settled alerts\n"
             "/learn — prediction-vs-outcome scoreboard (also: all / calib / sources / cities / nobias)\n"
@@ -2338,7 +2338,54 @@ def handle_command(text, chat_id):
         return
 
     if low.startswith("/calc") or low.startswith("/shares") or low.startswith("/profit"):
-        # share / profit calculator: /calc [degree] <price¢> <$amount>
+        import re
+        def _price01(x):
+            return x / 100 if x >= 1 else x          # 53→53¢, 0.53→53¢
+
+        # MULTI-LEG: any "degree - price" pairs (separator -, :, or =) → cover calc.
+        pairs = re.findall(r'(\d+\.?\d*)\s*[-:=]\s*(\d+\.?\d*)', text)
+        if pairs:
+            legs = []
+            for d, p in pairs:
+                pr = _price01(float(p))
+                if 0 < pr < 1:
+                    legs.append((float(d), pr))
+            # amount = the leftover number (strip the pair substrings + the command)
+            stripped = re.sub(r'\d+\.?\d*\s*[-:=]\s*\d+\.?\d*\s*¢?[cC]?', ' ', text)
+            stripped = re.sub(r'^\s*/\w+', ' ', stripped.strip())
+            rem = [float(x) for x in re.findall(r'\d+\.?\d*', stripped)]
+            amount = rem[-1] if rem else None
+            if not legs or amount is None or amount <= 0:
+                reply_telegram(chat_id,
+                    "🧮 <b>Cover calculator</b> — spread $ across degrees for equal payout.\n"
+                    "Give each <b>degree - price</b> then the amount, e.g.\n"
+                    "<code>/calc 26 - 56c, 27 - 50c, amount 4</code>")
+                return
+            sump   = sum(p for _, p in legs)
+            S      = amount / sump                    # equal shares per leg
+            payout = S                                # $1 per winning share
+            profit = payout - amount
+            roi    = profit / amount * 100
+            L = [f"🧮 <b>Cover</b> — ${amount:g} across {len(legs)} degrees (equal payout):"]
+            for d, p in legs:
+                cost = S * p
+                flag = "" if (cost >= 1.0 or S >= 5) else "  ⚠️&lt;min"
+                L.append(f"   • {d:g}° @ {p*100:.0f}¢ → buy <b>{S:.1f} sh</b> (${cost:.2f}){flag}")
+            L.append(f"   Σ price = {sump*100:.0f}¢ · total stake ${amount:.2f}")
+            if profit > 0.005:
+                L.append(f"   ✅ Whichever hits → <b>${payout:.2f}</b> "
+                         f"(profit <b>+${profit:.2f}</b>, +{roi:.0f}%)")
+            else:
+                L.append(f"   ⚠️ Prices sum to {sump*100:.0f}¢ (over 100¢) — an equal cover "
+                         f"<b>can't profit</b>: stake ${amount:.2f} wins back only "
+                         f"${payout:.2f} whichever hits ({profit:+.2f}). "
+                         f"Drop a leg or wait for cheaper prices so they sum under 100¢.")
+            if any(S * p < 1.0 and S < 5 for _, p in legs):
+                L.append("   <i>(⚠️&lt;min legs fail Polymarket's $1/5-share minimum — raise the amount.)</i>")
+            reply_telegram(chat_id, "\n".join(L))
+            return
+
+        # SINGLE-LEG: /calc [degree] <price¢> <$amount>
         raw = text.replace("¢", " ").replace("$", " ").replace("/", " ")
         nums = []
         for t in raw.split()[1:]:
@@ -2351,14 +2398,15 @@ def handle_command(text, chat_id):
             reply_telegram(chat_id,
                 "🧮 <b>Share / profit calculator</b>\n"
                 "Tells you how many shares to buy and what you win.\n"
-                "Usage: <code>/calc [degree] &lt;price¢&gt; &lt;$amount&gt;</code>\n"
-                "• <code>/calc 53 8</code> → buy at 53¢ with $8\n"
-                "• <code>/calc 26 53 8</code> → 26° at 53¢ with $8\n"
+                "<b>One degree:</b> <code>/calc [degree] &lt;price¢&gt; &lt;$amount&gt;</code>\n"
+                "• <code>/calc 53 8</code> · <code>/calc 26 53 8</code>\n"
+                "<b>Several degrees (cover):</b> give <b>degree - price</b> pairs + amount\n"
+                "• <code>/calc 26 - 56c, 27 - 50c, amount 4</code>\n"
                 "<i>Price under 1 is read as dollars (0.53 = 53¢).</i>")
             return
         degree = f"{nums[0]:g}°" if len(nums) >= 3 else None
         price_raw, amount = (nums[1], nums[2]) if len(nums) >= 3 else (nums[0], nums[1])
-        price = price_raw / 100 if price_raw >= 1 else price_raw   # 53→53¢, 0.53→53¢
+        price = _price01(price_raw)
         if not (0 < price < 1) or amount <= 0:
             reply_telegram(chat_id, "🧮 Price must be 1–99¢ (or 0–1 as dollars) and amount &gt; 0.")
             return

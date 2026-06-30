@@ -2283,9 +2283,15 @@ def predict(city_name: str, fetch_prices: bool = False,
     if (settlement == "metar" and not _provider and not meta.get("wu_station")
             and metar.get("source") == "wunderground" and air_max is not None
             and (max_so_far is None or abs(max_so_far - air_max) >= 0.5)):
+        # Switch the obs WHOLESALE to the airport METAR so max/cur/trend/recent and
+        # the source LABEL are all one consistent (settlement) source — not a WU
+        # label on the airport's number. (airport dict has no "source" key → the
+        # return defaults it to "metar", so the card shows "🛩️ airport METAR".)
+        metar      = airport
         max_so_far = air_max
-        if air_temp is not None:
-            cur_temp = air_temp
+        cur_temp   = air_temp if air_temp is not None else cur_temp
+        trend      = airport.get("trend", trend)
+        recent     = airport.get("recent_temps", recent)
         live_source_disagree = False        # we're now ON the settlement source
 
     # ── peak window ───────────────────────────────────────────────────────────

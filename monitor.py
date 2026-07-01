@@ -2673,7 +2673,8 @@ def handle_command(text, chat_id):
                       "alerts", "today", "backup", "pick", "help", "start", "menu",
                       "mute", "muted", "unmute", "watch", "watches", "unwatch",
                       "watchlist", "webhook", "send", "endgame", "ending",
-                      "locked", "decided", "results"}
+                      "locked", "decided", "results", "cover", "calc", "shares",
+                      "profit"}
         first = scope.split()[0] if scope else ""
         if first in _CMD_WORDS:
             handle_command("/" + scope, chat_id)

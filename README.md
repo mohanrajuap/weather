@@ -236,6 +236,21 @@ with `COVER_BUDGETS=4,5,6`; `ENABLE_ADVICE=0` hides the block.
 (cache bypassed via `fresh_prices`), so a stale 30-min-old snapshot never drives the
 cover — useful right before you place an order.
 
+### 4g. Interface — button hub + image charts
+`/menu` opens a **categorized hub** (Scan · Trade · Positions & P&L · Learning ·
+More); tapping a section edits the message in place into a focused sub-menu — no
+new-message spam. Typed commands still work identically (buttons just route through
+the same handlers).
+
+Signal and cover cards ship a **rendered PNG chart** ([`charts.py`](charts.py),
+matplotlib): the signal chart shows model % vs market ¢ as horizontal bars per
+degree (the model-vs-market disagreement at a glance) with the blend + live obs in
+the footer; the cover chart shows $ / shares / price per covered degree. Chart
+rendering is fully optional — any failure (no matplotlib, bad data) silently falls
+back to the text card, so it can never break an alert. Toggle with `ENABLE_CHARTS`.
+The text card itself is organized into scannable sections: 📊 MODEL · 🌡️ LIVE &
+TIMING · 🎲 PROBABILITIES · 🏛️ MARKET, then the trade + cover.
+
 ### 5. Learning
 Every scan records the prediction; once a market settles, the bot fetches the
 actual high, scores the call, and feeds the result back into the bias learner.

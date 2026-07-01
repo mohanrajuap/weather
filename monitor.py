@@ -22,6 +22,7 @@ Run locally to test:
 """
 
 import os
+import re
 import sys
 import time
 import json
@@ -1093,14 +1094,23 @@ def _extract_pos_bucket(title: str):
         return int(m.group(1))
     return None
 
+# Match a real calendar date ("July 1", "Jul 1", "Jul. 1") — anchored on the MONTH
+# name so it can't accidentally grab a "reach 95"/"be 95" number from the title.
+# The capture group is the 3-letter month stem, so "Jul 1" and "July 1" normalise
+# to the SAME value → same-market legs group together regardless of month spelling.
+_MONTH_DATE_RE = re.compile(
+    r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})", re.I)
+
+def _extract_date(title: str) -> str:
+    m = _MONTH_DATE_RE.search(title or "")
+    return f"{m.group(1).title()} {int(m.group(2))}" if m else ""
+
 def _market_key(title: str):
     """Group positions that belong to the SAME market (same city + same date) so
     multiple buckets you hold can be netted — only one of them can ever settle."""
-    import re
     t = title or ""
     mcity = _match_city_from_title(t) or t[:20].lower()
-    md = re.search(r"([A-Za-z]{3,9}\s+\d{1,2})", t)     # e.g. "June 21"
-    return f"{mcity}|{md.group(1).lower() if md else ''}"
+    return f"{mcity}|{_extract_date(t).lower()}"
 
 
 def fmt_positions_update(wallet: str, positions) -> str:
@@ -1135,10 +1145,20 @@ def fmt_positions_update(wallet: str, positions) -> str:
         emoji = "🟢" if pnl >= 0 else "🔴"
 
         short = title[:34]
-        # readable header: pull "City — bucket" out of the long weather title
-        # (they all start "Will the highest temperature in…"), else truncate.
-        _m = re.search(r"\bin\s+(.+?)\s+on\b.*?\bbe\s+(.+?)\s*\??$", title, re.I)
-        hdr = f"{_m.group(1)} — {_m.group(2)}" if _m else title[:40]
+        # Build the header from the SAME reliable extractors used for grouping + the
+        # model read (city · date · bucket) rather than one fragile title regex — so
+        # it ALWAYS reads "City · date — bucket". Showing the DATE makes it obvious
+        # when several legs on one city are actually DIFFERENT daily markets (which is
+        # exactly why they don't net-combine — only one bucket per market can win).
+        city   = _match_city_from_title(title)
+        bucket = _extract_pos_bucket(title)
+        mdate  = _extract_date(title)
+        gsym0  = "°F" if (pw.CITIES.get(city or "") or {}).get("f") else "°C"
+        if city and bucket is not None:
+            hdr = city_display(city) + (f" · {esc(mdate)}" if mdate else "") + f" — {bucket}{gsym0}"
+        else:
+            _m = re.search(r"\bin\s+(.+?)\s+on\s+(.+?)\s+be\s+(.+?)\s*\??$", title, re.I)
+            hdr = f"{_m.group(1)} · {_m.group(2)} — {_m.group(3)}" if _m else title[:40]
         lines.append(f"{emoji} <b>{esc(hdr)}</b>")
         lines.append(f"   {side} | {e_s}→{n_s} | ${val:.2f} (P&L {pnl:+.2f})")
         # ── winning amount: each share pays $1 if it settles in your favour ──
@@ -1153,9 +1173,7 @@ def fmt_positions_update(wallet: str, positions) -> str:
         if pos.get("redeemable"):
             lines.append(f"   ✅ SETTLED — claimable")
 
-        # ── live model read for THIS position's bucket ──
-        city   = _match_city_from_title(title)
-        bucket = _extract_pos_bucket(title)
+        # ── live model read for THIS position's bucket ── (city/bucket from above)
         cur_price = pos.get("cur_price")   # market's current price for your side
         g_model_prob = None                # this leg's model prob (for the net view)
         if city and bucket is not None:
@@ -1211,13 +1229,11 @@ def fmt_positions_update(wallet: str, positions) -> str:
 
         # record this leg for the per-market net summary (only one bucket can win)
         if bucket is not None and shares > 0:
-            gsym = "°F" if (pw.CITIES.get(city or "") or {}).get("f") else "°C"
-            md   = re.search(r"([A-Za-z]{3,9}\s+\d{1,2})", title)
             groups.setdefault(_market_key(title), []).append({
                 "bucket": bucket, "cost": cost, "payout": shares * 1.0,
-                "prob": g_model_prob, "cur": now, "sym": gsym, "side": side,
+                "prob": g_model_prob, "cur": now, "sym": gsym0, "side": side,
                 "cityd": city_display(city) if city else short,
-                "date": md.group(1) if md else "",
+                "date": mdate,
             })
         lines.append("")
 

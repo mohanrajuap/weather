@@ -46,6 +46,11 @@ import polyweather_predict as pw
 import learn
 # degree-distribution trade advisor (coverage / capital-preservation sizing)
 import trade_advisor
+# rendered image charts for signal cards (optional — degrades to text if unavailable)
+try:
+    import charts
+except Exception:
+    charts = None
 
 import html as _html
 
@@ -173,6 +178,9 @@ BANKROLL       = float(os.environ.get("BANKROLL", "100"))
 # Trade advisor: append a coverage/spread sizing suggestion to signals, /scan and
 # /endgame. COVER_BUDGET = $ to spread across degrees per city.
 ENABLE_ADVICE  = os.environ.get("ENABLE_ADVICE", "1") == "1"
+# Attach a rendered image chart (model vs market bars) to signal cards. Needs
+# matplotlib on the host; degrades silently to text-only if it's missing or fails.
+ENABLE_CHARTS  = os.environ.get("ENABLE_CHARTS", "1") == "1"
 COVER_BUDGET   = float(os.environ.get("COVER_BUDGET", "4"))
 # Budgets shown automatically in every cover suggestion (custom via /cover <city> <amt>)
 COVER_BUDGETS  = tuple(float(x) for x in
@@ -419,6 +427,67 @@ def reply_telegram(chat_id, text: str, keyboard=None) -> bool:
     except Exception as e:
         print(f"[telegram] reply error: {e}")
         return False
+
+
+def edit_telegram(chat_id, message_id, text: str, keyboard=None) -> bool:
+    """Edit a message in place (used for smooth menu navigation — tapping a menu
+    category swaps the SAME message instead of spamming new ones). Falls back to a
+    fresh reply if the edit fails (e.g. message too old to edit)."""
+    if not TG_TOKEN or not message_id:
+        return reply_telegram(chat_id, text, keyboard)
+    payload = {"chat_id": chat_id, "message_id": message_id, "text": text,
+               "parse_mode": "HTML", "disable_web_page_preview": True}
+    if keyboard:
+        payload["reply_markup"] = {"inline_keyboard": keyboard}
+    try:
+        r = httpx.post(f"https://api.telegram.org/bot{TG_TOKEN}/editMessageText",
+                       json=payload, timeout=15.0)
+        if r.status_code == 200:
+            return True
+    except Exception as e:
+        print(f"[telegram] edit error: {e}")
+    return reply_telegram(chat_id, text, keyboard)
+
+
+def send_photo(chat_id, png_bytes: bytes, caption: str = "", keyboard=None) -> bool:
+    """Send a PNG (chart) to one chat via sendPhoto. Caption ≤1024 chars (HTML)."""
+    if not TG_TOKEN or not png_bytes:
+        return False
+    data = {"chat_id": str(chat_id), "parse_mode": "HTML"}
+    if caption:
+        data["caption"] = caption[:1024]
+    if keyboard:
+        data["reply_markup"] = json.dumps({"inline_keyboard": keyboard})
+    try:
+        r = httpx.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendPhoto",
+                       data=data, files={"photo": ("signal.png", png_bytes, "image/png")},
+                       timeout=30.0)
+        if r.status_code != 200:
+            print(f"[telegram] sendPhoto {r.status_code}: {r.text[:120]}")
+        return r.status_code == 200
+    except Exception as e:
+        print(f"[telegram] sendPhoto error: {e}")
+        return False
+
+
+def alert_photo(png_bytes: bytes, caption: str = "", keyboard=None) -> bool:
+    """Broadcast a chart to all recipients (suppressed in OBSERVE mode, like alerts)."""
+    if OBSERVE_ONLY or not png_bytes or not TG_CHAT_IDS:
+        return False
+    ok = False
+    for cid in TG_CHAT_IDS:
+        ok = send_photo(cid, png_bytes, caption, keyboard) or ok
+    return ok
+
+
+def signal_chart_bytes(p):
+    """Render a signal's model-vs-market chart, or None (never raises)."""
+    if not ENABLE_CHARTS or charts is None:
+        return None
+    try:
+        return charts.signal_png(p)
+    except Exception:
+        return None
 
 
 # ── State store (SQLite) ──────────────────────────────────────────────────────
@@ -1638,6 +1707,7 @@ def run_scan(conn):
         if crossed_up:
             alert_signal(fmt_new_signal(p),   # suppressed in OBSERVE mode
                          keyboard=_refresh_kbd(f"rf:sig:{p['city']}"))
+            alert_photo(signal_chart_bytes(p))   # rendered model-vs-market chart
             fire_webhook(p, "new_signal")     # forward to your other bot (if set)
             upsert_state(conn, key, p["city"], tdate, bucket, prob, alerted_high=1)
             new_alerts += 1
@@ -1853,6 +1923,8 @@ def scan_for_command(scope="all", reply_to=None):
         if single_pred:
             reply_telegram(reply_to, fmt_new_signal(single_pred),
                            keyboard=_refresh_kbd(f"rf:sig:{single_pred['city']}"))
+            if reply_to:
+                send_photo(reply_to, signal_chart_bytes(single_pred))
             # offer a one-tap forward when there's an actual trade to send
             if single_pred.get("best_trade"):
                 _forward_prompt(reply_to, [single_pred["city"]])
@@ -1885,41 +1957,65 @@ def _tg_authorized(chat_id) -> bool:
     return str(chat_id) in TG_CHAT_IDS
 
 
-# ── Telegram button menu ──────────────────────────────────────────────────────
+# ── Telegram button hub ───────────────────────────────────────────────────────
+# A modern, categorised menu: a home screen of sections, each opening a focused
+# sub-menu. Navigation EDITS the same message in place (no new-message spam).
+# Action buttons still send callback_data 'cmd:<command>' → handle_command, so the
+# buttons and typed commands share one code path.
+_BACK = {"text": "⬅️  Back", "callback_data": "menu:main"}
+
+def _menu(section: str):
+    """(text, keyboard) for a hub section. 'main' is the home screen."""
+    if section == "scan":
+        return ("📡 <b>Scan markets</b>\nRun the model across markets now, or type "
+                "<code>/scan tokyo</code> for one city.",
+                [[{"text": "🔍  Scan all 51", "callback_data": "cmd:/scan"}],
+                 [{"text": "🌏  Asia", "callback_data": "cmd:/scan asia"},
+                  {"text": "🌍  Europe", "callback_data": "cmd:/scan europe"}],
+                 [{"text": "🌎  Americas", "callback_data": "cmd:/scan americas"}],
+                 [_BACK]])
+    if section == "trade":
+        return ("🎓 <b>Trade tools</b>\nCover sizing, the share calculator, and "
+                "nearly-decided markets.",
+                [[{"text": "🎓  Cover a city", "callback_data": "cmd:/cover"},
+                  {"text": "🧮  Calculator", "callback_data": "cmd:/calc"}],
+                 [{"text": "🔚  Ending markets", "callback_data": "cmd:/endgame"},
+                  {"text": "🔒  Locked highs", "callback_data": "cmd:/locked"}],
+                 [_BACK]])
+    if section == "positions":
+        return ("💼 <b>Positions &amp; P&amp;L</b>\nWhat you hold, realised P&amp;L, and "
+                "price watches.",
+                [[{"text": "💼  Positions", "callback_data": "cmd:/positions"},
+                  {"text": "💰  P&L ledger", "callback_data": "cmd:/pnl"}],
+                 [{"text": "💸  Missed trades", "callback_data": "cmd:/missed"},
+                  {"text": "🔭  Price watches", "callback_data": "cmd:/watches"}],
+                 [_BACK]])
+    if section == "learn":
+        return ("📊 <b>Learning</b>\nHow the model is actually performing.",
+                [[{"text": "📊  Scoreboard", "callback_data": "cmd:/learn"},
+                  {"text": "🎯  Calibration", "callback_data": "cmd:/learn calib"}],
+                 [{"text": "🏙️  Best cities", "callback_data": "cmd:/learn cities"},
+                  {"text": "📡  Sources", "callback_data": "cmd:/learn sources"}],
+                 [{"text": "🧪  Bias vs no-bias", "callback_data": "cmd:/learn nobias"}],
+                 [_BACK]])
+    if section == "more":
+        return ("⚙️ <b>More</b>\nAlerts, muting, webhook and backups.",
+                [[{"text": "🧵  Today's alerts", "callback_data": "cmd:/alerts"},
+                  {"text": "🔕  Muted cities", "callback_data": "cmd:/muted"}],
+                 [{"text": "📡  Test webhook", "callback_data": "cmd:/webhook"},
+                  {"text": "💾  Back up data", "callback_data": "cmd:/backup"}],
+                 [{"text": "❓  Help / all commands", "callback_data": "cmd:/help"}],
+                 [_BACK]])
+    # home
+    return ("🌦️  <b>PolyWeather</b>\n<i>Tap a section, or type any command.</i>",
+            [[{"text": "📡  Scan markets", "callback_data": "menu:scan"},
+              {"text": "🎓  Trade tools", "callback_data": "menu:trade"}],
+             [{"text": "💼  Positions & P&L", "callback_data": "menu:positions"},
+              {"text": "📊  Learning", "callback_data": "menu:learn"}],
+             [{"text": "⚙️  More", "callback_data": "menu:more"}]])
+
 def _main_menu_keyboard():
-    """Inline keyboard mirroring every command. Each button sends callback_data
-    'cmd:<command>' which is routed straight back through handle_command, so the
-    buttons and typed commands share one code path."""
-    return [
-        [{"text": "🔍 Scan all",      "callback_data": "cmd:/scan"},
-         {"text": "🌍 Pick region",   "callback_data": "menu:regions"}],
-        [{"text": "💼 Positions",     "callback_data": "cmd:/positions"},
-         {"text": "💰 P&L ledger",    "callback_data": "cmd:/pnl"}],
-        [{"text": "📊 Learn",         "callback_data": "cmd:/learn"},
-         {"text": "🎯 Calibration",   "callback_data": "cmd:/learn calib"}],
-        [{"text": "🏙️ Best cities",   "callback_data": "cmd:/learn cities"},
-         {"text": "📡 Sources",       "callback_data": "cmd:/learn sources"}],
-        [{"text": "🧪 No-bias check", "callback_data": "cmd:/learn nobias"},
-         {"text": "💸 Missed",        "callback_data": "cmd:/missed"}],
-        [{"text": "🔚 Ending markets","callback_data": "cmd:/endgame"},
-         {"text": "🔒 Locked highs",  "callback_data": "cmd:/locked"}],
-        [{"text": "🎓 Cover ($4/5/6)","callback_data": "cmd:/cover"},
-         {"text": "🧮 Calculator",    "callback_data": "cmd:/calc"}],
-        [{"text": "🧵 Today's alerts","callback_data": "cmd:/alerts"},
-         {"text": "🔭 Price watches", "callback_data": "cmd:/watches"}],
-        [{"text": "🔕 Muted",         "callback_data": "cmd:/muted"},
-         {"text": "💾 Backup",        "callback_data": "cmd:/backup"}],
-        [{"text": "❓ Help",          "callback_data": "cmd:/help"}],
-    ]
-
-
-def _regions_keyboard():
-    return [
-        [{"text": "🌏 Asia",     "callback_data": "cmd:/scan asia"},
-         {"text": "🌍 Europe",   "callback_data": "cmd:/scan europe"}],
-        [{"text": "🌎 Americas", "callback_data": "cmd:/scan americas"}],
-        [{"text": "⬅️ Back to menu", "callback_data": "menu:main"}],
-    ]
+    return _menu("main")[1]
 
 
 def _forward_prompt(reply_to, cities):
@@ -1973,6 +2069,7 @@ def _send_city_signal(city, chat_id, fresh=False):
         reply_telegram(chat_id, f"❌ {city_display(city)}: {esc(p['error'])}"); return
     reply_telegram(chat_id, fmt_new_signal(p) + (_fresh_tag() if fresh else ""),
                    keyboard=_refresh_kbd(f"rf:sig:{p.get('city', city)}"))
+    send_photo(chat_id, signal_chart_bytes(p))
 
 def _send_cover(city, amount, chat_id, fresh=False, wide=None):
     """Cover card — auto $4/5/6 (amount=None) or a custom amount; wide=full safety."""
@@ -2001,6 +2098,11 @@ def _send_cover(city, amount, chat_id, fresh=False, wide=None):
         token = f"rf:cov:{city}:{wtok}"
     reply_telegram(chat_id, f"{head}\n{body}" + (_fresh_tag() if fresh else ""),
                    keyboard=_refresh_kbd(token))
+    if charts is not None and ENABLE_CHARTS:
+        try:
+            send_photo(chat_id, charts.cover_png(res, sym))
+        except Exception:
+            pass
 
 def _send_endgame_city(city, chat_id, fresh=False):
     """One ending-market card (used by the Refresh button on /endgame cards)."""
@@ -2247,12 +2349,8 @@ def handle_command(text, chat_id):
     low = text.lower()
 
     if low in ("/menu", "/start"):
-        reply_telegram(chat_id,
-            "📋 <b>PolyWeather menu</b>\n"
-            "Tap a button below, or type any command.\n"
-            "For one city, type: <code>/scan tokyo</code> · <code>/history tokyo</code> · "
-            "<code>/mute tokyo</code>",
-            keyboard=_main_menu_keyboard())
+        txt, kb = _menu("main")
+        reply_telegram(chat_id, txt, keyboard=kb)
         return
 
     if low == "/help":
@@ -2747,17 +2845,16 @@ def command_listener():
                 cq = upd.get("callback_query")
                 if cq:
                     data    = cq.get("data", "")
-                    cq_chat = (cq.get("message") or {}).get("chat", {}).get("id")
+                    cq_msg  = cq.get("message") or {}
+                    cq_chat = cq_msg.get("chat", {}).get("id")
+                    cq_mid  = cq_msg.get("message_id")
                     _answer_callback(cq.get("id"))     # stop the button spinner
                     if cq_chat and _tg_authorized(cq_chat):
-                        if data.startswith("cmd:"):
+                        if data.startswith("menu:"):                 # hub navigation (edit in place)
+                            txt, kb = _menu(data.split(":", 1)[1])
+                            edit_telegram(cq_chat, cq_mid, txt, keyboard=kb)
+                        elif data.startswith("cmd:"):
                             handle_command(data[4:], cq_chat)        # any menu button
-                        elif data == "menu:main":
-                            reply_telegram(cq_chat, "📋 <b>Menu</b> — tap or type a command:",
-                                           keyboard=_main_menu_keyboard())
-                        elif data == "menu:regions":
-                            reply_telegram(cq_chat, "🌍 Pick a region to scan:",
-                                           keyboard=_regions_keyboard())
                         elif data.startswith("rf:"):                  # 🔄 refresh a card
                             _handle_refresh(data, cq_chat)
                         elif data.startswith("send:"):                # forward to bot
@@ -2931,6 +3028,8 @@ def main():
     if MUTED:
         print(f"  Muted cities:      {', '.join(sorted(MUTED))}")
     print(f"  Cities:            {len(ALERT_CITIES)}")
+    _charts_ok = ENABLE_CHARTS and charts is not None and charts._mpl() is not None
+    print(f"  Charts:            {'on (rendered images)' if _charts_ok else 'off (text-only)'}")
     print(f"  Prices:            {'on' if USE_PRICES else 'off'}")
     print(f"  State DB:          {STATE_DB}")
     print(f"  Telegram:          {len(TG_CHAT_IDS)} recipient(s)" if (TG_TOKEN and TG_CHAT_IDS) else "  Telegram:          NOT configured")

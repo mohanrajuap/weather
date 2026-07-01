@@ -664,15 +664,16 @@ def fmt_new_signal(p) -> str:
     L.append(badge)
     L.append("")
 
-    # model section
+    # ═══ MODEL ═══
     # Show BOTH numbers: the raw model blend and the bias-adjusted one the bot
     # actually trades on, so the peak-bias contribution is always transparent.
+    L.append("📊 <b>MODEL</b>")
     _bias = p.get("peak_bias") or 0.0
     if p.get("deb_raw") is not None and abs(_bias) >= 0.05:
-        L.append(f"🧬 <b>Model blend:</b> {p.get('deb')}{sym}  "
+        L.append(f"🧬 Blend <b>{p.get('deb')}{sym}</b>  "
                  f"(raw {p.get('deb_raw')}{sym} {_bias:+.1f}° bias · σ {p.get('sigma')})")
     else:
-        L.append(f"🧬 <b>Model blend:</b> {p.get('deb')}{sym}  (σ {p.get('sigma')})")
+        L.append(f"🧬 Blend <b>{p.get('deb')}{sym}</b>  (σ {p.get('sigma')})")
     if p.get("forecasts"):
         fc = " · ".join(f"{esc(m)} {v}" for m, v in p["forecasts"].items())
         L.append(f"📊 {fc}")
@@ -682,6 +683,10 @@ def fmt_new_signal(p) -> str:
     if agr and agr != "unknown":
         ae = {"strong":"✅","moderate":"⚠️","weak":"❌"}.get(agr,"•")
         L.append(f"{ae} Agreement: {esc(agr)}")
+
+    # ═══ LIVE & TIMING ═══
+    L.append("")
+    L.append("🌡️ <b>LIVE &amp; TIMING</b>")
     if live.get("current_temp") is not None:
         _srcname = live.get("source")
         if _srcname == "hko":
@@ -736,7 +741,7 @@ def fmt_new_signal(p) -> str:
             _plabel = "no bias applied today — these ARE the no-bias values"
         else:
             _plabel = "with bias"
-        L.append(f"🎲 <b>Probabilities</b> ({_plabel} · vs market price)")
+        L.append(f"🎲 <b>PROBABILITIES</b>  <i>{_plabel}</i>")
         # show the model's top buckets PLUS any degree the MARKET prices as live
         # (≥5¢) that the model ranks low — so you always see the model's number on
         # what the MARKET thinks is likely (e.g. model ~0% on 16°C while market 33¢),
@@ -782,13 +787,14 @@ def fmt_new_signal(p) -> str:
         fav_p = mkt[fav]
         model_b = p.get("top_bucket")
         L.append("")
+        L.append("🏛️ <b>MARKET</b>")
         fav_l = _bucket_label(p, fav, sym)
         if model_b is None:
             # model has no firm pick — just report the market's favourite
-            L.append(f"🏛️ Market favours {fav_l} @ {fav_p*100:.0f}¢ ({fav_p*100:.0f}% implied)")
+            L.append(f"   Favours {fav_l} @ {fav_p*100:.0f}¢ ({fav_p*100:.0f}% implied)")
         elif fav != model_b:
             in_model = any(b.get("value") == fav for b in (dist or []))
-            L.append(f"🏛️ <b>Market favours {fav_l} @ {fav_p*100:.0f}¢</b> "
+            L.append(f"   <b>Favours {fav_l} @ {fav_p*100:.0f}¢</b> "
                      f"({fav_p*100:.0f}% implied) — model picks {_bucket_label(p, model_b, sym)}.")
             if fav_p >= 0.50:
                 L.append(f"   ⚠️ Market strongly disagrees with the model. The edge is "
@@ -797,7 +803,7 @@ def fmt_new_signal(p) -> str:
             if not in_model:
                 L.append(f"   ℹ️ The model gives {fav_l} ~0% — that's the gap to weigh.")
         else:
-            L.append(f"🏛️ Market agrees with model: {fav_l} @ {fav_p*100:.0f}¢")
+            L.append(f"   ✅ Agrees with model: {fav_l} @ {fav_p*100:.0f}¢")
 
     # best trade — only call it a BUY when action_ok; else show as "if it holds"
     if bt:

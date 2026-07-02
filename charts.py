@@ -13,6 +13,12 @@ Two charts:
                        return whichever covered degree settles.
 """
 import io
+import threading
+
+# pyplot keeps GLOBAL figure state and is NOT thread-safe. Renders can run from two
+# threads at once (scan-loop alert + the listener's 🔄 Refresh) — interleaved calls
+# could garble a chart with another city's data. One lock serialises all renders.
+_RENDER_LOCK = threading.Lock()
 
 # Flat, Telegram-friendly palette (works on light & dark since it's a baked image
 # with its own near-white panel background).
@@ -65,10 +71,15 @@ def signal_png(p):
     plt = _mpl()
     if plt is None:
         return None
-    try:
-        return _render_signal(p, plt)
-    except Exception:
-        return None
+    with _RENDER_LOCK:
+        try:
+            return _render_signal(p, plt)
+        except Exception:
+            try:
+                plt.close("all")      # a half-built figure would otherwise leak
+            except Exception:
+                pass
+            return None
 
 
 def _render_signal(p, plt):
@@ -171,29 +182,41 @@ def cover_png(res, sym="°C"):
     try:
         rows = res.get("rows") or []
         cover = next((r["cover"] for r in rows if r.get("cover") and r["cover"].get("legs")), None)
-        if not cover:
-            return None
-        short = sym.replace("°", "")
-        legs  = cover["legs"]
-        labels = [f"{l['bucket']}{short}" for l in legs]
-        stakes = [l["stake"] for l in legs]
-        fig, ax = plt.subplots(figsize=(7.0, max(2.4, 0.55 * len(legs) + 1.4)))
-        ypos = range(len(legs))
-        ax.barh(list(ypos), stakes, color=_MODEL, height=0.55, zorder=3)
-        for i, l in enumerate(legs):
-            ax.text(l["stake"] + max(stakes) * 0.02, i,
-                    f"${l['stake']:.2f} · {l['shares']:g} sh @ {l['price']*100:.0f}¢",
-                    va="center", ha="left", fontsize=9.5, color=_INK, zorder=4)
-        ax.set_yticks(list(ypos)); ax.set_yticklabels(labels, fontsize=11, color=_INK)
-        ax.invert_yaxis()
-        ax.set_xlim(0, max(stakes) * 1.5)
-        ax.tick_params(axis="x", colors=_MUTE, labelsize=9)
-        ax.grid(axis="x", color=_GRID, linewidth=0.8, zorder=0)
-        for s in ("top", "right", "left"):
-            ax.spines[s].set_visible(False)
-        title = (f"Cover ${cover['total']:.0f} → ${cover['payout']:.2f} back "
-                 f"· {cover['mkt_coverage']*100:.0f}% covered · +${cover['profit_if_covered']:.2f}")
-        ax.set_title(title, fontsize=12.5, color=_INK, loc="left", pad=10, fontweight="bold")
-        return _save(fig, plt)
     except Exception:
         return None
+    if not cover:
+        return None
+    with _RENDER_LOCK:
+        try:
+            return _render_cover(cover, sym, plt)
+        except Exception:
+            try:
+                plt.close("all")      # a half-built figure would otherwise leak
+            except Exception:
+                pass
+            return None
+
+
+def _render_cover(cover, sym, plt):
+    short = sym.replace("°", "")
+    legs  = cover["legs"]
+    labels = [f"{l['bucket']}{short}" for l in legs]
+    stakes = [l["stake"] for l in legs]
+    fig, ax = plt.subplots(figsize=(7.0, max(2.4, 0.55 * len(legs) + 1.4)))
+    ypos = range(len(legs))
+    ax.barh(list(ypos), stakes, color=_MODEL, height=0.55, zorder=3)
+    for i, l in enumerate(legs):
+        ax.text(l["stake"] + max(stakes) * 0.02, i,
+                f"${l['stake']:.2f} · {l['shares']:g} sh @ {l['price']*100:.0f}¢",
+                va="center", ha="left", fontsize=9.5, color=_INK, zorder=4)
+    ax.set_yticks(list(ypos)); ax.set_yticklabels(labels, fontsize=11, color=_INK)
+    ax.invert_yaxis()
+    ax.set_xlim(0, max(stakes) * 1.5)
+    ax.tick_params(axis="x", colors=_MUTE, labelsize=9)
+    ax.grid(axis="x", color=_GRID, linewidth=0.8, zorder=0)
+    for s in ("top", "right", "left"):
+        ax.spines[s].set_visible(False)
+    title = (f"Cover ${cover['total']:.0f} → ${cover['payout']:.2f} back "
+             f"· {cover['mkt_coverage']*100:.0f}% covered · +${cover['profit_if_covered']:.2f}")
+    ax.set_title(title, fontsize=12.5, color=_INK, loc="left", pad=10, fontweight="bold")
+    return _save(fig, plt)

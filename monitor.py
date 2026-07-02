@@ -445,6 +445,11 @@ def edit_telegram(chat_id, message_id, text: str, keyboard=None) -> bool:
                        json=payload, timeout=15.0)
         if r.status_code == 200:
             return True
+        # Tapping the same menu button twice → Telegram 400 "message is not
+        # modified". That's a success (the message already shows this content) —
+        # falling through would spam a duplicate menu message.
+        if r.status_code == 400 and "not modified" in r.text.lower():
+            return True
     except Exception as e:
         print(f"[telegram] edit error: {e}")
     return reply_telegram(chat_id, text, keyboard)
@@ -685,7 +690,9 @@ def fmt_new_signal(p) -> str:
         ae = {"strong":"✅","moderate":"⚠️","weak":"❌"}.get(agr,"•")
         L.append(f"{ae} Agreement: {esc(agr)}")
 
-    # ═══ LIVE & TIMING ═══
+    # ═══ LIVE & TIMING ═══  (header added only if the section has content —
+    # a tomorrow-forecast card with no live obs would otherwise show an orphan header)
+    _live_hdr_at = len(L)
     L.append("")
     L.append("🌡️ <b>LIVE &amp; TIMING</b>")
     if live.get("current_temp") is not None:
@@ -724,6 +731,8 @@ def fmt_new_signal(p) -> str:
             L.append(esc(rl))
     except Exception:
         pass
+    if len(L) == _live_hdr_at + 2:            # nothing landed under the header
+        del L[_live_hdr_at:_live_hdr_at + 2]
 
     # probabilities (with bias — what the bot trades on)
     dist = p.get("distribution") or []

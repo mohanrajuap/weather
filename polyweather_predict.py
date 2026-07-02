@@ -1747,6 +1747,110 @@ def fetch_positions(wallet: str, weather_only: bool = True) -> Optional[List[Dic
         })
     return positions
 
+def fetch_trades(wallet: str, limit: int = 40) -> Optional[List[Dict]]:
+    """Recent FILLS for a wallet (public Data API — fills settle on-chain, so no
+    auth is needed). Used to notify 'your order got filled'. Newest first."""
+    if not wallet:
+        return None
+    data = _get(f"{DATA}/trades", {"user": wallet, "limit": limit},
+                timeout=10.0, cache_ttl=60)
+    if not isinstance(data, list):
+        return None
+    out = []
+    for t in data:
+        if not isinstance(t, dict):
+            continue
+        # composite id: one tx can carry several fills (different asset/price/size)
+        fid = (f"{t.get('transactionHash') or ''}|{t.get('asset') or ''}"
+               f"|{t.get('price') or ''}|{t.get('size') or ''}")
+        out.append({
+            "id":      fid,
+            "title":   t.get("title") or "",
+            "side":    (t.get("side") or "").upper(),        # BUY / SELL
+            "outcome": t.get("outcome"),                     # Yes / No
+            "size":    _sf(t.get("size")) or 0.0,
+            "price":   _sf(t.get("price")),
+            "ts":      _sf(t.get("timestamp")),
+            "slug":    t.get("slug") or t.get("eventSlug") or "",
+        })
+    return out
+
+
+# ── Open (unfilled) CLOB orders — REQUIRES API credentials ────────────────────
+# Unlike positions/fills (public, on-chain), resting limit orders are private CLOB
+# data: GET /data/orders answers 401 without Polymarket API creds. Create them at
+# polymarket.com → settings → API keys (or py-clob-client create_or_derive_api_creds)
+# and set POLY_API_KEY / POLY_API_SECRET / POLY_PASSPHRASE. ⚠️ These creds can also
+# PLACE/CANCEL orders, so only add them if you accept that risk on your host.
+POLY_API_KEY    = os.environ.get("POLY_API_KEY", "").strip()
+POLY_API_SECRET = os.environ.get("POLY_API_SECRET", "").strip()
+POLY_PASSPHRASE = os.environ.get("POLY_PASSPHRASE", "").strip()
+# Address the API key was created by (signing address). Often differs from the
+# proxy/funder wallet shown in the Polymarket UI — override if /orders says 401.
+POLY_API_ADDRESS = os.environ.get("POLY_API_ADDRESS", "").strip()
+
+def clob_creds_set() -> bool:
+    return bool(POLY_API_KEY and POLY_API_SECRET and POLY_PASSPHRASE)
+
+def _clob_auth_headers(method: str, path: str, body: str = "") -> Dict[str, str]:
+    """L2 HMAC headers for the CLOB API (same scheme as py-clob-client):
+    sig = urlsafe_b64( HMAC_SHA256( b64decode(secret), ts+method+path+body ) )."""
+    import hmac as _hmac, hashlib as _hashlib, base64 as _b64
+    ts  = str(int(_time.time()))
+    msg = ts + method.upper() + path + (body or "")
+    sec = _b64.urlsafe_b64decode(POLY_API_SECRET)
+    sig = _b64.urlsafe_b64encode(
+        _hmac.new(sec, msg.encode("utf-8"), _hashlib.sha256).digest()).decode()
+    addr = POLY_API_ADDRESS or os.environ.get("POLYMARKET_WALLET", "").strip()
+    return {"POLY_ADDRESS": addr, "POLY_SIGNATURE": sig, "POLY_TIMESTAMP": ts,
+            "POLY_API_KEY": POLY_API_KEY, "POLY_PASSPHRASE": POLY_PASSPHRASE}
+
+def fetch_open_orders() -> Optional[List[Dict]]:
+    """Open (resting/unfilled) orders via the authenticated CLOB API. Returns a
+    list (possibly empty), or None if creds are missing or the call failed."""
+    if not clob_creds_set():
+        return None
+    path = "/data/orders"
+    try:
+        r = _SESSION.get(f"{CLOB}{path}", headers=_clob_auth_headers("GET", path),
+                         timeout=10.0)
+        if r.status_code != 200:
+            print(f"[orders] {r.status_code} from CLOB: {r.text[:120]}")
+            return None
+        data = r.json()
+    except Exception as e:
+        print(f"[orders] error: {e}")
+        return None
+    if not isinstance(data, list):
+        return None
+    out = []
+    for o in data:
+        if not isinstance(o, dict):
+            continue
+        size    = _sf(o.get("original_size")) or 0.0
+        matched = _sf(o.get("size_matched")) or 0.0
+        # enrich the raw token id with the market question via Gamma (cached 1h)
+        title, outcome = "", o.get("outcome")
+        tok = o.get("asset_id") or ""
+        if tok:
+            m = _get(f"{GAMMA}/markets", {"clob_token_ids": tok},
+                     timeout=8.0, cache_ttl=3600)
+            if isinstance(m, list) and m:
+                title = m[0].get("question") or m[0].get("groupItemTitle") or ""
+        out.append({
+            "id":        o.get("id"),
+            "title":     title,
+            "side":      (o.get("side") or "").upper(),
+            "outcome":   outcome,
+            "price":     _sf(o.get("price")),
+            "size":      size,
+            "matched":   matched,
+            "remaining": max(0.0, size - matched),
+            "created":   o.get("created_at"),
+        })
+    return out
+
+
 def compute_edges(distribution: List[Dict], pm: Optional[Dict],
                   temp_sym: str, confidence: float = 1.0,
                   edge_min: Optional[float] = None) -> List[Dict]:

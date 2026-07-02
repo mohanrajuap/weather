@@ -276,6 +276,37 @@ def save_watches(watches: list):
 PRICE_WATCHES = load_watches()
 
 
+# ── Order-fill notifications (✅ your order got filled) ───────────────────────
+# Fills are PUBLIC on-chain data (Data API /trades by wallet), so this needs no
+# credentials. We remember which fills we've already announced; on the very first
+# run we baseline silently so a fresh deploy doesn't replay your whole history.
+def _resolve_fills_file() -> str:
+    env = os.environ.get("FILLS_FILE")
+    if env:
+        return env
+    return "/data/seen_fills.json" if os.path.isdir("/data") else "seen_fills.json"
+
+FILLS_FILE = _resolve_fills_file()
+
+def load_seen_fills():
+    try:
+        if os.path.exists(FILLS_FILE):
+            with open(FILLS_FILE) as f:
+                return set(json.load(f))
+    except Exception:
+        pass
+    return None                      # None = never baselined (first run)
+
+def save_seen_fills(ids):
+    try:
+        with open(FILLS_FILE, "w") as f:
+            json.dump(sorted(ids)[-500:], f)     # keep it bounded
+    except Exception as e:
+        print(f"[fills] save error: {e}")
+
+_SEEN_FILLS = load_seen_fills()
+
+
 # ── Telegram ──────────────────────────────────────────────────────────────────
 def send_telegram(text: str, keyboard=None) -> bool:
     if not TG_TOKEN or not TG_CHAT_IDS:
@@ -1283,6 +1314,12 @@ def fmt_positions_update(wallet: str, positions) -> str:
         lines.append(f"   👉 Most likely ({best['bucket']}{sym}): {emoji} <b>{word} "
                      f"${abs(bnet):.2f}</b> on ${tcost:.2f} invested")
 
+    # ── Open (unfilled) orders — shown when CLOB API creds are configured ──
+    oo = _open_orders_lines()
+    if oo:
+        lines.append("━━━━━━━━━━━━━━━━━━━")
+        lines.extend(oo)
+
     tot_e = "🟢" if total_pnl >= 0 else "🔴"
     roi = (total_pnl / total_paid * 100) if total_paid > 0 else 0
     lines.append("━━━━━━━━━━━━━━━━━━━")
@@ -1290,6 +1327,68 @@ def fmt_positions_update(wallet: str, positions) -> str:
     if claimable:
         lines.append(f"✅ {len(claimable)} settled & claimable — go redeem!")
     return "\n".join(lines)
+
+
+def _order_hdr(title: str) -> str:
+    """Compact 'City · date — bucket' header for an order's market title."""
+    city   = _match_city_from_title(title)
+    bucket = _extract_pos_bucket(title)
+    mdate  = _extract_date(title)
+    if city and bucket is not None:
+        gsym = "°F" if (pw.CITIES.get(city) or {}).get("f") else "°C"
+        return city_display(city) + (f" · {mdate}" if mdate else "") + f" — {bucket}{gsym}"
+    return (title or "order")[:44]
+
+
+def _open_orders_lines():
+    """['⏳ OPEN ORDERS…', per-order lines] or [] (creds missing / none open)."""
+    if not pw.clob_creds_set():
+        return []
+    orders = pw.fetch_open_orders()
+    if not orders:
+        return []
+    L = [f"⏳ <b>OPEN ORDERS ({len(orders)})</b> — resting, not filled yet"]
+    for o in orders[:8]:
+        pr   = f"{o['price']*100:.0f}¢" if o.get("price") is not None else "?"
+        part = (f" · {o['matched']:g}/{o['size']:g} sh filled" if (o.get("matched") or 0) > 0
+                else f" · {o['remaining']:g} sh")
+        cost = (o.get("price") or 0) * (o.get("remaining") or 0)
+        L.append(f"   • {esc(_order_hdr(o.get('title','')))} — {esc(o.get('side','?'))} "
+                 f"{esc(o.get('outcome') or '')} @ {pr}{part} (${cost:.2f})")
+    return L
+
+
+def check_order_fills():
+    """Alert when an order FILLS: poll the public trades feed and announce fills we
+    haven't seen. First run baselines silently (no replay of old history). Runs on
+    the position-watch cadence; sends via send_telegram (works in OBSERVE too —
+    it's position management, not a trade prompt)."""
+    global _SEEN_FILLS
+    if not WALLET:
+        return
+    trades = pw.fetch_trades(WALLET, limit=40)
+    if trades is None:
+        return
+    ids = {t["id"] for t in trades}
+    if _SEEN_FILLS is None:                    # first ever run → baseline silently
+        _SEEN_FILLS = ids
+        save_seen_fills(_SEEN_FILLS)
+        print(f"[fills] baselined {len(ids)} historical fills (no alerts)")
+        return
+    new = [t for t in trades if t["id"] not in _SEEN_FILLS]
+    if not new:
+        return
+    for t in reversed(new):                    # oldest first, in order
+        total = (t.get("price") or 0) * (t.get("size") or 0)
+        pr    = f"{t['price']*100:.0f}¢" if t.get("price") is not None else "?"
+        send_telegram(
+            "✅ <b>ORDER FILLED</b>\n"
+            f"{esc(_order_hdr(t.get('title','')))}\n"
+            f"{esc(t.get('side','?'))} <b>{esc(t.get('outcome') or '')}</b> "
+            f"{t.get('size',0):g} sh @ {pr}  =  <b>${total:.2f}</b>")
+        print(f"  ✅ FILL {t.get('title','')[:40]} {t.get('side')} {t.get('size')} @ {t.get('price')}")
+    _SEEN_FILLS |= ids
+    save_seen_fills(_SEEN_FILLS)
 
 
 def send_position_update():
@@ -2014,12 +2113,13 @@ def _menu(section: str):
                   {"text": "🔒  Locked highs", "callback_data": "cmd:/locked"}],
                  [_BACK]])
     if section == "positions":
-        return ("💼 <b>Positions &amp; P&amp;L</b>\nWhat you hold, realised P&amp;L, and "
-                "price watches.",
+        return ("💼 <b>Positions &amp; P&amp;L</b>\nWhat you hold, open orders, realised "
+                "P&amp;L, and price watches.",
                 [[{"text": "💼  Positions", "callback_data": "cmd:/positions"},
-                  {"text": "💰  P&L ledger", "callback_data": "cmd:/pnl"}],
-                 [{"text": "💸  Missed trades", "callback_data": "cmd:/missed"},
-                  {"text": "🔭  Price watches", "callback_data": "cmd:/watches"}],
+                  {"text": "⏳  Open orders", "callback_data": "cmd:/orders"}],
+                 [{"text": "💰  P&L ledger", "callback_data": "cmd:/pnl"},
+                  {"text": "💸  Missed trades", "callback_data": "cmd:/missed"}],
+                 [{"text": "🔭  Price watches", "callback_data": "cmd:/watches"}],
                  [_BACK]])
     if section == "learn":
         return ("📊 <b>Learning</b>\nHow the model is actually performing.",
@@ -2211,6 +2311,7 @@ def set_bot_commands():
         {"command": "cover",     "description": "🎓 Cover-the-degrees sizing ($4/5/6 or /cover <city> <amt>)"},
         {"command": "calc",      "description": "🧮 Share calculator (/calc <price¢> <$amount>)"},
         {"command": "positions", "description": "💼 Your positions + P&L"},
+        {"command": "orders",    "description": "⏳ Open (unfilled) orders"},
         {"command": "pnl",       "description": "💰 Realized P&L ledger"},
         {"command": "learn",     "description": "📊 Scoreboard (calib/sources/cities/nobias)"},
         {"command": "missed",    "description": "💸 What-if P&L on alerts you skipped"},
@@ -2397,7 +2498,8 @@ def handle_command(text, chat_id):
             "(auto $4/$5/$6, a custom amount, or 'wide' to cover every live degree)\n"
             "/calc — share/profit calculator. One degree: <code>/calc 26 53 8</code>. "
             "Several (cover): <code>/calc 26 - 56c, 27 - 50c, amount 4</code>\n"
-            "/positions — show your positions now\n"
+            "/positions — show your positions now (+ open orders if API creds set)\n"
+            "/orders — open (unfilled) orders; fills alert automatically (✅ ORDER FILLED)\n"
             "/pnl — realized P&L ledger from settled alerts\n"
             "/learn — prediction-vs-outcome scoreboard (also: all / calib / sources / cities / nobias)\n"
             "/missed — $1 what-if P&L on alerts you didn't take\n"
@@ -2442,6 +2544,31 @@ def handle_command(text, chat_id):
             reply_telegram(chat_id, fmt_positions_update(WALLET, positions))
         else:
             reply_telegram(chat_id, "No wallet set (POLYMARKET_WALLET).")
+        return
+
+    if low.startswith("/orders") or low.startswith("/open"):
+        if not pw.clob_creds_set():
+            reply_telegram(chat_id,
+                "⏳ <b>Open orders</b> need Polymarket API credentials (resting limit "
+                "orders are private CLOB data — positions and fills stay public).\n\n"
+                "1. polymarket.com → settings → <b>API keys</b> → create\n"
+                "2. Set in Railway: <code>POLY_API_KEY</code>, <code>POLY_API_SECRET</code>, "
+                "<code>POLY_PASSPHRASE</code> (if it answers 401, also "
+                "<code>POLY_API_ADDRESS</code> = the address that created the key)\n\n"
+                "⚠️ <i>These credentials can also place/cancel orders — add them only "
+                "if you accept that risk. Fill alerts (✅ order filled) work WITHOUT "
+                "them and are already on.</i>")
+            return
+        orders = pw.fetch_open_orders()
+        if orders is None:
+            reply_telegram(chat_id, "⏳ Could not fetch open orders — check the "
+                           "credentials (see Railway logs: <code>[orders]</code>).")
+        elif not orders:
+            reply_telegram(chat_id, "⏳ No open orders — everything you placed has "
+                           "filled or been cancelled.")
+        else:
+            L = _open_orders_lines()
+            reply_telegram(chat_id, "\n".join(L))
         return
 
     if low.startswith("/missed"):
@@ -2803,7 +2930,7 @@ def handle_command(text, chat_id):
                       "mute", "muted", "unmute", "watch", "watches", "unwatch",
                       "watchlist", "webhook", "send", "endgame", "ending",
                       "locked", "decided", "results", "cover", "calc", "shares",
-                      "profit"}
+                      "profit", "orders", "open"}
         first = scope.split()[0] if scope else ""
         if first in _CMD_WORDS:
             handle_command("/" + scope, chat_id)
@@ -3204,6 +3331,10 @@ def main():
                 watch_positions(conn)
             except Exception as e:
                 print(f"[loop] watch error: {e}")
+            try:
+                check_order_fills()          # ✅ announce orders that just filled
+            except Exception as e:
+                print(f"[loop] fills error: {e}")
             last_watch = time.time()
 
         # FAST watch on active signals — catch drops without waiting 20 min

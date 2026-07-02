@@ -236,6 +236,18 @@ with `COVER_BUDGETS=4,5,6`; `ENABLE_ADVICE=0` hides the block.
 (cache bypassed via `fresh_prices`), so a stale 30-min-old snapshot never drives the
 cover — useful right before you place an order.
 
+### 4f-ii. Order tracking — fills + open orders
+**✅ ORDER FILLED alerts** fire automatically whenever one of your orders executes
+(polled from the public on-chain trades feed every `POSITION_WATCH_MIN` minutes —
+needs only `POLYMARKET_WALLET`, no credentials). A fresh deploy baselines silently,
+so your history isn't replayed.
+
+**⏳ Open (unfilled) orders** are private CLOB data, so `/orders` and the open-orders
+section in the position update activate only when Polymarket API credentials are set
+(`POLY_API_KEY` / `POLY_API_SECRET` / `POLY_PASSPHRASE`, from polymarket.com →
+settings → API keys; add `POLY_API_ADDRESS` if it answers 401). ⚠️ Those creds can
+also place/cancel orders — add them only if you accept that risk.
+
 ### 4g. Interface — button hub + image charts
 `/menu` opens a **categorized hub** (Scan · Trade · Positions & P&L · Learning ·
 More); tapping a section edits the message in place into a focused sub-menu — no

@@ -2242,6 +2242,31 @@
       "t": "5:37 AM",
       "city": "sao paulo",
       "line": "\ud83d\udfe2 S\u00e3o Paulo 24\u00b0C@78% \u00b7 BUY NO 21\u00b0C@34\u00a2 +35%"
+    },
+    {
+      "t": "10:51 AM",
+      "city": "kuala lumpur",
+      "line": "\ud83d\udfe2 Kuala Lumpur 33\u00b0C@74% \u00b7 BUY NO 34\u00b0C@24\u00a2 +16%"
+    },
+    {
+      "t": "11:07 AM",
+      "city": "busan",
+      "line": "\ud83d\udfe2 Busan 27\u00b0C@77% \u00b7 BUY NO 26\u00b0C@74\u00a2 +68%"
+    },
+    {
+      "t": "11:23 AM",
+      "city": "qingdao",
+      "line": "\ud83d\udfe2 Qingdao 33\u00b0C@76% \u00b7 BUY YES 33\u00b0C@60\u00a2 +16%"
+    },
+    {
+      "t": "7:44 PM",
+      "city": "milan",
+      "line": "\ud83d\udfe2 Milan 34\u00b0C@79% \u00b7 BUY YES 34\u00b0C@21\u00a2 +58%"
+    },
+    {
+      "t": "9:48 PM",
+      "city": "madrid",
+      "line": "\ud83d\udfe2 Madrid 38\u00b0C@99% \u00b7 BUY YES 38\u00b0C@73\u00a2 +26%"
     }
   ]
 }

@@ -696,7 +696,16 @@ def fmt_new_signal(p) -> str:
     L.append(head)
     L.append(f"📍 <b>{esc(city)}</b>  ·  {esc(p.get('target_date'))} ({esc(p.get('predicting',''))})")
     L.append(_DIV)
-    L.append(f"🎯 <b>{_bucket_label(p, p['top_bucket'], sym)}</b>  at  <b>{p['top_prob']*100:.0f}%</b>")
+    # Stated model probability + the HISTORICAL win rate of predictions that
+    # claimed the same (empirical calibration — e.g. "said 90%" has won ~82%).
+    _cal_txt = ""
+    try:
+        _cal, _cal_n = learn.calibrated_prob(p.get("top_prob") or 0)
+        if _cal is not None and abs(_cal - (p.get("top_prob") or 0)) >= 0.05:
+            _cal_txt = f"  <i>(history: ~{_cal*100:.0f}%)</i>"
+    except Exception:
+        pass
+    L.append(f"🎯 <b>{_bucket_label(p, p['top_bucket'], sym)}</b>  at  <b>{p['top_prob']*100:.0f}%</b>{_cal_txt}")
     L.append(f"🕐 {esc(tim.get('quality','?'))} · local {esc(tim.get('city_local_now','?'))} · peak {esc(tim.get('peak_window','?'))}")
     L.append(badge)
     L.append("")

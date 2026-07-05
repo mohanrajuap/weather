@@ -47,9 +47,10 @@ USAGE
 
 import math
 
-# ── Calibration from the 361-settled-market analysis ──────────────────────────
-EMP_STD       = 1.45
-BIAS_OFFSET   = -0.16
+# ── Empirical calibration (refreshed 2026-07-06 on 871 settled markets) ───────
+# actual − deb: mean −0.11° · std 1.38° (was −0.16 / 1.45 on the first 361).
+EMP_STD       = 1.38
+BIAS_OFFSET   = -0.11
 DISAGREE_K    = 0.35
 SIGMA_FLOOR   = 1.30
 

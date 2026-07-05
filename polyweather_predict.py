@@ -2099,8 +2099,19 @@ def _signed_bias(city_data: dict, models: list, skip_date: str,
     if tw == 0:
         return None
     bias = sum(d * w for d, w in diffs) / tw
-    # clamp to a sane range so one weird day can't swing it wildly
-    return max(-1.5, min(1.5, bias))
+    # Clamp so one weird day can't swing the bias wildly. Default ±1.5° — but for
+    # some urban settlement stations the NWP models run 2-3° cold EVERY day
+    # (Taipei actual−model ≈ +2.1..+3.0 for 17 straight days; also Guangzhou,
+    # Hong Kong, Seoul), so a hard ±1.5 cap left a permanent ~+1° residual the
+    # learner could never close. Allow up to ±2.5 ONLY when the direction is
+    # persistent — ≥6 history days with ≥80% agreeing on the sign — so a volatile
+    # city (Seattle's error flipped −0.4→−2.0 within a week) keeps the tight cap.
+    clamp = 1.5
+    if len(diffs) >= 6:
+        same = sum(1 for d, _ in diffs if abs(d) > 0.05 and (d > 0) == (bias > 0))
+        if same / len(diffs) >= 0.8:
+            clamp = 2.5
+    return max(-clamp, min(clamp, bias))
 
 def record_actual(city: str, date: str, actual_high: float):
     history  = _load_history()

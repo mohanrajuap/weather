@@ -35,6 +35,7 @@ CLI:
 import os
 import json
 import argparse
+import time
 import threading
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, List, Any
@@ -77,6 +78,48 @@ def _save(data: dict):
         os.replace(tmp, _LEARN_FILE)
     except Exception as e:
         print(f"  [learn] save error: {e}")
+
+
+# ── Empirical probability calibration ─────────────────────────────────────────
+# The model's stated top_prob is systematically miscalibrated (871 settled: said
+# 85-100% → won ~82%; said 55-70% → won ~72%). calibrated_prob() maps a stated
+# probability to the HISTORICAL win rate of predictions that claimed the same —
+# recomputed live from the settled history (cached 30 min), so it self-updates.
+_CAL_BINS  = [(0.00, 0.40), (0.40, 0.55), (0.55, 0.70), (0.70, 0.85), (0.85, 1.01)]
+_CAL_CACHE = {"ts": 0.0, "bins": None}
+
+def _calibration_bins():
+    now = time.time()
+    if _CAL_CACHE["bins"] is not None and now - _CAL_CACHE["ts"] < 1800:
+        return _CAL_CACHE["bins"]
+    tally = {b: [0, 0] for b in _CAL_BINS}
+    with _LOCK:
+        data = _load()
+    for day in data.values():
+        for rec in day.values():
+            o, p = rec.get("outcome") or {}, rec.get("pred") or {}
+            ab, pr = o.get("actual_bucket"), p.get("top_prob")
+            if ab is None or pr is None:
+                continue
+            lo, hi, tb = p.get("top_lo"), p.get("top_hi"), p.get("top_bucket")
+            hit = (lo <= ab <= hi) if (lo is not None and hi is not None and lo != hi) \
+                  else (tb == ab)
+            for b in _CAL_BINS:
+                if b[0] <= pr < b[1]:
+                    tally[b][0] += hit; tally[b][1] += 1
+                    break
+    _CAL_CACHE.update(ts=now, bins=tally)
+    return tally
+
+def calibrated_prob(stated: float):
+    """(historical win rate for this stated probability, sample n) or (None, 0)."""
+    try:
+        for b, (h, n) in _calibration_bins().items():
+            if b[0] <= stated < b[1]:
+                return ((h / n) if n >= 30 else None, n)
+    except Exception:
+        pass
+    return None, 0
 
 
 # ── Per-day alert log ('threads' grouped by day; pull up with /alerts) ─────────

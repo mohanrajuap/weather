@@ -268,6 +268,35 @@ Every scan records the prediction; once a market settles, the bot fetches the
 actual high, scores the call, and feeds the result back into the bias learner.
 This is what tells you whether the bot is trustworthy — see **Commands** below.
 
+#### Model's best cities (snapshot 2026-07-06 · 871 settled markets · ~17 days/city)
+Where the model is most **accurate** (hit rate ≥80%, error ≤1°):
+
+| City | Hit | MAE |
+|---|---|---|
+| Madrid | 100% | 0.42° |
+| Los Angeles | 94% | 0.89° |
+| Moscow | 88% | 0.42° |
+| Shanghai | 88% | 0.72° |
+| Wellington | 83% | 0.90° |
+| Istanbul | 82% | 0.48° |
+| Tel Aviv | 82% | 0.59° |
+| Karachi | 82% | 0.75° |
+| Paris | 82% | 0.77° |
+
+Where the model **beats the market** (the tradeable edge — accuracy alone isn't
+tradeable when the market is just as right):
+
+| City | Model | Market | Disagreements won |
+|---|---|---|---|
+| New York | 88% | 56% | 6/7 |
+| Atlanta | 82% | 56% | 5/7 |
+| Hong Kong | 71% | 53% | 5/8 |
+| Los Angeles | 94% | 81% | 3/4 |
+| Istanbul | 82% | 71% | 2/2 |
+
+This table is a point-in-time snapshot — run **`/learn cities`** for the live,
+self-updating version.
+
 ---
 
 ## Setup (Railway)

@@ -746,15 +746,64 @@ def fetch_ensemble(lat: float, lon: float,
         "members": n,
     }
 
+# Regional HIGH-RESOLUTION models (all free, same Open-Meteo endpoint). A 1-3 km
+# model resolves the afternoon peak + local effects (sea breeze, marine layer,
+# urban heat) that 10-25 km globals smooth away — targeted at the cities the
+# learning data showed weakest. Each rides along IN the same single HTTP call
+# (models= is comma-separated); a city outside a model's domain just gets nulls
+# back (verified live), so a mapping mistake can never break the global models.
+HD_MODELS: Dict[str, Tuple[str, str]] = {
+    # US CONUS → NOAA HRRR 3 km (the marine-layer / convection model)
+    "new york":      ("gfs_hrrr", "HRRR"),
+    "los angeles":   ("gfs_hrrr", "HRRR"),
+    "san francisco": ("gfs_hrrr", "HRRR"),
+    "chicago":       ("gfs_hrrr", "HRRR"),
+    "dallas":        ("gfs_hrrr", "HRRR"),
+    "houston":       ("gfs_hrrr", "HRRR"),
+    "austin":        ("gfs_hrrr", "HRRR"),
+    "miami":         ("gfs_hrrr", "HRRR"),
+    "atlanta":       ("gfs_hrrr", "HRRR"),
+    "seattle":       ("gfs_hrrr", "HRRR"),
+    "aurora":        ("gfs_hrrr", "HRRR"),
+    "toronto":       ("gem_hrdps_continental", "HRDPS"),          # Canada 2.5 km
+    # Europe regionals
+    "paris":         ("meteofrance_arome_france_hd", "AROME"),    # 1.5 km
+    "madrid":        ("meteofrance_arome_france_hd", "AROME"),    # in-domain (verified)
+    "milan":         ("meteofrance_arome_france_hd", "AROME"),    # in-domain (verified)
+    "london":        ("ukmo_uk_deterministic_2km", "UKV"),        # 2 km
+    "munich":        ("icon_d2", "ICON-D2"),                      # 2 km
+    "amsterdam":     ("knmi_harmonie_arome_europe", "HARMONIE"),
+    "helsinki":      ("dmi_harmonie_arome_europe", "DMI-HAR"),
+    # Asia
+    "tokyo":         ("jma_msm", "MSM"),                          # 5 km
+    "seoul":         ("jma_msm", "MSM"),                          # in-domain (verified)
+    "busan":         ("jma_msm", "MSM"),
+    # China's own model for Chinese settlement stations — the learning data's
+    # worst cities (chengdu 24%, wuhan 35%, beijing 35% hit) are all here.
+    "shanghai":      ("cma_grapes_global", "CMA"),
+    "beijing":       ("cma_grapes_global", "CMA"),
+    "qingdao":       ("cma_grapes_global", "CMA"),
+    "wuhan":         ("cma_grapes_global", "CMA"),
+    "chengdu":       ("cma_grapes_global", "CMA"),
+    "chongqing":     ("cma_grapes_global", "CMA"),
+    "shenzhen":      ("cma_grapes_global", "CMA"),
+    "guangzhou":     ("cma_grapes_global", "CMA"),
+    "hong kong":     ("cma_grapes_global", "CMA"),
+    "taipei":        ("cma_grapes_global", "CMA"),
+}
+
+
 def fetch_multi_model(lat: float, lon: float,
                       use_fahrenheit: bool = False,
-                      target_idx: int = 0) -> Optional[Dict[str, float]]:
+                      target_idx: int = 0,
+                      city_key: Optional[str] = None) -> Optional[Dict[str, float]]:
     """Fetch individual NWP model forecasts for target day.
 
-    All four models are requested in a SINGLE Open-Meteo call (comma-separated
-    `models=`). The response suffixes each daily field with the model name, e.g.
-    `temperature_2m_max_gfs_seamless`. This cuts the per-city call count from 4
-    to 1, which keeps us well under Open-Meteo's free daily limit.
+    All models are requested in a SINGLE Open-Meteo call (comma-separated
+    `models=`); the response suffixes each daily field with the model name, e.g.
+    `temperature_2m_max_gfs_seamless`. Keeps the per-city call count at 1, well
+    under Open-Meteo's free daily limit. A city with a regional HD model
+    (HD_MODELS) gets it in the same call — no extra HTTP cost.
     """
     unit = "fahrenheit" if use_fahrenheit else "celsius"
     model_names = {
@@ -765,6 +814,9 @@ def fetch_multi_model(lat: float, lon: float,
         "meteofrance_seamless": "MeteoFrance",   # often best on hot continental days
         "ukmo_seamless":        "UKMO",
     }
+    hd = HD_MODELS.get((city_key or "").strip().lower())
+    if hd:
+        model_names[hd[0]] = hd[1]
     d = _get(OPEN_METEO_URL, {
         "latitude": lat, "longitude": lon,
         "daily": "temperature_2m_max",
@@ -2226,7 +2278,7 @@ def predict(city_name: str, fetch_prices: bool = False,
     res = {}
     def _om():  res["om"]    = fetch_open_meteo(lat, lon, use_f, target_idx)
     def _ens(): res["ens"]   = fetch_ensemble(lat, lon, use_f, target_idx)
-    def _mm():  res["mm"]    = fetch_multi_model(lat, lon, use_f, target_idx)
+    def _mm():  res["mm"]    = fetch_multi_model(lat, lon, use_f, target_idx, city_key)
     def _mn():  res["mn"]    = fetch_metno(lat, lon, tz, use_f, target_date)
     def _nws(): res["nws"]   = fetch_nws(lat, lon, use_f, target_date)
     def _7t():  res["t7"]    = fetch_7timer(lat, lon, tz, use_f, target_date)

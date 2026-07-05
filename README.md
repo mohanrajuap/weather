@@ -33,6 +33,7 @@ their API key:
 | Source | Key needed? | Notes |
 |---|---|---|
 | Open-Meteo (ECMWF, GFS, ICON, GEM, Météo-France, UKMO + its own) | no | 7 models in 1 call |
+| **Regional HD models** (per city, same call — no extra requests) | no | HRRR 3km (US), HRDPS (Toronto), AROME 1.5km (Paris/Madrid/Milan), UKV 2km (London), ICON-D2 (Munich), HARMONIE (Amsterdam), DMI (Helsinki), JMA MSM (Tokyo/Seoul/Busan), CMA (China/HK/Taipei) |
 | MET Norway (Yr) | no | independent ECMWF-based |
 | US NWS (weather.gov) | no | US cities only, very accurate |
 | 7Timer | no | global, coarse |

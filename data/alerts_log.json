@@ -2268,5 +2268,22 @@
       "city": "madrid",
       "line": "\ud83d\udfe2 Madrid 38\u00b0C@99% \u00b7 BUY YES 38\u00b0C@73\u00a2 +26%"
     }
+  ],
+  "2026-07-06": [
+    {
+      "t": "12:40 AM",
+      "city": "toronto",
+      "line": "\ud83d\udfe2 Toronto 26\u00b0C@78% \u00b7 BUY NO 27\u00b0C@16\u00a2 +35%"
+    },
+    {
+      "t": "1:27 AM",
+      "city": "toronto",
+      "line": "\ud83d\udfe2 Toronto 26\u00b0C@71% \u00b7 BUY NO 27\u00b0C@23\u00a2 +61%"
+    },
+    {
+      "t": "2:00 AM",
+      "city": "toronto",
+      "line": "\ud83d\udfe2 Toronto 26\u00b0C@89% \u00b7 BUY NO 27\u00b0C@12\u00a2 +19%"
+    }
   ]
 }

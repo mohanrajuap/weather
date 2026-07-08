@@ -149,19 +149,20 @@
         "MET.no": 21.5,
         "7Timer": 23.0,
         "WeatherAPI": 23.1
-      }
+      },
+      "actual_high": 23.0
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 26.8,
-        "ECMWF": 23.1,
-        "GFS": 23.7,
-        "ICON": 23.6,
-        "GEM": 22.6,
-        "MeteoFrance": 23.8,
-        "UKMO": 22.8,
-        "HARMONIE": 24.8,
-        "MET.no": 22.8,
+        "Open-Meteo": 26.3,
+        "ECMWF": 22.5,
+        "GFS": 24.3,
+        "ICON": 23.1,
+        "GEM": 22.4,
+        "MeteoFrance": 23.0,
+        "UKMO": 22.7,
+        "HARMONIE": 24.3,
+        "MET.no": 22.6,
         "7Timer": 23.0,
         "WeatherAPI": 23.3
       }
@@ -317,20 +318,21 @@
         "MET.no": 17.4,
         "7Timer": 14.0,
         "WeatherAPI": 14.9
-      }
+      },
+      "actual_high": 17.0
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 16.9,
-        "ECMWF": 16.1,
-        "GFS": 15.6,
-        "ICON": 15.4,
-        "GEM": 16.0,
-        "MeteoFrance": 15.8,
-        "UKMO": 16.0,
-        "DMI-HAR": 16.5,
-        "MET.no": 19.8,
-        "7Timer": 16.0,
+        "Open-Meteo": 20.8,
+        "ECMWF": 18.2,
+        "GFS": 16.2,
+        "ICON": 17.9,
+        "GEM": 19.6,
+        "MeteoFrance": 17.6,
+        "UKMO": 19.4,
+        "DMI-HAR": 18.3,
+        "MET.no": 20.7,
+        "7Timer": 15.0,
         "WeatherAPI": 17.8
       }
     }
@@ -483,17 +485,18 @@
         "MET.no": 28.9,
         "7Timer": 30.0,
         "WeatherAPI": 28.7
-      }
+      },
+      "actual_high": 28.0
     },
     "2026-07-08": {
       "forecasts": {
         "Open-Meteo": 29.6,
-        "ECMWF": 28.8,
-        "GFS": 30.7,
+        "ECMWF": 29.1,
+        "GFS": 30.9,
         "ICON": 29.2,
         "GEM": 27.7,
         "MeteoFrance": 29.3,
-        "UKMO": 29.7,
+        "UKMO": 29.0,
         "MET.no": 29.4,
         "7Timer": 31.0,
         "WeatherAPI": 29.4
@@ -641,15 +644,15 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 12.5,
-        "ECMWF": 12.7,
-        "GFS": 13.0,
-        "ICON": 13.0,
-        "GEM": 12.8,
-        "MeteoFrance": 12.9,
-        "UKMO": 12.3,
-        "MET.no": 11.9,
-        "7Timer": 11.0,
+        "Open-Meteo": 12.0,
+        "ECMWF": 11.9,
+        "GFS": 11.3,
+        "ICON": 11.5,
+        "GEM": 11.9,
+        "MeteoFrance": 12.2,
+        "UKMO": 11.8,
+        "MET.no": 11.8,
+        "7Timer": 10.0,
         "WeatherAPI": 11.7
       }
     }
@@ -802,19 +805,20 @@
         "MET.no": 18.8,
         "7Timer": 20.0,
         "WeatherAPI": 19.5
-      }
+      },
+      "actual_high": 19.0
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 18.8,
-        "ECMWF": 18.0,
-        "GFS": 19.6,
-        "ICON": 19.6,
-        "GEM": 19.4,
-        "MeteoFrance": 18.0,
-        "UKMO": 18.2,
-        "MET.no": 18.3,
-        "7Timer": 18.0,
+        "Open-Meteo": 18.0,
+        "ECMWF": 18.3,
+        "GFS": 19.0,
+        "ICON": 18.3,
+        "GEM": 19.6,
+        "MeteoFrance": 17.3,
+        "UKMO": 18.3,
+        "MET.no": 18.0,
+        "7Timer": 17.0,
         "WeatherAPI": 18.6
       }
     }
@@ -955,19 +959,20 @@
         "MET.no": 39.7,
         "7Timer": 44.0,
         "WeatherAPI": 35.2
-      }
+      },
+      "actual_high": 38.0
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 39.3,
-        "ECMWF": 42.0,
-        "GFS": 38.8,
-        "ICON": 40.0,
-        "GEM": 35.7,
-        "MeteoFrance": 38.6,
-        "UKMO": 42.4,
-        "MET.no": 37.8,
-        "7Timer": 40.0,
+        "Open-Meteo": 37.2,
+        "ECMWF": 39.2,
+        "GFS": 36.5,
+        "ICON": 37.5,
+        "GEM": 34.8,
+        "MeteoFrance": 36.9,
+        "UKMO": 37.9,
+        "MET.no": 37.4,
+        "7Timer": 38.0,
         "WeatherAPI": 35.4
       }
     }
@@ -1115,16 +1120,16 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 25.5,
-        "ECMWF": 27.0,
-        "GFS": 24.2,
-        "ICON": 29.0,
-        "GEM": 26.7,
-        "MeteoFrance": 27.3,
-        "UKMO": 25.7,
-        "MSM": 25.5,
+        "Open-Meteo": 24.3,
+        "ECMWF": 24.8,
+        "GFS": 22.8,
+        "ICON": 26.9,
+        "GEM": 24.0,
+        "MeteoFrance": 25.0,
+        "UKMO": 23.6,
+        "MSM": 24.3,
         "MET.no": 26.3,
-        "7Timer": 24.0,
+        "7Timer": 23.0,
         "WeatherAPI": 25.8
       }
     }
@@ -1272,15 +1277,15 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 28.1,
-        "ECMWF": 29.7,
-        "GFS": 30.7,
-        "ICON": 27.1,
-        "GEM": 29.9,
-        "MeteoFrance": 29.8,
-        "UKMO": 28.4,
-        "MSM": 28.1,
-        "MET.no": 28.6,
+        "Open-Meteo": 27.8,
+        "ECMWF": 28.9,
+        "GFS": 29.9,
+        "ICON": 26.7,
+        "GEM": 29.1,
+        "MeteoFrance": 29.1,
+        "UKMO": 28.2,
+        "MSM": 27.8,
+        "MET.no": 28.8,
         "7Timer": 29.0,
         "WeatherAPI": 28.1
       }
@@ -1429,15 +1434,15 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 27.8,
-        "ECMWF": 28.5,
-        "GFS": 29.2,
-        "ICON": 28.1,
-        "GEM": 30.1,
-        "MeteoFrance": 27.6,
-        "UKMO": 28.3,
-        "CMA": 28.9,
-        "MET.no": 28.5,
+        "Open-Meteo": 29.5,
+        "ECMWF": 30.0,
+        "GFS": 29.7,
+        "ICON": 29.8,
+        "GEM": 29.2,
+        "MeteoFrance": 27.8,
+        "UKMO": 30.1,
+        "CMA": 29.1,
+        "MET.no": 29.5,
         "7Timer": 31.0,
         "WeatherAPI": 28.4
       }
@@ -1586,17 +1591,17 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 33.5,
-        "ECMWF": 33.0,
-        "GFS": 34.5,
-        "ICON": 33.4,
-        "GEM": 31.8,
-        "MeteoFrance": 33.9,
-        "UKMO": 30.6,
-        "CMA": 33.0,
+        "Open-Meteo": 34.1,
+        "ECMWF": 33.9,
+        "GFS": 34.7,
+        "ICON": 34.6,
+        "GEM": 32.4,
+        "MeteoFrance": 34.2,
+        "UKMO": 33.2,
+        "CMA": 34.2,
         "MET.no": 33.4,
         "7Timer": 31.0,
-        "WeatherAPI": 34.5
+        "WeatherAPI": 33.8
       }
     }
   },
@@ -1743,16 +1748,16 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 33.5,
-        "ECMWF": 32.9,
-        "GFS": 32.2,
-        "ICON": 33.9,
-        "GEM": 32.3,
-        "MeteoFrance": 30.1,
-        "UKMO": 35.4,
-        "CMA": 35.2,
-        "MET.no": 33.0,
-        "7Timer": 33.0,
+        "Open-Meteo": 33.6,
+        "ECMWF": 32.5,
+        "GFS": 32.9,
+        "ICON": 35.5,
+        "GEM": 33.4,
+        "MeteoFrance": 30.0,
+        "UKMO": 36.0,
+        "CMA": 37.2,
+        "MET.no": 33.5,
+        "7Timer": 34.0,
         "WeatherAPI": 33.2
       }
     }
@@ -1900,15 +1905,15 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 31.1,
-        "ECMWF": 31.1,
-        "GFS": 35.9,
-        "ICON": 32.5,
-        "GEM": 31.0,
-        "MeteoFrance": 30.0,
-        "UKMO": 31.3,
-        "CMA": 33.0,
-        "MET.no": 31.5,
+        "Open-Meteo": 31.3,
+        "ECMWF": 32.4,
+        "GFS": 36.0,
+        "ICON": 33.5,
+        "GEM": 32.8,
+        "MeteoFrance": 31.0,
+        "UKMO": 31.6,
+        "CMA": 33.7,
+        "MET.no": 31.3,
         "7Timer": 33.0,
         "WeatherAPI": 35.3
       }
@@ -2057,15 +2062,15 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 23.7,
-        "ECMWF": 23.9,
-        "GFS": 23.7,
-        "ICON": 24.4,
-        "GEM": 24.0,
-        "MeteoFrance": 24.1,
-        "UKMO": 24.2,
-        "CMA": 24.2,
-        "MET.no": 28.9,
+        "Open-Meteo": 29.0,
+        "ECMWF": 28.8,
+        "GFS": 30.0,
+        "ICON": 30.0,
+        "GEM": 28.2,
+        "MeteoFrance": 27.7,
+        "UKMO": 30.0,
+        "CMA": 29.7,
+        "MET.no": 29.1,
         "7Timer": 31.0,
         "WeatherAPI": 26.5
       }
@@ -2214,14 +2219,14 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 30.7,
-        "ECMWF": 30.2,
-        "GFS": 30.4,
-        "ICON": 30.4,
-        "GEM": 31.2,
-        "MeteoFrance": 29.7,
-        "UKMO": 31.0,
-        "CMA": 32.3,
+        "Open-Meteo": 32.4,
+        "ECMWF": 32.0,
+        "GFS": 32.9,
+        "ICON": 33.0,
+        "GEM": 31.1,
+        "MeteoFrance": 30.8,
+        "UKMO": 34.0,
+        "CMA": 35.4,
         "MET.no": 32.4,
         "7Timer": 32.0,
         "WeatherAPI": 33.1
@@ -2386,15 +2391,14 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 32.5,
-        "ECMWF": 29.0,
-        "GFS": 32.5,
-        "ICON": 28.9,
-        "GEM": 34.3,
-        "MeteoFrance": 30.4,
-        "UKMO": 29.5,
-        "HRDPS": 34.3,
-        "MET.no": 31.1,
+        "Open-Meteo": 29.8,
+        "ECMWF": 28.6,
+        "GFS": 29.8,
+        "ICON": 32.0,
+        "GEM": 31.8,
+        "MeteoFrance": 31.6,
+        "UKMO": 30.7,
+        "MET.no": 30.2,
         "7Timer": 30.0,
         "WeatherAPI": 30.2
       }
@@ -2543,16 +2547,16 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 37.9,
-        "ECMWF": 37.1,
-        "GFS": 34.3,
-        "ICON": 36.4,
-        "GEM": 37.2,
-        "MeteoFrance": 37.0,
-        "UKMO": 37.2,
-        "CMA": 35.3,
+        "Open-Meteo": 40.2,
+        "ECMWF": 39.6,
+        "GFS": 34.7,
+        "ICON": 38.0,
+        "GEM": 37.9,
+        "MeteoFrance": 38.9,
+        "UKMO": 37.4,
+        "CMA": 36.5,
         "MET.no": 38.1,
-        "7Timer": 36.0,
+        "7Timer": 35.0,
         "WeatherAPI": 35.4
       }
     }
@@ -2700,14 +2704,14 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 35.3,
-        "ECMWF": 35.5,
-        "GFS": 34.1,
-        "ICON": 35.6,
-        "GEM": 36.4,
-        "MeteoFrance": 39.3,
-        "UKMO": 35.7,
-        "CMA": 36.6,
+        "Open-Meteo": 33.9,
+        "ECMWF": 34.3,
+        "GFS": 34.4,
+        "ICON": 36.1,
+        "GEM": 35.2,
+        "MeteoFrance": 40.0,
+        "UKMO": 36.6,
+        "CMA": 37.1,
         "MET.no": 34.3,
         "7Timer": 35.0,
         "WeatherAPI": 37.1
@@ -2857,14 +2861,14 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 28.3,
-        "ECMWF": 28.1,
-        "GFS": 29.8,
-        "ICON": 28.4,
-        "GEM": 30.5,
-        "MeteoFrance": 28.7,
-        "UKMO": 29.4,
-        "CMA": 30.4,
+        "Open-Meteo": 30.4,
+        "ECMWF": 29.4,
+        "GFS": 32.1,
+        "ICON": 30.5,
+        "GEM": 29.8,
+        "MeteoFrance": 29.6,
+        "UKMO": 31.3,
+        "CMA": 30.5,
         "MET.no": 29.2,
         "7Timer": 28.0,
         "WeatherAPI": 29.6
@@ -3014,16 +3018,16 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 28.8,
-        "ECMWF": 27.7,
-        "GFS": 26.0,
-        "ICON": 29.5,
-        "GEM": 31.2,
-        "MeteoFrance": 27.7,
-        "UKMO": 28.4,
-        "CMA": 29.5,
-        "MET.no": 28.9,
-        "7Timer": 29.0,
+        "Open-Meteo": 30.1,
+        "ECMWF": 28.4,
+        "GFS": 30.7,
+        "ICON": 30.3,
+        "GEM": 30.8,
+        "MeteoFrance": 29.5,
+        "UKMO": 29.1,
+        "CMA": 29.6,
+        "MET.no": 29.8,
+        "7Timer": 30.0,
         "WeatherAPI": 30.5
       }
     }
@@ -3169,15 +3173,15 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 31.7,
-        "ECMWF": 31.1,
-        "GFS": 30.8,
-        "ICON": 30.4,
-        "GEM": 30.7,
-        "MeteoFrance": 29.3,
-        "UKMO": 32.3,
+        "Open-Meteo": 30.3,
+        "ECMWF": 28.8,
+        "GFS": 30.5,
+        "ICON": 30.6,
+        "GEM": 29.4,
+        "MeteoFrance": 29.2,
+        "UKMO": 29.9,
         "MET.no": 29.6,
-        "7Timer": 30.0,
+        "7Timer": 29.0,
         "WeatherAPI": 29.8
       }
     }
@@ -3325,15 +3329,15 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 24.5,
-        "ECMWF": 25.1,
-        "GFS": 26.6,
-        "ICON": 24.9,
-        "GEM": 26.0,
-        "MeteoFrance": 23.6,
-        "UKMO": 26.8,
-        "MSM": 24.5,
-        "MET.no": 27.0,
+        "Open-Meteo": 28.1,
+        "ECMWF": 28.1,
+        "GFS": 28.9,
+        "ICON": 27.6,
+        "GEM": 28.7,
+        "MeteoFrance": 25.7,
+        "UKMO": 30.2,
+        "MSM": 28.1,
+        "MET.no": 26.9,
         "7Timer": 30.0,
         "WeatherAPI": 26.8
       }
@@ -3507,17 +3511,16 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 84.1,
-        "ECMWF": 80.5,
-        "GFS": 84.1,
-        "ICON": 85.4,
-        "GEM": 85.3,
-        "MeteoFrance": 79.1,
-        "UKMO": 86.2,
-        "HRRR": 84.1,
-        "MET.no": 82.0,
+        "Open-Meteo": 86.2,
+        "ECMWF": 80.9,
+        "GFS": 86.2,
+        "ICON": 87.2,
+        "GEM": 89.1,
+        "MeteoFrance": 86.7,
+        "UKMO": 86.4,
+        "MET.no": 82.4,
         "NWS": 82.0,
-        "7Timer": 86.0,
+        "7Timer": 87.8,
         "WeatherAPI": 83.1
       }
     }
@@ -3663,15 +3666,15 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 30.6,
-        "ECMWF": 30.8,
-        "GFS": 31.1,
-        "ICON": 31.5,
+        "Open-Meteo": 31.3,
+        "ECMWF": 31.3,
+        "GFS": 30.8,
+        "ICON": 30.5,
         "GEM": 30.7,
-        "MeteoFrance": 32.4,
-        "UKMO": 32.1,
-        "MET.no": 30.1,
-        "7Timer": 30.0,
+        "MeteoFrance": 30.9,
+        "UKMO": 31.9,
+        "MET.no": 30.6,
+        "7Timer": 32.0,
         "WeatherAPI": 29.6
       }
     }
@@ -3817,15 +3820,15 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 33.1,
-        "ECMWF": 32.8,
-        "GFS": 32.6,
-        "ICON": 33.2,
-        "GEM": 32.3,
-        "MeteoFrance": 33.1,
-        "UKMO": 32.1,
+        "Open-Meteo": 32.4,
+        "ECMWF": 32.3,
+        "GFS": 32.5,
+        "ICON": 33.5,
+        "GEM": 32.2,
+        "MeteoFrance": 32.8,
+        "UKMO": 30.5,
         "MET.no": 31.8,
-        "7Timer": 32.0,
+        "7Timer": 33.0,
         "WeatherAPI": 29.9
       }
     }
@@ -3971,14 +3974,14 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 34.4,
-        "ECMWF": 33.0,
-        "GFS": 32.9,
-        "ICON": 33.9,
-        "GEM": 33.8,
-        "MeteoFrance": 33.8,
-        "UKMO": 35.4,
-        "MET.no": 31.8,
+        "Open-Meteo": 32.6,
+        "ECMWF": 31.1,
+        "GFS": 32.3,
+        "ICON": 33.3,
+        "GEM": 33.7,
+        "MeteoFrance": 32.1,
+        "UKMO": 33.5,
+        "MET.no": 31.5,
         "7Timer": 32.0,
         "WeatherAPI": 31.6
       }
@@ -4146,8 +4149,23 @@
         "HRRR": 75.8,
         "MET.no": 68.4,
         "NWS": 75.0,
-        "7Timer": 84.2,
+        "7Timer": 82.4,
         "WeatherAPI": 75.6
+      }
+    },
+    "2026-07-08": {
+      "forecasts": {
+        "Open-Meteo": 79.8,
+        "ECMWF": 90.3,
+        "GFS": 79.8,
+        "ICON": 84.1,
+        "GEM": 85.2,
+        "MeteoFrance": 75.4,
+        "UKMO": 74.9,
+        "MET.no": 72.7,
+        "NWS": 75.0,
+        "7Timer": 86.0,
+        "WeatherAPI": 77.8
       }
     }
   },
@@ -4315,6 +4333,21 @@
         "7Timer": 57.2,
         "WeatherAPI": 63.1
       }
+    },
+    "2026-07-08": {
+      "forecasts": {
+        "Open-Meteo": 68.9,
+        "ECMWF": 64.2,
+        "GFS": 68.9,
+        "ICON": 73.5,
+        "GEM": 66.8,
+        "MeteoFrance": 56.5,
+        "UKMO": 68.3,
+        "MET.no": 61.3,
+        "NWS": 67.0,
+        "7Timer": 68.0,
+        "WeatherAPI": 63.2
+      }
     }
   },
   "aurora": {
@@ -4477,10 +4510,25 @@
         "MeteoFrance": 99.3,
         "UKMO": 96.1,
         "HRRR": 96.0,
-        "MET.no": 94.8,
+        "MET.no": 91.9,
         "NWS": 95.0,
-        "7Timer": 95.0,
+        "7Timer": 91.4,
         "WeatherAPI": 98.7
+      }
+    },
+    "2026-07-08": {
+      "forecasts": {
+        "Open-Meteo": 92.2,
+        "ECMWF": 88.6,
+        "GFS": 92.2,
+        "ICON": 90.8,
+        "GEM": 86.1,
+        "MeteoFrance": 94.4,
+        "UKMO": 89.0,
+        "MET.no": 93.0,
+        "NWS": 93.0,
+        "7Timer": 91.4,
+        "WeatherAPI": 95.2
       }
     }
   },
@@ -4649,6 +4697,21 @@
         "7Timer": 100.4,
         "WeatherAPI": 103.8
       }
+    },
+    "2026-07-08": {
+      "forecasts": {
+        "Open-Meteo": 100.8,
+        "ECMWF": 98.4,
+        "GFS": 100.8,
+        "ICON": 96.7,
+        "GEM": 97.4,
+        "MeteoFrance": 101.5,
+        "UKMO": 99.3,
+        "MET.no": 97.9,
+        "NWS": 97.0,
+        "7Timer": 100.4,
+        "WeatherAPI": 100.4
+      }
     }
   },
   "houston": {
@@ -4815,6 +4878,21 @@
         "NWS": 95.0,
         "7Timer": 98.6,
         "WeatherAPI": 103.5
+      }
+    },
+    "2026-07-08": {
+      "forecasts": {
+        "Open-Meteo": 98.7,
+        "ECMWF": 95.4,
+        "GFS": 98.7,
+        "ICON": 95.1,
+        "GEM": 94.4,
+        "MeteoFrance": 93.5,
+        "UKMO": 96.6,
+        "MET.no": 92.5,
+        "NWS": 97.0,
+        "7Timer": 100.4,
+        "WeatherAPI": 97.6
       }
     }
   },
@@ -4986,14 +5064,13 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 89.4,
-        "ECMWF": 86.7,
-        "GFS": 89.4,
-        "ICON": 89.1,
-        "GEM": 89.9,
-        "MeteoFrance": 88.4,
-        "UKMO": 90.5,
-        "HRRR": 89.4,
+        "Open-Meteo": 87.2,
+        "ECMWF": 84.3,
+        "GFS": 87.2,
+        "ICON": 85.9,
+        "GEM": 86.2,
+        "MeteoFrance": 90.0,
+        "UKMO": 90.6,
         "MET.no": 87.8,
         "NWS": 88.0,
         "7Timer": 86.0,
@@ -5169,15 +5246,14 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 99.9,
-        "ECMWF": 98.2,
-        "GFS": 99.9,
-        "ICON": 97.2,
-        "GEM": 99.7,
-        "MeteoFrance": 99.2,
-        "UKMO": 100.3,
-        "HRRR": 99.9,
-        "MET.no": 100.2,
+        "Open-Meteo": 103.0,
+        "ECMWF": 101.1,
+        "GFS": 103.0,
+        "ICON": 99.6,
+        "GEM": 99.2,
+        "MeteoFrance": 102.3,
+        "UKMO": 101.7,
+        "MET.no": 99.0,
         "NWS": 100.0,
         "7Timer": 100.4,
         "WeatherAPI": 102.1
@@ -5352,17 +5428,16 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 88.3,
-        "ECMWF": 89.3,
-        "GFS": 88.3,
-        "ICON": 91.5,
-        "GEM": 91.1,
-        "MeteoFrance": 93.5,
-        "UKMO": 91.9,
-        "HRRR": 88.3,
-        "MET.no": 90.3,
+        "Open-Meteo": 92.1,
+        "ECMWF": 90.1,
+        "GFS": 92.1,
+        "ICON": 92.0,
+        "GEM": 91.7,
+        "MeteoFrance": 93.0,
+        "UKMO": 91.5,
+        "MET.no": 90.5,
         "NWS": 93.0,
-        "7Timer": 93.2,
+        "7Timer": 95.0,
         "WeatherAPI": 90.7
       }
     }
@@ -5535,17 +5610,16 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 92.2,
-        "ECMWF": 93.1,
-        "GFS": 92.2,
-        "ICON": 94.6,
-        "GEM": 86.6,
-        "MeteoFrance": 95.9,
-        "UKMO": 93.4,
-        "HRRR": 92.2,
-        "MET.no": 93.4,
+        "Open-Meteo": 92.5,
+        "ECMWF": 93.2,
+        "GFS": 92.5,
+        "ICON": 92.1,
+        "GEM": 88.0,
+        "MeteoFrance": 96.5,
+        "UKMO": 92.8,
+        "MET.no": 92.1,
         "NWS": 93.0,
-        "7Timer": 95.0,
+        "7Timer": 96.8,
         "WeatherAPI": 97.0
       }
     }
@@ -5702,18 +5776,33 @@
     },
     "2026-07-07": {
       "forecasts": {
-        "Open-Meteo": 83.5,
-        "ECMWF": 81.5,
-        "GFS": 83.5,
-        "ICON": 78.4,
-        "GEM": 84.0,
-        "MeteoFrance": 81.6,
-        "UKMO": 82.5,
-        "HRRR": 83.5,
-        "MET.no": 77.4,
+        "Open-Meteo": 74.7,
+        "ECMWF": 75.8,
+        "GFS": 73.9,
+        "ICON": 71.8,
+        "GEM": 77.5,
+        "MeteoFrance": 72.5,
+        "UKMO": 78.4,
+        "HRRR": 73.9,
+        "MET.no": 76.5,
         "NWS": 79.0,
-        "7Timer": 82.4,
+        "7Timer": 78.8,
         "WeatherAPI": 81.7
+      }
+    },
+    "2026-07-08": {
+      "forecasts": {
+        "Open-Meteo": 79.1,
+        "ECMWF": 74.0,
+        "GFS": 79.1,
+        "ICON": 70.9,
+        "GEM": 73.8,
+        "MeteoFrance": 72.9,
+        "UKMO": 73.6,
+        "MET.no": 72.7,
+        "NWS": 74.0,
+        "7Timer": 69.8,
+        "WeatherAPI": 69.3
       }
     }
   },
@@ -5872,16 +5961,16 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 22.1,
-        "ECMWF": 22.6,
-        "GFS": 24.3,
-        "ICON": 24.5,
-        "GEM": 23.5,
-        "MeteoFrance": 21.5,
-        "UKMO": 23.9,
-        "MET.no": 22.3,
+        "Open-Meteo": 20.7,
+        "ECMWF": 22.0,
+        "GFS": 25.3,
+        "ICON": 24.2,
+        "GEM": 20.2,
+        "MeteoFrance": 20.7,
+        "UKMO": 23.0,
+        "MET.no": 22.9,
         "7Timer": 23.0,
-        "WeatherAPI": 22.2
+        "WeatherAPI": 22.3
       }
     }
   },
@@ -6040,14 +6129,14 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 15.8,
-        "ECMWF": 16.2,
-        "GFS": 16.1,
-        "ICON": 17.7,
-        "GEM": 17.4,
-        "MeteoFrance": 15.0,
-        "UKMO": 16.1,
-        "MET.no": 16.0,
+        "Open-Meteo": 16.3,
+        "ECMWF": 16.0,
+        "GFS": 16.3,
+        "ICON": 14.4,
+        "GEM": 18.8,
+        "MeteoFrance": 15.7,
+        "UKMO": 15.1,
+        "MET.no": 16.4,
         "7Timer": 15.0,
         "WeatherAPI": 16.3
       }
@@ -6208,14 +6297,14 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 20.9,
-        "ECMWF": 21.4,
-        "GFS": 21.0,
-        "ICON": 21.4,
-        "GEM": 22.0,
-        "MeteoFrance": 20.0,
-        "UKMO": 19.9,
-        "MET.no": 20.8,
+        "Open-Meteo": 20.7,
+        "ECMWF": 21.8,
+        "GFS": 23.3,
+        "ICON": 22.4,
+        "GEM": 23.3,
+        "MeteoFrance": 21.7,
+        "UKMO": 18.7,
+        "MET.no": 20.6,
         "7Timer": 22.0,
         "WeatherAPI": 21.3
       }
@@ -6376,14 +6465,14 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 31.8,
-        "ECMWF": 31.3,
-        "GFS": 32.3,
-        "ICON": 34.2,
-        "GEM": 34.8,
-        "MeteoFrance": 32.8,
-        "UKMO": 34.0,
-        "MET.no": 31.4,
+        "Open-Meteo": 30.5,
+        "ECMWF": 30.3,
+        "GFS": 30.6,
+        "ICON": 32.1,
+        "GEM": 33.4,
+        "MeteoFrance": 30.9,
+        "UKMO": 30.4,
+        "MET.no": 31.8,
         "7Timer": 32.0,
         "WeatherAPI": 31.6
       }
@@ -6529,15 +6618,15 @@
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 33.5,
-        "ECMWF": 32.9,
-        "GFS": 35.8,
-        "ICON": 33.0,
-        "GEM": 34.4,
-        "MeteoFrance": 32.7,
-        "UKMO": 35.9,
-        "MET.no": 33.3,
-        "7Timer": 36.0,
+        "Open-Meteo": 31.9,
+        "ECMWF": 31.6,
+        "GFS": 36.1,
+        "ICON": 32.5,
+        "GEM": 31.8,
+        "MeteoFrance": 28.6,
+        "UKMO": 32.2,
+        "MET.no": 31.9,
+        "7Timer": 35.0,
         "WeatherAPI": 36.2
       }
     }
@@ -6678,18 +6767,19 @@
         "MET.no": 34.5,
         "7Timer": 33.0,
         "WeatherAPI": 32.7
-      }
+      },
+      "actual_high": 35.0
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 36.4,
-        "ECMWF": 37.2,
-        "GFS": 31.4,
-        "ICON": 34.8,
-        "GEM": 35.0,
-        "MeteoFrance": 37.7,
-        "UKMO": 35.5,
-        "MET.no": 34.4,
+        "Open-Meteo": 35.1,
+        "ECMWF": 36.0,
+        "GFS": 32.4,
+        "ICON": 33.7,
+        "GEM": 34.3,
+        "MeteoFrance": 36.8,
+        "UKMO": 36.3,
+        "MET.no": 34.5,
         "7Timer": 34.0,
         "WeatherAPI": 32.3
       }
@@ -6845,21 +6935,22 @@
         "MET.no": 31.6,
         "7Timer": 34.0,
         "WeatherAPI": 35.1
-      }
+      },
+      "actual_high": 33.0
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 33.2,
-        "ECMWF": 32.5,
-        "GFS": 34.3,
-        "ICON": 33.2,
-        "GEM": 32.8,
-        "MeteoFrance": 33.4,
-        "UKMO": 34.4,
-        "AROME": 33.7,
-        "MET.no": 33.8,
+        "Open-Meteo": 33.1,
+        "ECMWF": 32.8,
+        "GFS": 35.6,
+        "ICON": 33.1,
+        "GEM": 33.7,
+        "MeteoFrance": 33.8,
+        "UKMO": 33.6,
+        "AROME": 33.8,
+        "MET.no": 32.9,
         "7Timer": 35.0,
-        "WeatherAPI": 35.9
+        "WeatherAPI": 36.1
       }
     }
   },
@@ -7011,19 +7102,20 @@
         "MET.no": 18.6,
         "7Timer": 16.0,
         "WeatherAPI": 18.2
-      }
+      },
+      "actual_high": 20.0
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 18.4,
-        "ECMWF": 19.3,
-        "GFS": 19.1,
-        "ICON": 19.4,
-        "GEM": 19.9,
-        "MeteoFrance": 18.6,
-        "UKMO": 20.3,
+        "Open-Meteo": 19.5,
+        "ECMWF": 19.6,
+        "GFS": 19.7,
+        "ICON": 20.0,
+        "GEM": 19.0,
+        "MeteoFrance": 19.9,
+        "UKMO": 19.7,
         "MET.no": 19.6,
-        "7Timer": 20.0,
+        "7Timer": 18.0,
         "WeatherAPI": 19.9
       }
     }
@@ -7176,19 +7268,20 @@
         "MET.no": 25.6,
         "7Timer": 24.0,
         "WeatherAPI": 27.8
-      }
+      },
+      "actual_high": 26.9
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 26.9,
-        "ECMWF": 26.9,
-        "GFS": 26.9,
-        "ICON": 26.9,
-        "GEM": 28.1,
-        "MeteoFrance": 27.1,
-        "UKMO": 23.7,
-        "MET.no": 26.9,
-        "7Timer": 25.0,
+        "Open-Meteo": 29.6,
+        "ECMWF": 28.2,
+        "GFS": 30.2,
+        "ICON": 29.6,
+        "GEM": 29.6,
+        "MeteoFrance": 29.0,
+        "UKMO": 23.9,
+        "MET.no": 27.1,
+        "7Timer": 26.0,
         "WeatherAPI": 27.4
       }
     }
@@ -7341,16 +7434,17 @@
         "MET.no": 30.8,
         "7Timer": 30.0,
         "WeatherAPI": 29.4
-      }
+      },
+      "actual_high": 31.0
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 30.8,
-        "ECMWF": 32.6,
-        "GFS": 31.1,
-        "ICON": 30.8,
-        "GEM": 31.0,
-        "MeteoFrance": 31.9,
+        "Open-Meteo": 30.2,
+        "ECMWF": 30.9,
+        "GFS": 30.0,
+        "ICON": 30.2,
+        "GEM": 29.4,
+        "MeteoFrance": 31.0,
         "UKMO": 31.0,
         "MET.no": 30.3,
         "7Timer": 29.0,
@@ -7508,18 +7602,19 @@
         "MET.no": 27.6,
         "7Timer": 28.0,
         "WeatherAPI": 27.8
-      }
+      },
+      "actual_high": 30.0
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 30.2,
-        "ECMWF": 27.1,
-        "GFS": 26.5,
-        "ICON": 30.2,
-        "GEM": 27.9,
-        "MeteoFrance": 29.4,
-        "UKMO": 29.0,
-        "ICON-D2": 30.2,
+        "Open-Meteo": 22.3,
+        "ECMWF": 23.7,
+        "GFS": 20.4,
+        "ICON": 22.3,
+        "GEM": 25.5,
+        "MeteoFrance": 22.3,
+        "UKMO": 22.5,
+        "ICON-D2": 22.3,
         "MET.no": 23.8,
         "7Timer": 21.0,
         "WeatherAPI": 21.7
@@ -7676,19 +7771,20 @@
         "MET.no": 33.3,
         "7Timer": 35.0,
         "WeatherAPI": 34.4
-      }
+      },
+      "actual_high": 33.0
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 33.6,
-        "ECMWF": 33.7,
-        "GFS": 34.1,
-        "ICON": 33.6,
-        "GEM": 33.9,
-        "MeteoFrance": 34.2,
-        "UKMO": 34.2,
-        "AROME": 34.2,
-        "MET.no": 35.4,
+        "Open-Meteo": 36.3,
+        "ECMWF": 35.8,
+        "GFS": 37.2,
+        "ICON": 36.3,
+        "GEM": 36.3,
+        "MeteoFrance": 36.4,
+        "UKMO": 36.6,
+        "AROME": 36.4,
+        "MET.no": 35.6,
         "7Timer": 37.0,
         "WeatherAPI": 37.2
       }
@@ -7844,18 +7940,19 @@
         "MET.no": 30.6,
         "7Timer": 31.0,
         "WeatherAPI": 31.1
-      }
+      },
+      "actual_high": 32.0
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 31.8,
-        "ECMWF": 31.1,
-        "GFS": 31.3,
-        "ICON": 31.2,
-        "GEM": 30.2,
-        "MeteoFrance": 31.3,
-        "UKMO": 31.8,
-        "UKV": 31.8,
+        "Open-Meteo": 32.5,
+        "ECMWF": 33.2,
+        "GFS": 33.6,
+        "ICON": 32.0,
+        "GEM": 31.7,
+        "MeteoFrance": 33.1,
+        "UKMO": 32.5,
+        "UKV": 32.5,
         "MET.no": 32.4,
         "7Timer": 33.0,
         "WeatherAPI": 33.3
@@ -8012,19 +8109,20 @@
         "MET.no": 33.5,
         "7Timer": 38.0,
         "WeatherAPI": 39.1
-      }
+      },
+      "actual_high": 40.0
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 39.1,
+        "Open-Meteo": 38.2,
         "ECMWF": 38.3,
-        "GFS": 38.9,
-        "ICON": 39.1,
-        "GEM": 38.5,
-        "MeteoFrance": 40.7,
-        "UKMO": 38.7,
-        "AROME": 40.6,
-        "MET.no": 38.0,
+        "GFS": 38.8,
+        "ICON": 38.2,
+        "GEM": 36.0,
+        "MeteoFrance": 39.8,
+        "UKMO": 37.8,
+        "AROME": 39.8,
+        "MET.no": 37.9,
         "7Timer": 38.0,
         "WeatherAPI": 38.7
       }
@@ -8178,18 +8276,19 @@
         "MET.no": 26.3,
         "7Timer": 24.0,
         "WeatherAPI": 26.6
-      }
+      },
+      "actual_high": 28.0
     },
     "2026-07-08": {
       "forecasts": {
-        "Open-Meteo": 26.9,
-        "ECMWF": 26.0,
-        "GFS": 27.2,
-        "ICON": 26.9,
-        "GEM": 27.7,
-        "MeteoFrance": 28.7,
-        "UKMO": 26.1,
-        "MET.no": 28.5,
+        "Open-Meteo": 28.5,
+        "ECMWF": 28.3,
+        "GFS": 28.0,
+        "ICON": 28.5,
+        "GEM": 29.2,
+        "MeteoFrance": 29.7,
+        "UKMO": 27.5,
+        "MET.no": 28.4,
         "7Timer": 27.0,
         "WeatherAPI": 27.7
       }
@@ -8343,17 +8442,18 @@
         "MET.no": 17.0,
         "7Timer": 20.0,
         "WeatherAPI": 16.1
-      }
+      },
+      "actual_high": 21.0
     },
     "2026-07-08": {
       "forecasts": {
         "Open-Meteo": 18.8,
-        "ECMWF": 20.0,
-        "GFS": 20.5,
+        "ECMWF": 21.9,
+        "GFS": 19.9,
         "ICON": 18.8,
-        "GEM": 19.6,
-        "MeteoFrance": 21.0,
-        "UKMO": 20.5,
+        "GEM": 21.1,
+        "MeteoFrance": 20.3,
+        "UKMO": 21.4,
         "MET.no": 22.1,
         "7Timer": 20.0,
         "WeatherAPI": 19.9

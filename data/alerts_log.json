@@ -2575,6 +2575,83 @@
       "t": "3:40 AM",
       "city": "chicago",
       "line": "\ud83d\udfe2 Chicago 85\u00b0F@89% \u00b7 BUY YES 85\u00b0F@29\u00a2 +60%"
+    },
+    {
+      "t": "9:43 AM",
+      "city": "busan",
+      "line": "\ud83d\udfe2 Busan 30\u00b0C@71% \u00b7 BUY YES 30\u00b0C@41\u00a2 +30%"
+    },
+    {
+      "t": "10:45 AM",
+      "city": "kuala lumpur",
+      "line": "\ud83d\udfe2 Kuala Lumpur 33\u00b0C@80% \u00b7 BUY YES 33\u00b0C@67\u00a2 +13%"
+    },
+    {
+      "t": "11:32 AM",
+      "city": "wuhan",
+      "line": "\ud83d\udfe2 Wuhan 35\u00b0C@76% \u00b7 BUY YES 35\u00b0C@38\u00a2 +38%"
+    },
+    {
+      "t": "4:32 PM",
+      "city": "ankara",
+      "line": "\ud83d\udfe2 Ankara 31\u00b0C@82% \u00b7 BUY NO 30\u00b0C@25\u00a2 +33%"
+    },
+    {
+      "t": "4:32 PM",
+      "city": "cape town",
+      "line": "\ud83d\udfe2 Cape Town 16\u00b0C@72% \u00b7 BUY YES 16\u00b0C@15\u00a2 +57%"
+    },
+    {
+      "t": "5:35 PM",
+      "city": "ankara",
+      "line": "\ud83d\udd34 Ankara 31\u00b0C weakened to 73%"
+    },
+    {
+      "t": "6:38 PM",
+      "city": "milan",
+      "line": "\ud83d\udfe2 Milan 34\u00b0C@87% \u00b7 BUY YES 34\u00b0C@35\u00a2 +52%"
+    },
+    {
+      "t": "8:11 PM",
+      "city": "milan",
+      "line": "\ud83d\udd34 Milan 34\u00b0C weakened to 74%"
+    },
+    {
+      "t": "9:43 PM",
+      "city": "madrid",
+      "line": "\ud83d\udfe2 Madrid 38\u00b0C@99% \u00b7 BUY NO 39\u00b0C@18\u00a2 +18%"
+    }
+  ],
+  "2026-07-10": [
+    {
+      "t": "1:08 AM",
+      "city": "miami",
+      "line": "\ud83d\udfe2 Miami 93\u00b0F@85% \u00b7 BUY NO 91\u00b0F@64\u00a2 +60%"
+    },
+    {
+      "t": "1:38 AM",
+      "city": "chicago",
+      "line": "\ud83d\udfe2 Chicago 85\u00b0F@88% \u00b7 BUY YES 85\u00b0F@66\u00a2 +22%"
+    },
+    {
+      "t": "1:38 AM",
+      "city": "dallas",
+      "line": "\ud83d\udfe2 Dallas 101\u00b0F@94% \u00b7 BUY YES 101\u00b0F@74\u00a2 +20%"
+    },
+    {
+      "t": "2:40 AM",
+      "city": "chicago",
+      "line": "\ud83d\udd04 Chicago 85\u00b0F\u219287\u00b0F @80%"
+    },
+    {
+      "t": "2:55 AM",
+      "city": "milan",
+      "line": "\ud83d\udfe2 Milan 33\u00b0C@70% \u00b7 BUY YES 33\u00b0C@49\u00a2 +21%"
+    },
+    {
+      "t": "3:41 AM",
+      "city": "dallas",
+      "line": "\ud83d\udd34 Dallas 103\u00b0F weakened to 82%"
     }
   ]
 }

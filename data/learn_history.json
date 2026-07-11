@@ -69518,19 +69518,19 @@
   "2026-07-11": {
     "wellington": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 10,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.768,
+        "top_prob": 0.959,
         "verdict": "TRADE",
         "made_call": true,
-        "deb": 10.4,
-        "deb_raw": 9.7,
+        "deb": 10.3,
+        "deb_raw": 9.6,
         "peak_bias": 0.72,
-        "sigma": 0.27,
+        "sigma": 0.21,
         "forecasts": {
           "Open-Meteo": 9.4,
           "ECMWF": 9.5,
@@ -69539,9 +69539,9 @@
           "GEM": 8.8,
           "MeteoFrance": 10.6,
           "UKMO": 9.8,
-          "MET.no": 9.4,
+          "MET.no": 9.3,
           "7Timer": 9.0,
-          "WeatherAPI": 9.6
+          "WeatherAPI": 9.4
         },
         "timing": "FIRMING",
         "pm_buckets": {
@@ -69550,8 +69550,8 @@
           "7": 0.0,
           "8": 0.0,
           "9": 0.0,
-          "10": 0.86,
-          "11": 0.14,
+          "10": 0.95,
+          "11": 0.03,
           "12": 0.0,
           "13": 0.0,
           "14": 0.0,
@@ -69573,19 +69573,19 @@
         "had_position": true
       },
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 34,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.704,
+        "top_prob": 0.609,
         "verdict": "WAIT",
         "made_call": false,
-        "deb": 34.6,
-        "deb_raw": 32.8,
+        "deb": 34.7,
+        "deb_raw": 32.9,
         "peak_bias": 1.75,
-        "sigma": 0.47,
+        "sigma": 0.55,
         "forecasts": {
           "Open-Meteo": 33.1,
           "ECMWF": 32.9,
@@ -69595,48 +69595,43 @@
           "MeteoFrance": 30.4,
           "UKMO": 35.7,
           "CMA": 32.5,
-          "MET.no": 32.7,
+          "MET.no": 32.8,
           "7Timer": 33.0,
-          "WeatherAPI": 30.0
+          "WeatherAPI": 30.2
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
           "29": 0.0,
-          "30": 0.001,
-          "31": 0.002,
-          "32": 0.011,
+          "30": 0.0,
+          "31": 0.001,
+          "32": 0.006,
           "33": 0.12,
-          "34": 0.48,
-          "35": 0.25,
-          "36": 0.053,
-          "37": 0.004,
+          "34": 0.62,
+          "35": 0.18,
+          "36": 0.011,
+          "37": 0.002,
           "38": 0.001,
-          "39": 0.0
+          "39": 0.001
         },
         "pm_title": "Highest temperature in Hong Kong on July 11?",
-        "best_trade": {
-          "action": "BUY YES",
-          "temp": 34,
-          "yes_price": 0.48,
-          "edge": 0.224
-        }
+        "best_trade": null
       }
     },
     "seoul": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 31,
+        "top_bucket": 32,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.636,
+        "top_prob": 0.632,
         "verdict": "SKIP",
         "made_call": false,
         "deb": 30.9,
         "deb_raw": 28.4,
         "peak_bias": 2.5,
-        "sigma": 0.55,
+        "sigma": 0.51,
         "forecasts": {
           "Open-Meteo": 26.8,
           "ECMWF": 28.8,
@@ -69648,7 +69643,7 @@
           "MSM": 26.8,
           "MET.no": 30.4,
           "7Timer": 25.0,
-          "WeatherAPI": 27.7
+          "WeatherAPI": 28.0
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
@@ -69659,35 +69654,30 @@
           "27": 0.0,
           "28": 0.0,
           "29": 0.0,
-          "30": 0.11,
-          "31": 0.43,
-          "32": 0.34,
-          "33": 0.073
+          "30": 0.0,
+          "31": 0.0,
+          "32": 0.72,
+          "33": 0.22
         },
         "pm_title": "Highest temperature in Seoul on July 11?",
-        "best_trade": {
-          "action": "BUY NO",
-          "temp": 32,
-          "yes_price": 0.34,
-          "edge": 0.234
-        }
+        "best_trade": null
       }
     },
     "busan": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 34,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.643,
+        "top_prob": 0.581,
         "verdict": "WAIT",
         "made_call": false,
         "deb": 34.0,
         "deb_raw": 33.1,
         "peak_bias": 0.86,
-        "sigma": 0.55,
+        "sigma": 0.63,
         "forecasts": {
           "Open-Meteo": 32.4,
           "ECMWF": 33.5,
@@ -69699,7 +69689,7 @@
           "MSM": 32.4,
           "MET.no": 32.5,
           "7Timer": 34.0,
-          "WeatherAPI": 31.8
+          "WeatherAPI": 32.0
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
@@ -69707,38 +69697,33 @@
           "28": 0.0,
           "29": 0.0,
           "30": 0.0,
-          "31": 0.005,
-          "32": 0.05,
-          "33": 0.41,
-          "34": 0.38,
-          "35": 0.069,
-          "36": 0.003,
+          "31": 0.0,
+          "32": 0.0,
+          "33": 0.15,
+          "34": 0.63,
+          "35": 0.138,
+          "36": 0.009,
           "37": 0.001
         },
         "pm_title": "Highest temperature in Busan on July 11?",
-        "best_trade": {
-          "action": "BUY NO",
-          "temp": 33,
-          "yes_price": 0.41,
-          "edge": 0.302
-        }
+        "best_trade": null
       }
     },
     "taipei": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 31,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.456,
+        "top_prob": 0.399,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 30.9,
-        "deb_raw": 28.5,
+        "deb": 30.8,
+        "deb_raw": 28.4,
         "peak_bias": 2.43,
-        "sigma": 0.82,
+        "sigma": 0.94,
         "forecasts": {
           "Open-Meteo": 28.1,
           "ECMWF": 27.7,
@@ -69748,9 +69733,9 @@
           "MeteoFrance": 30.8,
           "UKMO": 28.6,
           "CMA": 28.9,
-          "MET.no": 28.4,
+          "MET.no": 26.9,
           "7Timer": 27.0,
-          "WeatherAPI": 26.7
+          "WeatherAPI": 26.4
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
@@ -69760,36 +69745,36 @@
           "25": 0.0,
           "26": 0.0,
           "27": 0.0,
-          "28": 0.44,
-          "29": 0.29,
-          "30": 0.14,
-          "31": 0.023,
-          "32": 0.009
+          "28": 0.71,
+          "29": 0.11,
+          "30": 0.05,
+          "31": 0.024,
+          "32": 0.007
         },
         "pm_title": "Highest temperature in Taipei on July 11?",
         "best_trade": {
           "action": "BUY NO",
           "temp": 28,
-          "yes_price": 0.44,
-          "edge": 0.45
+          "yes_price": 0.71,
+          "edge": 0.813
         }
       }
     },
     "shanghai": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 31,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.477,
+        "top_prob": 0.483,
         "verdict": "SKIP",
         "made_call": false,
         "deb": 31.5,
         "deb_raw": 29.8,
         "peak_bias": 1.66,
-        "sigma": 0.59,
+        "sigma": 0.55,
         "forecasts": {
           "Open-Meteo": 30.1,
           "ECMWF": 29.5,
@@ -69801,7 +69786,7 @@
           "CMA": 29.9,
           "MET.no": 29.8,
           "7Timer": 30.0,
-          "WeatherAPI": 30.0
+          "WeatherAPI": 29.9
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
@@ -69810,32 +69795,37 @@
           "28": 0.0,
           "29": 0.0,
           "30": 0.0,
-          "31": 0.45,
-          "32": 0.403,
-          "33": 0.038,
-          "34": 0.007,
-          "35": 0.003,
-          "36": 0.001
+          "31": 0.82,
+          "32": 0.121,
+          "33": 0.02,
+          "34": 0.001,
+          "35": 0.0,
+          "36": 0.0
         },
         "pm_title": "Highest temperature in Shanghai on July 11?",
-        "best_trade": null
+        "best_trade": {
+          "action": "BUY YES",
+          "temp": 32,
+          "yes_price": 0.121,
+          "edge": 0.362
+        }
       }
     },
     "beijing": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 28,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.291,
+        "top_prob": 0.313,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 27.7,
-        "deb_raw": 28.1,
+        "deb": 27.8,
+        "deb_raw": 28.2,
         "peak_bias": -0.42,
-        "sigma": 1.8,
+        "sigma": 1.56,
         "forecasts": {
           "Open-Meteo": 30.4,
           "ECMWF": 30.5,
@@ -69845,43 +69835,48 @@
           "MeteoFrance": 28.3,
           "UKMO": 29.4,
           "CMA": 29.1,
-          "MET.no": 29.1,
+          "MET.no": 30.4,
           "7Timer": 26.0,
-          "WeatherAPI": 25.1
+          "WeatherAPI": 26.3
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
-          "27": 0.023,
-          "28": 0.15,
-          "29": 0.36,
-          "30": 0.27,
-          "31": 0.09,
+          "27": 0.055,
+          "28": 0.18,
+          "29": 0.45,
+          "30": 0.15,
+          "31": 0.05,
           "32": 0.009,
-          "33": 0.006,
-          "34": 0.0,
+          "33": 0.001,
+          "34": 0.001,
           "35": 0.0,
           "36": 0.0,
           "37": 0.0
         },
         "pm_title": "Highest temperature in Beijing on July 11?",
-        "best_trade": null
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 29,
+          "yes_price": 0.45,
+          "edge": 0.303
+        }
       }
     },
     "qingdao": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 30,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.476,
+        "top_prob": 0.495,
         "verdict": "SKIP",
         "made_call": false,
         "deb": 30.5,
         "deb_raw": 29.8,
         "peak_bias": 0.68,
-        "sigma": 0.51,
+        "sigma": 0.43,
         "forecasts": {
           "Open-Meteo": 29.8,
           "ECMWF": 28.8,
@@ -69891,9 +69886,9 @@
           "MeteoFrance": 27.5,
           "UKMO": 30.6,
           "CMA": 29.0,
-          "MET.no": 29.7,
+          "MET.no": 30.0,
           "7Timer": 32.0,
-          "WeatherAPI": 26.7
+          "WeatherAPI": 26.6
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
@@ -69903,24 +69898,24 @@
           "25": 0.0,
           "26": 0.0,
           "27": 0.0,
-          "28": 0.015,
-          "29": 0.08,
-          "30": 0.34,
-          "31": 0.26,
-          "32": 0.18
+          "28": 0.0,
+          "29": 0.0,
+          "30": 0.91,
+          "31": 0.05,
+          "32": 0.03
         },
         "pm_title": "Highest temperature in Qingdao on July 11?",
         "best_trade": {
           "action": "BUY YES",
           "temp": 31,
-          "yes_price": 0.26,
-          "edge": 0.216
+          "yes_price": 0.05,
+          "edge": 0.445
         }
       }
     },
     "wuhan": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 38,
@@ -69944,7 +69939,7 @@
           "CMA": 38.2,
           "MET.no": 35.4,
           "7Timer": 36.0,
-          "WeatherAPI": 37.4
+          "WeatherAPI": 37.3
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
@@ -69952,20 +69947,20 @@
           "32": 0.0,
           "33": 0.0,
           "34": 0.0,
-          "35": 0.005,
-          "36": 0.066,
-          "37": 0.2,
-          "38": 0.37,
-          "39": 0.23,
-          "40": 0.012,
+          "35": 0.0,
+          "36": 0.01,
+          "37": 0.33,
+          "38": 0.44,
+          "39": 0.16,
+          "40": 0.014,
           "41": 0.001
         },
         "pm_title": "Highest temperature in Wuhan on July 11?",
         "best_trade": {
           "action": "BUY YES",
           "temp": 38,
-          "yes_price": 0.37,
-          "edge": 0.516
+          "yes_price": 0.44,
+          "edge": 0.446
         }
       },
       "alert": {
@@ -69981,19 +69976,19 @@
     },
     "chengdu": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 35,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.268,
+        "top_prob": 0.257,
         "verdict": "SKIP",
         "made_call": false,
         "deb": 34.6,
         "deb_raw": 33.6,
         "peak_bias": 1.01,
-        "sigma": 1.41,
+        "sigma": 1.48,
         "forecasts": {
           "Open-Meteo": 33.9,
           "ECMWF": 34.4,
@@ -70003,43 +69998,48 @@
           "MeteoFrance": 35.3,
           "UKMO": 34.9,
           "CMA": 28.3,
-          "MET.no": 34.0,
+          "MET.no": 34.1,
           "7Timer": 32.0,
-          "WeatherAPI": 32.2
+          "WeatherAPI": 32.0
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
           "28": 0.0,
-          "29": 0.034,
-          "30": 0.058,
-          "31": 0.15,
-          "32": 0.18,
-          "33": 0.21,
+          "29": 0.007,
+          "30": 0.043,
+          "31": 0.201,
+          "32": 0.25,
+          "33": 0.24,
           "34": 0.11,
-          "35": 0.06,
-          "36": 0.006,
-          "37": 0.005,
-          "38": 0.001
+          "35": 0.022,
+          "36": 0.003,
+          "37": 0.001,
+          "38": 0.0
         },
         "pm_title": "Highest temperature in Chengdu on July 11?",
-        "best_trade": null
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 31,
+          "yes_price": 0.201,
+          "edge": 0.28
+        }
       }
     },
     "chongqing": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 38,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.459,
+        "top_prob": 0.435,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 38.4,
-        "deb_raw": 36.9,
+        "deb": 38.5,
+        "deb_raw": 37.0,
         "peak_bias": 1.51,
-        "sigma": 0.7,
+        "sigma": 0.66,
         "forecasts": {
           "Open-Meteo": 35.6,
           "ECMWF": 35.4,
@@ -70049,43 +70049,48 @@
           "MeteoFrance": 40.7,
           "UKMO": 36.7,
           "CMA": 37.0,
-          "MET.no": 36.1,
+          "MET.no": 36.5,
           "7Timer": 35.0,
-          "WeatherAPI": 37.6
+          "WeatherAPI": 37.7
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
           "32": 0.0,
-          "33": 0.001,
+          "33": 0.0,
           "34": 0.0,
-          "35": 0.004,
-          "36": 0.021,
-          "37": 0.21,
-          "38": 0.39,
+          "35": 0.001,
+          "36": 0.02,
+          "37": 0.17,
+          "38": 0.46,
           "39": 0.25,
-          "40": 0.07,
-          "41": 0.001,
+          "40": 0.06,
+          "41": 0.002,
           "42": 0.001
         },
         "pm_title": "Highest temperature in Chongqing on July 11?",
-        "best_trade": null
+        "best_trade": {
+          "action": "BUY YES",
+          "temp": 39,
+          "yes_price": 0.25,
+          "edge": 0.185
+        }
       }
     },
     "shenzhen": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 34,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.609,
+        "top_prob": 0.707,
         "verdict": "WAIT",
         "made_call": false,
         "deb": 34.2,
         "deb_raw": 33.8,
         "peak_bias": 0.45,
-        "sigma": 0.55,
+        "sigma": 0.43,
         "forecasts": {
           "Open-Meteo": 33.6,
           "ECMWF": 32.8,
@@ -70095,36 +70100,36 @@
           "MeteoFrance": 33.8,
           "UKMO": 35.7,
           "CMA": 34.9,
-          "MET.no": 33.7,
+          "MET.no": 33.5,
           "7Timer": 30.0,
-          "WeatherAPI": 32.5
+          "WeatherAPI": 32.8
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
           "29": 0.0,
-          "30": 0.001,
+          "30": 0.0,
           "31": 0.0,
-          "32": 0.002,
-          "33": 0.08,
-          "34": 0.46,
-          "35": 0.23,
-          "36": 0.15,
-          "37": 0.033,
-          "38": 0.002,
+          "32": 0.007,
+          "33": 0.041,
+          "34": 0.47,
+          "35": 0.32,
+          "36": 0.12,
+          "37": 0.025,
+          "38": 0.001,
           "39": 0.0
         },
         "pm_title": "Highest temperature in Shenzhen on July 11?",
         "best_trade": {
-          "action": "BUY NO",
-          "temp": 36,
-          "yes_price": 0.15,
-          "edge": 0.181
+          "action": "BUY YES",
+          "temp": 34,
+          "yes_price": 0.47,
+          "edge": 0.237
         }
       }
     },
     "guangzhou": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 38,
@@ -70148,7 +70153,7 @@
           "CMA": 37.4,
           "MET.no": 35.1,
           "7Timer": 36.0,
-          "WeatherAPI": 36.8
+          "WeatherAPI": 36.7
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
@@ -70156,38 +70161,38 @@
           "32": 0.0,
           "33": 0.0,
           "34": 0.0,
-          "35": 0.005,
-          "36": 0.14,
-          "37": 0.36,
-          "38": 0.36,
-          "39": 0.14,
-          "40": 0.012,
+          "35": 0.009,
+          "36": 0.19,
+          "37": 0.3,
+          "38": 0.35,
+          "39": 0.11,
+          "40": 0.005,
           "41": 0.002
         },
         "pm_title": "Highest temperature in Guangzhou on July 11?",
         "best_trade": {
           "action": "BUY YES",
           "temp": 38,
-          "yes_price": 0.36,
-          "edge": 0.27
+          "yes_price": 0.35,
+          "edge": 0.28
         }
       }
     },
     "singapore": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 31,
+        "top_bucket": 32,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.389,
+        "top_prob": 0.474,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 31.5,
-        "deb_raw": 30.2,
+        "deb": 31.6,
+        "deb_raw": 30.3,
         "peak_bias": 1.35,
-        "sigma": 0.82,
+        "sigma": 0.74,
         "forecasts": {
           "Open-Meteo": 30.5,
           "ECMWF": 29.2,
@@ -70196,9 +70201,9 @@
           "GEM": 30.3,
           "MeteoFrance": 29.5,
           "UKMO": 31.0,
-          "MET.no": 30.2,
+          "MET.no": 30.7,
           "7Timer": 30.0,
-          "WeatherAPI": 29.8
+          "WeatherAPI": 29.6
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
@@ -70206,21 +70211,26 @@
           "26": 0.0,
           "27": 0.0,
           "28": 0.0,
-          "29": 0.002,
-          "30": 0.11,
-          "31": 0.46,
-          "32": 0.27,
-          "33": 0.019,
-          "34": 0.002,
+          "29": 0.0,
+          "30": 0.0,
+          "31": 0.87,
+          "32": 0.09,
+          "33": 0.002,
+          "34": 0.0,
           "35": 0.0
         },
         "pm_title": "Highest temperature in Singapore on July 11?",
-        "best_trade": null
+        "best_trade": {
+          "action": "BUY YES",
+          "temp": 32,
+          "yes_price": 0.09,
+          "edge": 0.384
+        }
       }
     },
     "tokyo": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 30,
@@ -70244,17 +70254,17 @@
           "MSM": 28.5,
           "MET.no": 30.1,
           "7Timer": 31.0,
-          "WeatherAPI": 26.2
+          "WeatherAPI": 26.4
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
           "26": 0.0,
           "27": 0.0,
           "28": 0.0,
-          "29": 0.31,
-          "30": 0.47,
-          "31": 0.13,
-          "32": 0.017,
+          "29": 0.54,
+          "30": 0.42,
+          "31": 0.031,
+          "32": 0.005,
           "33": 0.001,
           "34": 0.0,
           "35": 0.0,
@@ -70264,26 +70274,26 @@
         "best_trade": {
           "action": "BUY NO",
           "temp": 29,
-          "yes_price": 0.31,
-          "edge": 0.202
+          "yes_price": 0.54,
+          "edge": 0.372
         }
       }
     },
     "kuala lumpur": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 32,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.447,
+        "top_prob": 0.359,
         "verdict": "SKIP",
         "made_call": false,
         "deb": 32.2,
         "deb_raw": 30.5,
         "peak_bias": 1.66,
-        "sigma": 0.82,
+        "sigma": 1.05,
         "forecasts": {
           "Open-Meteo": 29.5,
           "ECMWF": 29.4,
@@ -70294,7 +70304,7 @@
           "UKMO": 29.9,
           "MET.no": 29.1,
           "7Timer": 32.0,
-          "WeatherAPI": 30.9
+          "WeatherAPI": 31.3
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
@@ -70302,33 +70312,38 @@
           "26": 0.0,
           "27": 0.0,
           "28": 0.0,
-          "29": 0.008,
-          "30": 0.02,
-          "31": 0.14,
-          "32": 0.53,
-          "33": 0.27,
+          "29": 0.184,
+          "30": 0.133,
+          "31": 0.19,
+          "32": 0.4,
+          "33": 0.06,
           "34": 0.007,
           "35": 0.002
         },
         "pm_title": "Highest temperature in Kuala Lumpur on July 11?",
-        "best_trade": null
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 29,
+          "yes_price": 0.184,
+          "edge": 0.255
+        }
       }
     },
     "manila": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 29,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.523,
+        "top_prob": 0.539,
         "verdict": "SKIP",
         "made_call": false,
         "deb": 29.4,
         "deb_raw": 28.2,
         "peak_bias": 1.23,
-        "sigma": 0.55,
+        "sigma": 0.59,
         "forecasts": {
           "Open-Meteo": 28.8,
           "ECMWF": 28.4,
@@ -70337,48 +70352,48 @@
           "GEM": 28.3,
           "MeteoFrance": 28.4,
           "UKMO": 28.9,
-          "MET.no": 28.7,
+          "MET.no": 28.4,
           "7Timer": 27.0,
-          "WeatherAPI": 26.7
+          "WeatherAPI": 27.1
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
           "24": 0.0,
           "25": 0.0,
           "26": 0.0,
-          "27": 0.014,
-          "28": 0.18,
-          "29": 0.29,
-          "30": 0.21,
-          "31": 0.17,
+          "27": 0.0,
+          "28": 0.0,
+          "29": 0.44,
+          "30": 0.27,
+          "31": 0.13,
           "32": 0.013,
-          "33": 0.0,
+          "33": 0.002,
           "34": 0.0
         },
         "pm_title": "Highest temperature in Manila on July 11?",
         "best_trade": {
-          "action": "BUY YES",
-          "temp": 29,
-          "yes_price": 0.29,
-          "edge": 0.233
+          "action": "BUY NO",
+          "temp": 31,
+          "yes_price": 0.13,
+          "edge": 0.218
         }
       }
     },
     "jakarta": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 33,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.621,
+        "top_prob": 0.571,
         "verdict": "WAIT",
         "made_call": false,
         "deb": 32.7,
         "deb_raw": 32.4,
         "peak_bias": 0.34,
-        "sigma": 0.47,
+        "sigma": 0.55,
         "forecasts": {
           "Open-Meteo": 33.5,
           "ECMWF": 34.0,
@@ -70387,7 +70402,7 @@
           "GEM": 32.3,
           "MeteoFrance": 32.8,
           "UKMO": 31.1,
-          "MET.no": 31.6,
+          "MET.no": 31.3,
           "7Timer": 32.0,
           "WeatherAPI": 29.7
         },
@@ -70399,19 +70414,19 @@
     },
     "lucknow": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 34,
+        "top_bucket": 33,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.244,
+        "top_prob": 0.278,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 33.6,
-        "deb_raw": 34.3,
+        "deb": 33.5,
+        "deb_raw": 34.2,
         "peak_bias": -0.7,
-        "sigma": 1.56,
+        "sigma": 1.33,
         "forecasts": {
           "Open-Meteo": 34.3,
           "ECMWF": 34.1,
@@ -70422,18 +70437,18 @@
           "UKMO": 34.5,
           "MET.no": 34.2,
           "7Timer": 38.0,
-          "WeatherAPI": 37.6
+          "WeatherAPI": 37.3
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
           "29": 0.0,
-          "30": 0.001,
-          "31": 0.01,
-          "32": 0.06,
-          "33": 0.22,
-          "34": 0.373,
-          "35": 0.21,
-          "36": 0.005,
+          "30": 0.004,
+          "31": 0.002,
+          "32": 0.07,
+          "33": 0.21,
+          "34": 0.331,
+          "35": 0.211,
+          "36": 0.006,
           "37": 0.004,
           "38": 0.001,
           "39": 0.0
@@ -70444,19 +70459,19 @@
     },
     "karachi": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 33,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.422,
+        "top_prob": 0.456,
         "verdict": "SKIP",
         "made_call": false,
         "deb": 33.1,
         "deb_raw": 33.1,
         "peak_bias": 0.02,
-        "sigma": 0.9,
+        "sigma": 0.82,
         "forecasts": {
           "Open-Meteo": 33.2,
           "ECMWF": 33.7,
@@ -70465,9 +70480,9 @@
           "GEM": 33.1,
           "MeteoFrance": 35.0,
           "UKMO": 33.8,
-          "MET.no": 32.5,
+          "MET.no": 32.7,
           "7Timer": 33.0,
-          "WeatherAPI": 31.4
+          "WeatherAPI": 31.3
         },
         "timing": "SPECULATIVE",
         "pm_buckets": {
@@ -70477,36 +70492,36 @@
           "28": 0.0,
           "29": 0.0,
           "30": 0.006,
-          "31": 0.006,
-          "32": 0.16,
-          "33": 0.35,
-          "34": 0.37,
-          "35": 0.033
+          "31": 0.005,
+          "32": 0.08,
+          "33": 0.4,
+          "34": 0.39,
+          "35": 0.037
         },
         "pm_title": "Highest temperature in Karachi on July 11?",
         "best_trade": {
           "action": "BUY NO",
           "temp": 34,
-          "yes_price": 0.37,
-          "edge": 0.18
+          "yes_price": 0.39,
+          "edge": 0.23
         }
       }
     },
     "jeddah": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 36,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.743,
+        "top_prob": 0.673,
         "verdict": "SKIP",
         "made_call": false,
         "deb": 35.8,
         "deb_raw": 36.3,
         "peak_bias": -0.47,
-        "sigma": 0.39,
+        "sigma": 0.47,
         "forecasts": {
           "Open-Meteo": 36.3,
           "ECMWF": 38.5,
@@ -70517,18 +70532,18 @@
           "UKMO": 37.0,
           "MET.no": 36.5,
           "7Timer": 37.0,
-          "WeatherAPI": 34.5
+          "WeatherAPI": 34.4
         },
-        "timing": "OVERNIGHT",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
-          "34": 0.008,
-          "35": 0.097,
-          "36": 0.2,
-          "37": 0.31,
-          "38": 0.22,
+          "34": 0.002,
+          "35": 0.061,
+          "36": 0.18,
+          "37": 0.34,
+          "38": 0.25,
           "39": 0.06,
-          "40": 0.003,
-          "41": 0.002,
+          "40": 0.005,
+          "41": 0.001,
           "42": 0.0,
           "43": 0.0,
           "44": 0.0
@@ -70537,26 +70552,26 @@
         "best_trade": {
           "action": "BUY YES",
           "temp": 36,
-          "yes_price": 0.2,
-          "edge": 0.543
+          "yes_price": 0.18,
+          "edge": 0.493
         }
       }
     },
     "ankara": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 30,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.602,
+        "top_prob": 0.743,
         "verdict": "WAIT",
         "made_call": false,
         "deb": 29.9,
         "deb_raw": 28.6,
         "peak_bias": 1.33,
-        "sigma": 0.59,
+        "sigma": 0.43,
         "forecasts": {
           "Open-Meteo": 28.4,
           "ECMWF": 28.6,
@@ -70569,39 +70584,44 @@
           "7Timer": 27.0,
           "WeatherAPI": 27.8
         },
-        "timing": "OVERNIGHT",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
           "25": 0.001,
           "26": 0.001,
           "27": 0.001,
-          "28": 0.029,
-          "29": 0.34,
-          "30": 0.54,
-          "31": 0.05,
+          "28": 0.032,
+          "29": 0.37,
+          "30": 0.52,
+          "31": 0.06,
           "32": 0.003,
           "33": 0.001,
           "34": 0.0,
           "35": 0.0
         },
         "pm_title": "Highest temperature in Ankara on July 11?",
-        "best_trade": null
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 29,
+          "yes_price": 0.37,
+          "edge": 0.224
+        }
       }
     },
     "istanbul": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 28,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.677,
+        "top_prob": 0.704,
         "verdict": "WAIT",
         "made_call": false,
-        "deb": 28.0,
-        "deb_raw": 27.7,
+        "deb": 28.1,
+        "deb_raw": 27.8,
         "peak_bias": 0.33,
-        "sigma": 0.51,
+        "sigma": 0.47,
         "forecasts": {
           "Open-Meteo": 28.2,
           "ECMWF": 27.0,
@@ -70610,48 +70630,48 @@
           "GEM": 27.8,
           "MeteoFrance": 27.7,
           "UKMO": 22.2,
-          "MET.no": 25.7,
+          "MET.no": 26.1,
           "7Timer": 24.0,
-          "WeatherAPI": 28.5
+          "WeatherAPI": 28.6
         },
-        "timing": "OVERNIGHT",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
           "22": 0.0,
-          "23": 0.001,
+          "23": 0.0,
           "24": 0.001,
           "25": 0.001,
-          "26": 0.008,
-          "27": 0.25,
-          "28": 0.53,
-          "29": 0.2,
+          "26": 0.009,
+          "27": 0.21,
+          "28": 0.62,
+          "29": 0.15,
           "30": 0.007,
           "31": 0.002,
           "32": 0.002
         },
         "pm_title": "Highest temperature in Istanbul on July 11?",
         "best_trade": {
-          "action": "BUY YES",
-          "temp": 28,
-          "yes_price": 0.53,
-          "edge": 0.147
+          "action": "BUY NO",
+          "temp": 27,
+          "yes_price": 0.21,
+          "edge": 0.14
         }
       }
     },
     "moscow": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 26,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.241,
+        "top_prob": 0.252,
         "verdict": "SKIP",
         "made_call": false,
         "deb": 26.0,
         "deb_raw": 24.5,
         "peak_bias": 1.51,
-        "sigma": 1.64,
+        "sigma": 1.56,
         "forecasts": {
           "Open-Meteo": 24.0,
           "ECMWF": 24.5,
@@ -70662,46 +70682,46 @@
           "UKMO": 27.0,
           "MET.no": 25.8,
           "7Timer": 22.0,
-          "WeatherAPI": 22.2
+          "WeatherAPI": 22.8
         },
-        "timing": "OVERNIGHT",
+        "timing": "SPECULATIVE",
         "pm_buckets": {
           "18": 0.0,
           "19": 0.001,
-          "20": 0.002,
+          "20": 0.0,
           "21": 0.004,
           "22": 0.001,
           "23": 0.04,
-          "24": 0.23,
-          "25": 0.38,
-          "26": 0.25,
-          "27": 0.031,
+          "24": 0.2,
+          "25": 0.4,
+          "26": 0.26,
+          "27": 0.051,
           "28": 0.007
         },
         "pm_title": "Highest temperature in Moscow on July 11?",
         "best_trade": {
           "action": "BUY NO",
           "temp": 25,
-          "yes_price": 0.38,
-          "edge": 0.229
+          "yes_price": 0.4,
+          "edge": 0.243
         }
       }
     },
     "tel aviv": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 32,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.557,
+        "top_prob": 0.592,
         "verdict": "WAIT",
         "made_call": false,
         "deb": 31.6,
         "deb_raw": 31.6,
         "peak_bias": 0.05,
-        "sigma": 0.47,
+        "sigma": 0.39,
         "forecasts": {
           "Open-Meteo": 31.1,
           "ECMWF": 33.2,
@@ -70712,16 +70732,16 @@
           "UKMO": 32.2,
           "MET.no": 31.7,
           "7Timer": 32.0,
-          "WeatherAPI": 30.0
+          "WeatherAPI": 30.8
         },
         "timing": "OVERNIGHT",
         "pm_buckets": {
           "28": 0.001,
           "29": 0.001,
-          "30": 0.024,
+          "30": 0.023,
           "31": 0.56,
-          "32": 0.31,
-          "33": 0.04,
+          "32": 0.32,
+          "33": 0.042,
           "34": 0.003,
           "35": 0.0,
           "36": 0.0,
@@ -70732,26 +70752,26 @@
         "best_trade": {
           "action": "BUY YES",
           "temp": 32,
-          "yes_price": 0.31,
-          "edge": 0.247
+          "yes_price": 0.32,
+          "edge": 0.272
         }
       }
     },
     "lagos": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 29,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.506,
+        "top_prob": 0.555,
         "verdict": "SKIP",
         "made_call": false,
         "deb": 28.8,
         "deb_raw": 28.1,
         "peak_bias": 0.7,
-        "sigma": 0.7,
+        "sigma": 0.63,
         "forecasts": {
           "Open-Meteo": 28.7,
           "ECMWF": 28.3,
@@ -70762,7 +70782,7 @@
           "UKMO": 29.2,
           "MET.no": 28.8,
           "7Timer": 28.0,
-          "WeatherAPI": 27.5
+          "WeatherAPI": 27.2
         },
         "timing": "OVERNIGHT",
         "pm_buckets": {},
@@ -70772,7 +70792,7 @@
     },
     "cape town": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 19,
@@ -70803,13 +70823,13 @@
           "14": 0.0,
           "15": 0.001,
           "16": 0.0,
-          "17": 0.008,
+          "17": 0.005,
           "18": 0.15,
           "19": 0.43,
-          "20": 0.34,
+          "20": 0.39,
           "21": 0.003,
           "22": 0.004,
-          "23": 0.001
+          "23": 0.002
         },
         "pm_title": "Highest temperature in Cape Town on July 11?",
         "best_trade": {
@@ -70832,29 +70852,29 @@
     },
     "helsinki": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 29,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.506,
-        "verdict": "SKIP",
+        "top_prob": 0.571,
+        "verdict": "WAIT",
         "made_call": false,
-        "deb": 28.6,
-        "deb_raw": 28.0,
+        "deb": 28.7,
+        "deb_raw": 28.1,
         "peak_bias": 0.62,
-        "sigma": 0.59,
+        "sigma": 0.55,
         "forecasts": {
-          "Open-Meteo": 28.9,
+          "Open-Meteo": 29.0,
           "ECMWF": 26.3,
           "GFS": 29.0,
           "ICON": 28.6,
           "GEM": 27.6,
           "MeteoFrance": 26.1,
           "UKMO": 27.9,
-          "DMI-HAR": 29.0,
-          "MET.no": 28.7,
+          "DMI-HAR": 29.4,
+          "MET.no": 28.9,
           "7Timer": 28.0,
           "WeatherAPI": 27.7
         },
@@ -70863,21 +70883,21 @@
           "19": 0.0,
           "20": 0.0,
           "21": 0.0,
-          "22": 0.001,
+          "22": 0.0,
           "23": 0.001,
           "24": 0.003,
           "25": 0.01,
           "26": 0.05,
-          "27": 0.18,
+          "27": 0.14,
           "28": 0.45,
-          "29": 0.249
+          "29": 0.236
         },
         "pm_title": "Highest temperature in Helsinki on July 11?",
         "best_trade": {
           "action": "BUY YES",
           "temp": 29,
-          "yes_price": 0.249,
-          "edge": 0.257
+          "yes_price": 0.236,
+          "edge": 0.335
         }
       }
     },
@@ -70893,31 +70913,31 @@
         "had_position": false
       },
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 36,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.734,
+        "top_prob": 0.607,
         "verdict": "WAIT",
         "made_call": false,
-        "deb": 35.7,
-        "deb_raw": 35.8,
+        "deb": 35.6,
+        "deb_raw": 35.7,
         "peak_bias": -0.12,
-        "sigma": 0.31,
+        "sigma": 0.35,
         "forecasts": {
           "Open-Meteo": 35.6,
           "ECMWF": 34.3,
           "GFS": 36.7,
           "ICON": 35.6,
           "GEM": 35.4,
-          "MeteoFrance": 36.3,
+          "MeteoFrance": 36.1,
           "UKMO": 35.7,
-          "AROME": 36.3,
+          "AROME": 36.1,
           "MET.no": 34.4,
           "7Timer": 36.0,
-          "WeatherAPI": 36.9
+          "WeatherAPI": 36.7
         },
         "timing": "OVERNIGHT",
         "pm_buckets": {
@@ -70926,44 +70946,44 @@
           "31": 0.0,
           "32": 0.0,
           "33": 0.001,
-          "34": 0.006,
-          "35": 0.25,
-          "36": 0.57,
-          "37": 0.15,
-          "38": 0.005,
-          "39": 0.001
+          "34": 0.01,
+          "35": 0.28,
+          "36": 0.56,
+          "37": 0.14,
+          "38": 0.004,
+          "39": 0.002
         },
         "pm_title": "Highest temperature in Paris on July 11?",
         "best_trade": {
-          "action": "BUY YES",
-          "temp": 36,
-          "yes_price": 0.57,
-          "edge": 0.164
+          "action": "BUY NO",
+          "temp": 37,
+          "yes_price": 0.14,
+          "edge": 0.155
         }
       }
     },
     "london": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 29,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.668,
+        "top_prob": 0.57,
         "verdict": "WAIT",
         "made_call": false,
         "deb": 29.1,
         "deb_raw": 29.0,
         "peak_bias": 0.12,
-        "sigma": 0.51,
+        "sigma": 0.63,
         "forecasts": {
           "Open-Meteo": 28.6,
           "ECMWF": 29.4,
           "GFS": 29.8,
           "ICON": 27.3,
           "GEM": 28.5,
-          "MeteoFrance": 29.4,
+          "MeteoFrance": 29.2,
           "UKMO": 28.6,
           "UKV": 28.6,
           "MET.no": 28.5,
@@ -70973,14 +70993,14 @@
         "timing": "OVERNIGHT",
         "pm_buckets": {
           "24": 0.0,
-          "25": 0.002,
-          "26": 0.016,
-          "27": 0.1,
-          "28": 0.31,
-          "29": 0.43,
-          "30": 0.13,
-          "31": 0.005,
-          "32": 0.003,
+          "25": 0.003,
+          "26": 0.001,
+          "27": 0.11,
+          "28": 0.36,
+          "29": 0.34,
+          "30": 0.16,
+          "31": 0.004,
+          "32": 0.001,
           "33": 0.001,
           "34": 0.0
         },
@@ -70988,38 +71008,38 @@
         "best_trade": {
           "action": "BUY YES",
           "temp": 29,
-          "yes_price": 0.43,
-          "edge": 0.238
+          "yes_price": 0.34,
+          "edge": 0.23
         }
       }
     },
     "munich": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 30,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.529,
-        "verdict": "SKIP",
+        "top_prob": 0.555,
+        "verdict": "WAIT",
         "made_call": false,
         "deb": 30.2,
         "deb_raw": 28.8,
         "peak_bias": 1.44,
-        "sigma": 0.66,
+        "sigma": 0.63,
         "forecasts": {
           "Open-Meteo": 28.8,
           "ECMWF": 27.7,
           "GFS": 26.4,
           "ICON": 28.8,
           "GEM": 28.8,
-          "MeteoFrance": 30.0,
+          "MeteoFrance": 29.9,
           "UKMO": 29.0,
           "ICON-D2": 28.8,
-          "MET.no": 28.4,
+          "MET.no": 29.0,
           "7Timer": 27.0,
-          "WeatherAPI": 26.6
+          "WeatherAPI": 26.8
         },
         "timing": "OVERNIGHT",
         "pm_buckets": {
@@ -71027,11 +71047,11 @@
           "24": 0.0,
           "25": 0.001,
           "26": 0.002,
-          "27": 0.006,
-          "28": 0.026,
-          "29": 0.44,
-          "30": 0.46,
-          "31": 0.064,
+          "27": 0.005,
+          "28": 0.022,
+          "29": 0.45,
+          "30": 0.42,
+          "31": 0.051,
           "32": 0.002,
           "33": 0.0
         },
@@ -71039,24 +71059,24 @@
         "best_trade": {
           "action": "BUY NO",
           "temp": 29,
-          "yes_price": 0.44,
-          "edge": 0.309
+          "yes_price": 0.45,
+          "edge": 0.331
         }
       }
     },
     "milan": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 32,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.352,
+        "top_prob": 0.348,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 32.1,
-        "deb_raw": 32.6,
+        "deb": 32.2,
+        "deb_raw": 32.7,
         "peak_bias": -0.49,
         "sigma": 1.09,
         "forecasts": {
@@ -71065,26 +71085,26 @@
           "GFS": 32.3,
           "ICON": 33.3,
           "GEM": 34.0,
-          "MeteoFrance": 33.4,
+          "MeteoFrance": 34.1,
           "UKMO": 33.3,
-          "AROME": 33.4,
-          "MET.no": 30.6,
+          "AROME": 34.1,
+          "MET.no": 29.2,
           "7Timer": 33.0,
-          "WeatherAPI": 32.0
+          "WeatherAPI": 32.5
         },
         "timing": "OVERNIGHT",
         "pm_buckets": {
           "25": 0.0,
-          "26": 0.0,
-          "27": 0.001,
+          "26": 0.002,
+          "27": 0.003,
           "28": 0.003,
-          "29": 0.004,
-          "30": 0.04,
-          "31": 0.24,
-          "32": 0.31,
-          "33": 0.26,
-          "34": 0.042,
-          "35": 0.025
+          "29": 0.006,
+          "30": 0.06,
+          "31": 0.21,
+          "32": 0.34,
+          "33": 0.28,
+          "34": 0.036,
+          "35": 0.008
         },
         "pm_title": "Highest temperature in Milan on July 11?",
         "best_trade": null
@@ -71092,21 +71112,21 @@
     },
     "warsaw": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 22,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.391,
+        "top_prob": 0.399,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 22.1,
-        "deb_raw": 21.9,
+        "deb": 22.4,
+        "deb_raw": 22.2,
         "peak_bias": 0.16,
-        "sigma": 0.98,
+        "sigma": 0.86,
         "forecasts": {
-          "Open-Meteo": 22.3,
+          "Open-Meteo": 23.2,
           "ECMWF": 21.3,
           "GFS": 23.5,
           "ICON": 21.8,
@@ -71115,19 +71135,19 @@
           "UKMO": 22.2,
           "MET.no": 21.7,
           "7Timer": 24.0,
-          "WeatherAPI": 21.4
+          "WeatherAPI": 23.6
         },
         "timing": "OVERNIGHT",
         "pm_buckets": {
           "18": 0.003,
-          "19": 0.01,
-          "20": 0.04,
+          "19": 0.005,
+          "20": 0.05,
           "21": 0.22,
-          "22": 0.46,
-          "23": 0.239,
-          "24": 0.006,
+          "22": 0.47,
+          "23": 0.236,
+          "24": 0.007,
           "25": 0.002,
-          "26": 0.001,
+          "26": 0.0,
           "27": 0.0,
           "28": 0.0
         },
@@ -71137,43 +71157,43 @@
     },
     "amsterdam": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 27,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.523,
+        "top_prob": 0.54,
         "verdict": "SKIP",
         "made_call": false,
         "deb": 27.4,
         "deb_raw": 28.1,
         "peak_bias": -0.75,
-        "sigma": 0.55,
+        "sigma": 0.51,
         "forecasts": {
-          "Open-Meteo": 31.6,
+          "Open-Meteo": 31.4,
           "ECMWF": 27.0,
           "GFS": 29.8,
           "ICON": 27.3,
           "GEM": 28.2,
-          "MeteoFrance": 28.2,
+          "MeteoFrance": 28.4,
           "UKMO": 27.6,
-          "HARMONIE": 30.0,
+          "HARMONIE": 29.6,
           "MET.no": 27.2,
           "7Timer": 29.0,
-          "WeatherAPI": 29.4
+          "WeatherAPI": 29.6
         },
         "timing": "OVERNIGHT",
         "pm_buckets": {
           "22": 0.0,
           "23": 0.001,
-          "24": 0.003,
-          "25": 0.011,
-          "26": 0.15,
-          "27": 0.31,
-          "28": 0.36,
+          "24": 0.002,
+          "25": 0.01,
+          "26": 0.06,
+          "27": 0.24,
+          "28": 0.44,
           "29": 0.14,
-          "30": 0.006,
+          "30": 0.005,
           "31": 0.002,
           "32": 0.0
         },
@@ -71181,49 +71201,49 @@
         "best_trade": {
           "action": "BUY YES",
           "temp": 27,
-          "yes_price": 0.31,
-          "edge": 0.213
+          "yes_price": 0.24,
+          "edge": 0.3
         }
       }
     },
     "madrid": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "today",
         "unit": "\u00b0C",
         "top_bucket": 38,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.704,
+        "top_prob": 0.743,
         "verdict": "WAIT",
         "made_call": false,
         "deb": 38.1,
         "deb_raw": 37.3,
         "peak_bias": 0.76,
-        "sigma": 0.47,
+        "sigma": 0.43,
         "forecasts": {
           "Open-Meteo": 36.8,
           "ECMWF": 37.5,
           "GFS": 37.0,
           "ICON": 36.8,
           "GEM": 37.1,
-          "MeteoFrance": 38.6,
+          "MeteoFrance": 38.5,
           "UKMO": 37.3,
-          "AROME": 38.6,
+          "AROME": 38.5,
           "MET.no": 37.0,
           "7Timer": 36.0,
-          "WeatherAPI": 37.1
+          "WeatherAPI": 37.0
         },
         "timing": "OVERNIGHT",
         "pm_buckets": {
           "33": 0.0,
-          "34": 0.001,
+          "34": 0.0,
           "35": 0.001,
-          "36": 0.011,
-          "37": 0.15,
-          "38": 0.6,
+          "36": 0.006,
+          "37": 0.14,
+          "38": 0.65,
           "39": 0.18,
-          "40": 0.007,
+          "40": 0.006,
           "41": 0.002,
           "42": 0.0,
           "43": 0.0
@@ -71234,114 +71254,119 @@
     },
     "sao paulo": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-07-11T03:42:19+00:00",
+        "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 25,
+        "top_bucket": 28,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.333,
-        "verdict": "SKIP",
+        "top_prob": 0.676,
+        "verdict": "WAIT",
         "made_call": false,
-        "deb": 25.4,
-        "deb_raw": 24.6,
+        "deb": 27.7,
+        "deb_raw": 26.9,
         "peak_bias": 0.77,
-        "sigma": 1.09,
+        "sigma": 0.39,
         "forecasts": {
-          "Open-Meteo": 23.6,
-          "ECMWF": 24.9,
-          "GFS": 21.8,
-          "ICON": 24.5,
-          "GEM": 24.3,
-          "MeteoFrance": 23.7,
-          "UKMO": 21.6,
+          "Open-Meteo": 26.7,
+          "ECMWF": 27.7,
+          "GFS": 27.1,
+          "ICON": 27.0,
+          "GEM": 27.9,
+          "MeteoFrance": 26.7,
+          "UKMO": 25.8,
           "MET.no": 25.8,
           "7Timer": 26.0,
-          "WeatherAPI": 27.5
+          "WeatherAPI": 27.2
         },
-        "timing": "FORECAST",
+        "timing": "OVERNIGHT",
         "pm_buckets": {
           "22": 0.001,
           "23": 0.001,
           "24": 0.002,
           "25": 0.004,
-          "26": 0.14,
+          "26": 0.1,
           "27": 0.3,
           "28": 0.45,
-          "29": 0.08,
+          "29": 0.09,
           "30": 0.002,
           "31": 0.001,
           "32": 0.001
         },
         "pm_title": "Highest temperature in Sao Paulo on July 11?",
         "best_trade": {
-          "action": "BUY NO",
+          "action": "BUY YES",
           "temp": 28,
           "yes_price": 0.45,
-          "edge": 0.435
+          "edge": 0.226
         }
       }
     },
     "buenos aires": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
-        "predicting": "tomorrow",
+        "ts": "2026-07-11T03:42:19+00:00",
+        "predicting": "today",
         "unit": "\u00b0C",
-        "top_bucket": 14,
+        "top_bucket": 15,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.324,
+        "top_prob": 0.466,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 13.6,
-        "deb_raw": 12.0,
+        "deb": 15.3,
+        "deb_raw": 13.7,
         "peak_bias": 1.63,
-        "sigma": 1.13,
+        "sigma": 0.74,
         "forecasts": {
-          "Open-Meteo": 10.9,
-          "ECMWF": 11.1,
-          "GFS": 11.7,
-          "ICON": 11.7,
-          "GEM": 11.9,
-          "MeteoFrance": 12.1,
-          "UKMO": 11.3,
+          "Open-Meteo": 13.7,
+          "ECMWF": 14.0,
+          "GFS": 14.2,
+          "ICON": 12.5,
+          "GEM": 15.0,
+          "MeteoFrance": 11.7,
+          "UKMO": 12.6,
           "MET.no": 13.8,
           "7Timer": 13.0,
-          "WeatherAPI": 13.4
+          "WeatherAPI": 14.3
         },
-        "timing": "FORECAST",
+        "timing": "OVERNIGHT",
         "pm_buckets": {
           "8": 0.0,
           "9": 0.0,
-          "10": 0.001,
-          "11": 0.002,
-          "12": 0.04,
-          "13": 0.23,
-          "14": 0.44,
-          "15": 0.23,
+          "10": 0.0,
+          "11": 0.001,
+          "12": 0.06,
+          "13": 0.28,
+          "14": 0.42,
+          "15": 0.24,
           "16": 0.002,
           "17": 0.002,
           "18": 0.002
         },
         "pm_title": "Highest temperature in Buenos Aires on July 11?",
-        "best_trade": null
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 14,
+          "yes_price": 0.42,
+          "edge": 0.317
+        }
       }
     },
     "panama city": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0C",
         "top_bucket": 31,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.424,
+        "top_prob": 0.322,
         "verdict": "SKIP",
         "made_call": false,
         "deb": 31.5,
         "deb_raw": 29.9,
         "peak_bias": 1.61,
-        "sigma": 0.7,
+        "sigma": 1.09,
         "forecasts": {
           "Open-Meteo": 30.1,
           "ECMWF": 29.5,
@@ -71352,57 +71377,57 @@
           "UKMO": 29.7,
           "MET.no": 30.9,
           "7Timer": 30.0,
-          "WeatherAPI": 30.5
+          "WeatherAPI": 30.2
         },
         "timing": "FORECAST",
         "pm_buckets": {
           "25": 0.0,
           "26": 0.0,
           "27": 0.002,
-          "28": 0.007,
+          "28": 0.002,
           "29": 0.005,
           "30": 0.05,
           "31": 0.19,
-          "32": 0.38,
-          "33": 0.254,
-          "34": 0.011,
+          "32": 0.37,
+          "33": 0.297,
+          "34": 0.019,
           "35": 0.004
         },
         "pm_title": "Highest temperature in Panama City on July 11?",
         "best_trade": {
           "action": "BUY NO",
           "temp": 33,
-          "yes_price": 0.254,
-          "edge": 0.271
+          "yes_price": 0.297,
+          "edge": 0.213
         }
       }
     },
     "toronto": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0C",
-        "top_bucket": 26,
+        "top_bucket": 27,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.5,
-        "verdict": "SKIP",
+        "top_prob": 0.704,
+        "verdict": "WAIT",
         "made_call": false,
-        "deb": 26.5,
-        "deb_raw": 27.0,
+        "deb": 26.7,
+        "deb_raw": 27.2,
         "peak_bias": -0.55,
-        "sigma": 0.31,
+        "sigma": 0.35,
         "forecasts": {
-          "Open-Meteo": 26.8,
+          "Open-Meteo": 27.1,
           "ECMWF": 26.8,
-          "GFS": 26.8,
+          "GFS": 27.1,
           "ICON": 26.8,
           "GEM": 27.8,
           "MeteoFrance": 27.7,
           "UKMO": 28.4,
           "MET.no": 26.8,
           "7Timer": 26.0,
-          "WeatherAPI": 26.3
+          "WeatherAPI": 29.1
         },
         "timing": "FORECAST",
         "pm_buckets": {
@@ -71416,14 +71441,14 @@
           "30": 0.007,
           "31": 0.006,
           "32": 0.001,
-          "33": 0.002
+          "33": 0.001
         },
         "pm_title": "Highest temperature in Toronto on July 11?",
         "best_trade": {
           "action": "BUY NO",
           "temp": 28,
           "yes_price": 0.43,
-          "edge": 0.45
+          "edge": 0.429
         }
       },
       "alert": {
@@ -71439,43 +71464,44 @@
     },
     "new york": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
         "top_bucket": 83,
         "top_lo": 82,
         "top_hi": 83,
-        "top_prob": 0.62,
-        "verdict": "SKIP",
+        "top_prob": 0.774,
+        "verdict": "WAIT",
         "made_call": false,
-        "deb": 82.0,
-        "deb_raw": 83.2,
-        "peak_bias": -1.22,
-        "sigma": 1.02,
+        "deb": 82.6,
+        "deb_raw": 83.9,
+        "peak_bias": -1.29,
+        "sigma": 0.82,
         "forecasts": {
-          "Open-Meteo": 84.9,
+          "Open-Meteo": 86.0,
           "ECMWF": 81.6,
-          "GFS": 84.9,
+          "GFS": 86.0,
           "ICON": 85.2,
           "GEM": 85.8,
           "MeteoFrance": 83.1,
           "UKMO": 85.9,
+          "HRRR": 86.0,
           "MET.no": 79.5,
           "NWS": 82.0,
           "7Timer": 82.4,
-          "WeatherAPI": 80.4
+          "WeatherAPI": 85.8
         },
         "timing": "FORECAST",
         "pm_buckets": {
           "69": 0.0,
           "71": 0.0,
           "73": 0.0,
-          "75": 0.009,
-          "77": 0.033,
-          "79": 0.189,
-          "81": 0.35,
-          "83": 0.23,
-          "85": 0.08,
+          "75": 0.007,
+          "77": 0.031,
+          "79": 0.225,
+          "81": 0.34,
+          "83": 0.24,
+          "85": 0.1,
           "87": 0.012,
           "88": 0.012
         },
@@ -71483,101 +71509,98 @@
         "best_trade": {
           "action": "BUY YES",
           "temp": 83,
-          "yes_price": 0.23,
-          "edge": 0.39
+          "yes_price": 0.24,
+          "edge": 0.534
         }
       }
     },
     "miami": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
-        "top_bucket": 95,
-        "top_lo": 94,
-        "top_hi": 95,
-        "top_prob": 0.569,
+        "top_bucket": 93,
+        "top_lo": 92,
+        "top_hi": 93,
+        "top_prob": 0.58,
         "verdict": "WAIT",
         "made_call": false,
-        "deb": 94.1,
-        "deb_raw": 93.0,
-        "peak_bias": 1.13,
+        "deb": 92.8,
+        "deb_raw": 91.6,
+        "peak_bias": 1.16,
         "sigma": 1.21,
         "forecasts": {
-          "Open-Meteo": 93.9,
+          "Open-Meteo": 88.2,
           "ECMWF": 89.4,
-          "GFS": 93.9,
+          "GFS": 88.2,
           "ICON": 91.5,
           "GEM": 93.0,
           "MeteoFrance": 93.4,
           "UKMO": 93.5,
+          "HRRR": 88.2,
           "MET.no": 90.5,
           "NWS": 93.0,
           "7Timer": 96.8,
-          "WeatherAPI": 91.5
+          "WeatherAPI": 97.0
         },
         "timing": "FORECAST",
         "pm_buckets": {
           "81": 0.0,
           "83": 0.0,
           "85": 0.001,
-          "87": 0.002,
-          "89": 0.01,
-          "91": 0.16,
-          "93": 0.63,
-          "95": 0.178,
+          "87": 0.001,
+          "89": 0.016,
+          "91": 0.21,
+          "93": 0.57,
+          "95": 0.151,
           "97": 0.006,
           "99": 0.001,
           "100": 0.0
         },
         "pm_title": "Highest temperature in Miami on July 11?",
-        "best_trade": {
-          "action": "BUY YES",
-          "temp": 95,
-          "yes_price": 0.178,
-          "edge": 0.391
-        }
+        "best_trade": null
       }
     },
     "atlanta": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
-        "top_bucket": 93,
-        "top_lo": 92,
-        "top_hi": 93,
-        "top_prob": 0.315,
+        "top_bucket": 91,
+        "top_lo": 90,
+        "top_hi": 91,
+        "top_prob": 0.299,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 91.8,
-        "deb_raw": 91.0,
-        "peak_bias": 0.8,
-        "sigma": 2.38,
+        "deb": 90.7,
+        "deb_raw": 90.0,
+        "peak_bias": 0.75,
+        "sigma": 2.62,
         "forecasts": {
-          "Open-Meteo": 93.6,
+          "Open-Meteo": 90.3,
           "ECMWF": 84.8,
-          "GFS": 93.6,
+          "GFS": 90.3,
           "ICON": 89.1,
           "GEM": 84.5,
           "MeteoFrance": 90.2,
           "UKMO": 90.1,
+          "HRRR": 90.3,
           "MET.no": 91.2,
           "NWS": 91.0,
           "7Timer": 91.4,
-          "WeatherAPI": 88.1
+          "WeatherAPI": 91.2
         },
         "timing": "FORECAST",
         "pm_buckets": {
           "81": 0.0,
-          "83": 0.003,
+          "83": 0.001,
           "85": 0.008,
-          "87": 0.017,
+          "87": 0.036,
           "89": 0.11,
-          "91": 0.39,
-          "93": 0.29,
-          "95": 0.043,
-          "97": 0.018,
+          "91": 0.38,
+          "93": 0.3,
+          "95": 0.039,
+          "97": 0.011,
           "99": 0.001,
           "100": 0.0
         },
@@ -71587,19 +71610,19 @@
     },
     "mexico city": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0C",
-        "top_bucket": 25,
+        "top_bucket": 24,
         "top_lo": null,
         "top_hi": null,
-        "top_prob": 0.506,
+        "top_prob": 0.446,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 24.6,
-        "deb_raw": 24.5,
+        "deb": 24.5,
+        "deb_raw": 24.4,
         "peak_bias": 0.08,
-        "sigma": 0.59,
+        "sigma": 0.63,
         "forecasts": {
           "Open-Meteo": 23.3,
           "ECMWF": 24.1,
@@ -71610,7 +71633,7 @@
           "UKMO": 25.1,
           "MET.no": 24.1,
           "7Timer": 24.0,
-          "WeatherAPI": 24.3
+          "WeatherAPI": 24.1
         },
         "timing": "FORECAST",
         "pm_buckets": {
@@ -71618,60 +71641,61 @@
           "19": 0.0,
           "20": 0.002,
           "21": 0.005,
-          "22": 0.004,
-          "23": 0.025,
+          "22": 0.006,
+          "23": 0.035,
           "24": 0.27,
           "25": 0.41,
-          "26": 0.18,
-          "27": 0.009,
+          "26": 0.2,
+          "27": 0.017,
           "28": 0.006
         },
         "pm_title": "Highest temperature in Mexico City on July 11?",
         "best_trade": {
-          "action": "BUY NO",
-          "temp": 26,
-          "yes_price": 0.18,
-          "edge": 0.148
+          "action": "BUY YES",
+          "temp": 24,
+          "yes_price": 0.27,
+          "edge": 0.176
         }
       }
     },
     "chicago": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
         "top_bucket": 85,
         "top_lo": 84,
         "top_hi": 85,
-        "top_prob": 0.505,
-        "verdict": "SKIP",
+        "top_prob": 0.778,
+        "verdict": "WAIT",
         "made_call": false,
-        "deb": 83.6,
-        "deb_raw": 84.7,
-        "peak_bias": -1.14,
-        "sigma": 1.05,
+        "deb": 84.5,
+        "deb_raw": 85.6,
+        "peak_bias": -1.1,
+        "sigma": 0.82,
         "forecasts": {
-          "Open-Meteo": 84.4,
+          "Open-Meteo": 87.6,
           "ECMWF": 88.4,
-          "GFS": 84.4,
+          "GFS": 87.6,
           "ICON": 84.7,
           "GEM": 84.9,
           "MeteoFrance": 85.3,
           "UKMO": 82.7,
+          "HRRR": 87.6,
           "MET.no": 84.2,
           "NWS": 84.0,
           "7Timer": 84.2,
-          "WeatherAPI": 82.7
+          "WeatherAPI": 86.5
         },
         "timing": "FORECAST",
         "pm_buckets": {
           "77": 0.002,
-          "79": 0.006,
-          "81": 0.163,
+          "79": 0.008,
+          "81": 0.162,
           "83": 0.5,
           "85": 0.2,
           "87": 0.05,
-          "89": 0.005,
+          "89": 0.006,
           "91": 0.003,
           "93": 0.001,
           "95": 0.0,
@@ -71682,288 +71706,298 @@
           "action": "BUY YES",
           "temp": 85,
           "yes_price": 0.2,
-          "edge": 0.305
+          "edge": 0.578
         }
       }
     },
     "austin": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
-        "top_bucket": 97,
-        "top_lo": 96,
-        "top_hi": 97,
-        "top_prob": 0.271,
+        "top_bucket": 93,
+        "top_lo": 92,
+        "top_hi": 93,
+        "top_prob": 0.3,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 95.6,
-        "deb_raw": 96.4,
-        "peak_bias": -0.8,
-        "sigma": 2.77,
+        "deb": 92.0,
+        "deb_raw": 92.7,
+        "peak_bias": -0.73,
+        "sigma": 2.58,
         "forecasts": {
-          "Open-Meteo": 101.5,
+          "Open-Meteo": 91.7,
           "ECMWF": 94.5,
-          "GFS": 101.5,
+          "GFS": 91.7,
           "ICON": 96.0,
           "GEM": 95.1,
           "MeteoFrance": 97.1,
           "UKMO": 90.6,
-          "MET.no": 88.5,
+          "HRRR": 88.4,
+          "MET.no": 92.1,
           "NWS": 94.0,
           "7Timer": 95.0,
           "WeatherAPI": 96.1
         },
         "timing": "FORECAST",
         "pm_buckets": {
-          "87": 0.021,
-          "89": 0.081,
-          "91": 0.28,
+          "87": 0.032,
+          "89": 0.08,
+          "91": 0.25,
           "93": 0.35,
-          "95": 0.17,
-          "97": 0.051,
-          "99": 0.004,
+          "95": 0.11,
+          "97": 0.041,
+          "99": 0.003,
           "101": 0.001,
           "103": 0.001,
           "105": 0.0,
           "106": 0.0
         },
         "pm_title": "Highest temperature in Austin on July 11?",
-        "best_trade": {
-          "action": "BUY NO",
-          "temp": 91,
-          "yes_price": 0.28,
-          "edge": 0.244
-        }
+        "best_trade": null
       }
     },
     "houston": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
         "top_bucket": 91,
         "top_lo": 90,
         "top_hi": 91,
-        "top_prob": 0.374,
+        "top_prob": 0.367,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 91.4,
-        "deb_raw": 91.0,
-        "peak_bias": 0.36,
-        "sigma": 1.84,
+        "deb": 90.1,
+        "deb_raw": 89.7,
+        "peak_bias": 0.38,
+        "sigma": 2.07,
         "forecasts": {
-          "Open-Meteo": 91.3,
+          "Open-Meteo": 88.2,
           "ECMWF": 86.5,
-          "GFS": 91.3,
+          "GFS": 88.2,
           "ICON": 93.1,
           "GEM": 92.5,
           "MeteoFrance": 95.7,
           "UKMO": 91.1,
-          "MET.no": 88.5,
+          "HRRR": 88.2,
+          "MET.no": 87.3,
           "NWS": 92.0,
           "7Timer": 82.4,
-          "WeatherAPI": 95.6
+          "WeatherAPI": 93.0
         },
         "timing": "FORECAST",
         "pm_buckets": {
           "81": 0.0,
           "83": 0.002,
-          "85": 0.014,
-          "87": 0.19,
-          "89": 0.33,
-          "91": 0.28,
-          "93": 0.13,
+          "85": 0.013,
+          "87": 0.185,
+          "89": 0.25,
+          "91": 0.26,
+          "93": 0.19,
           "95": 0.01,
-          "97": 0.005,
+          "97": 0.004,
           "99": 0.001,
           "100": 0.001
         },
         "pm_title": "Highest temperature in Houston on July 11?",
-        "best_trade": {
-          "action": "BUY NO",
-          "temp": 89,
-          "yes_price": 0.33,
-          "edge": 0.235
-        }
+        "best_trade": null
       }
     },
     "dallas": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
-        "top_bucket": 99,
-        "top_lo": 98,
-        "top_hi": 99,
-        "top_prob": 0.394,
+        "top_bucket": 97,
+        "top_lo": 96,
+        "top_hi": 97,
+        "top_prob": 0.426,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 99.3,
-        "deb_raw": 99.5,
-        "peak_bias": -0.21,
-        "sigma": 1.76,
+        "deb": 97.1,
+        "deb_raw": 97.3,
+        "peak_bias": -0.23,
+        "sigma": 1.68,
         "forecasts": {
-          "Open-Meteo": 101.8,
+          "Open-Meteo": 96.3,
           "ECMWF": 98.7,
-          "GFS": 101.8,
+          "GFS": 96.3,
           "ICON": 97.4,
           "GEM": 97.0,
           "MeteoFrance": 98.2,
           "UKMO": 98.2,
-          "MET.no": 99.0,
+          "HRRR": 95.1,
+          "MET.no": 100.2,
           "NWS": 99.0,
           "7Timer": 98.6,
-          "WeatherAPI": 102.8
+          "WeatherAPI": 99.5
         },
         "timing": "FORECAST",
         "pm_buckets": {
-          "93": 0.005,
-          "95": 0.1,
-          "97": 0.29,
-          "99": 0.38,
+          "93": 0.004,
+          "95": 0.09,
+          "97": 0.28,
+          "99": 0.41,
           "101": 0.19,
-          "103": 0.004,
-          "105": 0.004,
+          "103": 0.006,
+          "105": 0.002,
           "107": 0.001,
           "109": 0.0,
           "111": 0.0,
           "112": 0.0
         },
         "pm_title": "Highest temperature in Dallas on July 11?",
-        "best_trade": null
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 101,
+          "yes_price": 0.19,
+          "edge": 0.158
+        }
       }
     },
     "los angeles": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
-        "predicting": "tomorrow",
-        "unit": "\u00b0F",
-        "top_bucket": 75,
-        "top_lo": 74,
-        "top_hi": 75,
-        "top_prob": 0.419,
-        "verdict": "SKIP",
-        "made_call": false,
-        "deb": 74.8,
-        "deb_raw": 76.4,
-        "peak_bias": -1.58,
-        "sigma": 1.8,
-        "forecasts": {
-          "Open-Meteo": 77.0,
-          "ECMWF": 87.0,
-          "GFS": 77.0,
-          "ICON": 79.1,
-          "GEM": 80.2,
-          "MeteoFrance": 72.2,
-          "UKMO": 74.8,
-          "MET.no": 75.7,
-          "NWS": 76.0,
-          "7Timer": 78.8,
-          "WeatherAPI": 75.8
-        },
-        "timing": "FORECAST",
-        "pm_buckets": {
-          "69": 0.002,
-          "71": 0.003,
-          "73": 0.235,
-          "75": 0.56,
-          "77": 0.09,
-          "79": 0.034,
-          "81": 0.005,
-          "83": 0.004,
-          "85": 0.0,
-          "87": 0.0,
-          "88": 0.0
-        },
-        "pm_title": "Highest temperature in Los Angeles on July 11?",
-        "best_trade": null
-      }
-    },
-    "san francisco": {
-      "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
         "top_bucket": 73,
         "top_lo": 72,
         "top_hi": 73,
-        "top_prob": 0.229,
+        "top_prob": 0.449,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 72.0,
-        "deb_raw": 71.9,
-        "peak_bias": 0.14,
-        "sigma": 3.44,
+        "deb": 73.5,
+        "deb_raw": 75.0,
+        "peak_bias": -1.49,
+        "sigma": 1.25,
         "forecasts": {
-          "Open-Meteo": 73.2,
+          "Open-Meteo": 74.0,
+          "ECMWF": 87.0,
+          "GFS": 74.0,
+          "ICON": 79.1,
+          "GEM": 80.2,
+          "MeteoFrance": 72.2,
+          "UKMO": 74.8,
+          "HRRR": 74.0,
+          "MET.no": 75.7,
+          "NWS": 75.0,
+          "7Timer": 78.8,
+          "WeatherAPI": 75.9
+        },
+        "timing": "FORECAST",
+        "pm_buckets": {
+          "69": 0.002,
+          "71": 0.002,
+          "73": 0.242,
+          "75": 0.52,
+          "77": 0.16,
+          "79": 0.015,
+          "81": 0.004,
+          "83": 0.006,
+          "85": 0.0,
+          "87": 0.0,
+          "88": 0.0
+        },
+        "pm_title": "Highest temperature in Los Angeles on July 11?",
+        "best_trade": {
+          "action": "BUY YES",
+          "temp": 73,
+          "yes_price": 0.242,
+          "edge": 0.207
+        }
+      }
+    },
+    "san francisco": {
+      "pred": {
+        "ts": "2026-07-11T03:42:19+00:00",
+        "predicting": "tomorrow",
+        "unit": "\u00b0F",
+        "top_bucket": 75,
+        "top_lo": 74,
+        "top_hi": 75,
+        "top_prob": 0.304,
+        "verdict": "SKIP",
+        "made_call": false,
+        "deb": 74.5,
+        "deb_raw": 75.2,
+        "peak_bias": -0.75,
+        "sigma": 2.58,
+        "forecasts": {
+          "Open-Meteo": 80.7,
           "ECMWF": 71.3,
-          "GFS": 73.2,
+          "GFS": 80.7,
           "ICON": 73.9,
           "GEM": 68.5,
-          "MeteoFrance": 57.8,
           "UKMO": 81.1,
+          "HRRR": 80.7,
           "MET.no": 66.4,
           "NWS": 71.0,
           "7Timer": 84.2,
-          "WeatherAPI": 67.3
+          "WeatherAPI": 67.2
         },
         "timing": "FORECAST",
         "pm_buckets": {
           "61": 0.001,
-          "63": 0.005,
-          "65": 0.004,
-          "67": 0.05,
-          "69": 0.23,
-          "71": 0.35,
-          "73": 0.18,
-          "75": 0.06,
-          "77": 0.006,
+          "63": 0.007,
+          "65": 0.005,
+          "67": 0.13,
+          "69": 0.25,
+          "71": 0.31,
+          "73": 0.19,
+          "75": 0.029,
+          "77": 0.005,
           "79": 0.001,
           "80": 0.001
         },
         "pm_title": "Highest temperature in San Francisco on July 11?",
-        "best_trade": null
+        "best_trade": {
+          "action": "BUY NO",
+          "temp": 69,
+          "yes_price": 0.25,
+          "edge": 0.277
+        }
       }
     },
     "aurora": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
         "top_bucket": 97,
         "top_lo": 96,
         "top_hi": 97,
-        "top_prob": 0.466,
+        "top_prob": 0.574,
         "verdict": "SKIP",
         "made_call": false,
-        "deb": 97.2,
-        "deb_raw": 96.6,
-        "peak_bias": 0.6,
-        "sigma": 1.45,
+        "deb": 96.7,
+        "deb_raw": 96.1,
+        "peak_bias": 0.61,
+        "sigma": 1.25,
         "forecasts": {
-          "Open-Meteo": 95.5,
+          "Open-Meteo": 94.9,
           "ECMWF": 95.8,
-          "GFS": 95.5,
+          "GFS": 94.9,
           "ICON": 94.2,
           "GEM": 94.8,
           "MeteoFrance": 99.3,
           "UKMO": 96.6,
-          "MET.no": 97.2,
+          "HRRR": 94.9,
+          "MET.no": 97.3,
           "NWS": 98.0,
           "7Timer": 98.6,
-          "WeatherAPI": 100.0
+          "WeatherAPI": 98.1
         },
         "timing": "FORECAST",
         "pm_buckets": {
           "87": 0.001,
           "89": 0.0,
-          "91": 0.013,
-          "93": 0.03,
-          "95": 0.25,
-          "97": 0.47,
-          "99": 0.16,
-          "101": 0.002,
+          "91": 0.01,
+          "93": 0.02,
+          "95": 0.24,
+          "97": 0.51,
+          "99": 0.19,
+          "101": 0.001,
           "103": 0.002,
           "105": 0.001,
           "106": 0.0
@@ -71974,41 +72008,42 @@
     },
     "seattle": {
       "pred": {
-        "ts": "2026-07-11T01:55:07+00:00",
+        "ts": "2026-07-11T03:42:19+00:00",
         "predicting": "tomorrow",
         "unit": "\u00b0F",
-        "top_bucket": 73,
-        "top_lo": 72,
-        "top_hi": 73,
-        "top_prob": 0.521,
-        "verdict": "SKIP",
+        "top_bucket": 71,
+        "top_lo": 70,
+        "top_hi": 71,
+        "top_prob": 0.709,
+        "verdict": "WAIT",
         "made_call": false,
-        "deb": 71.6,
-        "deb_raw": 73.6,
-        "peak_bias": -2.02,
-        "sigma": 0.94,
+        "deb": 70.8,
+        "deb_raw": 72.8,
+        "peak_bias": -2.0,
+        "sigma": 0.9,
         "forecasts": {
-          "Open-Meteo": 75.5,
+          "Open-Meteo": 72.7,
           "ECMWF": 73.0,
-          "GFS": 75.5,
+          "GFS": 72.7,
           "ICON": 71.6,
           "GEM": 70.8,
           "MeteoFrance": 70.5,
           "UKMO": 73.9,
-          "MET.no": 73.2,
+          "HRRR": 70.0,
+          "MET.no": 73.6,
           "NWS": 73.0,
           "7Timer": 77.0,
-          "WeatherAPI": 76.7
+          "WeatherAPI": 76.4
         },
         "timing": "FORECAST",
         "pm_buckets": {
           "65": 0.002,
           "67": 0.004,
-          "69": 0.12,
-          "71": 0.21,
-          "73": 0.28,
-          "75": 0.22,
-          "77": 0.068,
+          "69": 0.06,
+          "71": 0.19,
+          "73": 0.34,
+          "75": 0.27,
+          "77": 0.07,
           "79": 0.003,
           "81": 0.001,
           "83": 0.001,
@@ -72016,10 +72051,10 @@
         },
         "pm_title": "Highest temperature in Seattle on July 11?",
         "best_trade": {
-          "action": "BUY NO",
-          "temp": 75,
-          "yes_price": 0.22,
-          "edge": 0.26
+          "action": "BUY YES",
+          "temp": 71,
+          "yes_price": 0.19,
+          "edge": 0.519
         }
       }
     }

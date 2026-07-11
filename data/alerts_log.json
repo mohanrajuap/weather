@@ -2789,6 +2789,46 @@
       "t": "5:52 AM",
       "city": "toronto",
       "line": "\ud83d\udd34 Toronto 27\u00b0C weakened to 62%"
+    },
+    {
+      "t": "9:37 AM",
+      "city": "wuhan",
+      "line": "\ud83d\udfe2 Wuhan 38\u00b0C@89% \u00b7 BUY YES 38\u00b0C@43\u00a2 +46%"
+    },
+    {
+      "t": "10:24 AM",
+      "city": "busan",
+      "line": "\ud83d\udfe2 Busan 34\u00b0C@73% \u00b7 BUY YES 34\u00b0C@19\u00a2 +54%"
+    },
+    {
+      "t": "10:40 AM",
+      "city": "shenzhen",
+      "line": "\ud83d\udfe2 Shenzhen 34\u00b0C@83% \u00b7 BUY YES 34\u00b0C@37\u00a2 +46%"
+    },
+    {
+      "t": "10:40 AM",
+      "city": "manila",
+      "line": "\ud83d\udfe2 Manila 31\u00b0C@78% \u00b7 BUY NO 30\u00b0C@59\u00a2 +59%"
+    },
+    {
+      "t": "10:55 AM",
+      "city": "manila",
+      "line": "\ud83d\udd34 Manila 31\u00b0C weakened to 78%"
+    },
+    {
+      "t": "11:56 AM",
+      "city": "shenzhen",
+      "line": "\ud83d\udd34 Shenzhen 34\u00b0C weakened to 63%"
+    },
+    {
+      "t": "4:39 PM",
+      "city": "ankara",
+      "line": "\ud83d\udfe2 Ankara 30\u00b0C@86% \u00b7 BUY NO 29\u00b0C@28\u00a2 +30%"
+    },
+    {
+      "t": "4:39 PM",
+      "city": "istanbul",
+      "line": "\ud83d\udfe2 Istanbul 28\u00b0C@89% \u00b7 BUY YES 28\u00b0C@71\u00a2 +18%"
     }
   ]
 }

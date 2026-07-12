@@ -2956,6 +2956,16 @@
       "t": "5:54 AM",
       "city": "toronto",
       "line": "\ud83d\udd34 Toronto 30\u00b0C weakened to 39%"
+    },
+    {
+      "t": "7:42 AM",
+      "city": "wellington",
+      "line": "\ud83d\udfe2 Wellington 11\u00b0C@83% \u00b7 BUY YES 11\u00b0C@69\u00a2 +14%"
+    },
+    {
+      "t": "9:31 AM",
+      "city": "singapore",
+      "line": "\ud83d\udfe2 Singapore 31\u00b0C@71% \u00b7 BUY NO 30\u00b0C@47\u00a2 +39%"
     }
   ]
 }

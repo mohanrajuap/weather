@@ -2966,6 +2966,78 @@
       "t": "9:31 AM",
       "city": "singapore",
       "line": "\ud83d\udfe2 Singapore 31\u00b0C@71% \u00b7 BUY NO 30\u00b0C@47\u00a2 +39%"
+    },
+    {
+      "t": "10:48 AM",
+      "city": "kuala lumpur",
+      "line": "\ud83d\udfe2 Kuala Lumpur 32\u00b0C@73% \u00b7 BUY YES 32\u00b0C@32\u00a2 +41%"
+    },
+    {
+      "t": "11:19 AM",
+      "city": "singapore",
+      "line": "\ud83d\udd34 Singapore 31\u00b0C weakened to 74%"
+    },
+    {
+      "t": "11:35 AM",
+      "city": "guangzhou",
+      "line": "\ud83d\udfe2 Guangzhou 38\u00b0C@81% \u00b7 BUY YES 38\u00b0C@43\u00a2 +38%"
+    },
+    {
+      "t": "11:50 AM",
+      "city": "guangzhou",
+      "line": "\ud83d\udfe2 Guangzhou 39\u00b0C@98% \u00b7 BUY YES 39\u00b0C@28\u00a2 +70%"
+    },
+    {
+      "t": "11:50 AM",
+      "city": "kuala lumpur",
+      "line": "\ud83d\udfe2 Kuala Lumpur 32\u00b0C@75% \u00b7 BUY YES 32\u00b0C@43\u00a2 +32%"
+    },
+    {
+      "t": "4:44 PM",
+      "city": "ankara",
+      "line": "\ud83d\udfe2 Ankara 31\u00b0C@78% \u00b7 BUY YES 31\u00b0C@52\u00a2 +26%"
+    },
+    {
+      "t": "4:59 PM",
+      "city": "istanbul",
+      "line": "\ud83d\udfe2 Istanbul 27\u00b0C@89% \u00b7 BUY YES 27\u00b0C@74\u00a2 +15%"
+    },
+    {
+      "t": "6:35 PM",
+      "city": "ankara",
+      "line": "\ud83d\udfe2 Ankara 31\u00b0C@86% \u00b7 BUY YES 31\u00b0C@59\u00a2 +27%"
+    },
+    {
+      "t": "6:35 PM",
+      "city": "munich",
+      "line": "\ud83d\udfe2 Munich 28\u00b0C@70% \u00b7 BUY NO 29\u00b0C@26\u00a2 +19%"
+    },
+    {
+      "t": "6:35 PM",
+      "city": "milan",
+      "line": "\ud83d\udfe2 Milan 34\u00b0C@74% \u00b7 BUY NO 33\u00b0C@43\u00a2 +46%"
+    },
+    {
+      "t": "7:06 PM",
+      "city": "london",
+      "line": "\ud83d\udfe2 London 29\u00b0C@84% \u00b7 BUY NO 28\u00b0C@57\u00a2 +50%"
+    },
+    {
+      "t": "7:06 PM",
+      "city": "munich",
+      "line": "\ud83d\udd34 Munich 28\u00b0C weakened to 67%"
+    },
+    {
+      "t": "8:08 PM",
+      "city": "paris",
+      "line": "\ud83d\udfe2 Paris 36\u00b0C@75% \u00b7 BUY NO 35\u00b0C@71\u00a2 +75%"
+    }
+  ],
+  "2026-07-13": [
+    {
+      "t": "1:22 AM",
+      "city": "ankara",
+      "line": "\ud83d\udfe2 Ankara 32\u00b0C@78% \u00b7 BUY YES 32\u00b0C@57\u00a2 +22%"
     }
   ]
 }

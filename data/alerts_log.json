@@ -3038,6 +3038,78 @@
       "t": "1:22 AM",
       "city": "ankara",
       "line": "\ud83d\udfe2 Ankara 32\u00b0C@78% \u00b7 BUY YES 32\u00b0C@57\u00a2 +22%"
+    },
+    {
+      "t": "9:30 AM",
+      "city": "shanghai",
+      "line": "\ud83d\udfe2 Shanghai 33\u00b0C@74% \u00b7 BUY NO 34\u00b0C@51\u00a2 +46%"
+    },
+    {
+      "t": "9:45 AM",
+      "city": "shanghai",
+      "line": "\ud83d\udd34 Shanghai 33\u00b0C weakened to 67%"
+    },
+    {
+      "t": "10:31 AM",
+      "city": "kuala lumpur",
+      "line": "\ud83d\udfe2 Kuala Lumpur 32\u00b0C@75% \u00b7 BUY YES 32\u00b0C@14\u00a2 +61%"
+    },
+    {
+      "t": "11:17 AM",
+      "city": "busan",
+      "line": "\ud83d\udfe2 Busan 32\u00b0C@79% \u00b7 BUY NO 31\u00b0C@49\u00a2 +53%"
+    },
+    {
+      "t": "11:32 AM",
+      "city": "busan",
+      "line": "\ud83d\udd34 Busan 32\u00b0C weakened to 79%"
+    },
+    {
+      "t": "4:34 PM",
+      "city": "ankara",
+      "line": "\ud83d\udfe2 Ankara 32\u00b0C@93% \u00b7 BUY YES 32\u00b0C@68\u00a2 +25%"
+    },
+    {
+      "t": "6:11 PM",
+      "city": "ankara",
+      "line": "\ud83d\udfe2 Ankara 33\u00b0C@93% \u00b7 BUY YES 33\u00b0C@17\u00a2 +76%"
+    },
+    {
+      "t": "9:21 PM",
+      "city": "sao paulo",
+      "line": "\ud83d\udfe2 S\u00e3o Paulo 16\u00b0C@73% \u00b7 BUY YES 16\u00b0C@16\u00a2 +57%"
+    },
+    {
+      "t": "9:37 PM",
+      "city": "madrid",
+      "line": "\ud83d\udfe2 Madrid 32\u00b0C@88% \u00b7 BUY YES 32\u00b0C@31\u00a2 +57%"
+    },
+    {
+      "t": "10:54 PM",
+      "city": "sao paulo",
+      "line": "\ud83d\udd04 S\u00e3o Paulo 16\u00b0C\u219218\u00b0C @75%"
+    }
+  ],
+  "2026-07-14": [
+    {
+      "t": "1:30 AM",
+      "city": "milan",
+      "line": "\ud83d\udfe2 Milan 35\u00b0C@78% \u00b7 BUY YES 35\u00b0C@23\u00a2 +56%"
+    },
+    {
+      "t": "3:03 AM",
+      "city": "milan",
+      "line": "\ud83d\udd34 Milan 35\u00b0C weakened to 87%"
+    },
+    {
+      "t": "4:36 AM",
+      "city": "toronto",
+      "line": "\ud83d\udfe2 Toronto 37\u00b0C@71% \u00b7 BUY YES 37\u00b0C@42\u00a2 +29%"
+    },
+    {
+      "t": "5:37 AM",
+      "city": "toronto",
+      "line": "\ud83d\udd34 Toronto 34\u00b0C weakened to 51%"
     }
   ]
 }
